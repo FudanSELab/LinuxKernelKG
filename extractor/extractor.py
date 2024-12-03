@@ -7,6 +7,8 @@ from utils.deepseek import deepseek
 import json
 import logging
 from datetime import datetime
+import time
+from tqdm import tqdm
 
 # MySQL 数据库配置
 db_config = {
@@ -57,6 +59,17 @@ logger.setLevel(logging.DEBUG)
 def curl_commit(commit_id):
 
     url = f'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id={commit_id}'
+
+    # get 这一步可能会失败，需要处理异常
+    while True:
+        try:
+            time.sleep(1)
+            response = requests.get(url)
+            break
+        except Exception as e:
+            logger.error(f"Request failed in curl_commit(), retrying in 10 seconds: {e}")
+            time.sleep(10)
+
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -85,14 +98,14 @@ def main():
     features_output = []
 
     for id, (feature_id, feature_description, version) in enumerate(mm_features):
-
-        logger.info(f"Processing feature {id + 1}/{len(mm_features)}")
+        
+        logger.info(f"---------Processing feature {id + 1}/{len(mm_features)}---------")
 
         # 查询 feature_id 对应的 commit
         cursor.execute(query_commit_sql, (feature_id,))
         commit_ids = cursor.fetchall()
         commits = []
-        for _, commit_id in commit_ids:
+        for _, commit_id in tqdm(commit_ids, desc=f"curling commits of feature {id + 1}", leave=False):
             commit = curl_commit(commit_id)
             commits.append(commit)
         
@@ -127,14 +140,14 @@ def main():
 
         features_output.append(feature_extracted)
 
-        if id % 10 == 9:
-            # 写入文件
+        # 写入文件
+        if id % 10 == 0:
             with open(f'data/features/features_output_{nowtime}.json', 'w') as f:
-                json.dump(features_output, f, indent=4)
+                json.dump(feature_extracted, f, indent=4, ensure_ascii=False)
 
     # 写入文件
     with open(f'data/features/features_output_{nowtime}.json', 'w') as f:
-        json.dump(features_output, f, indent=4)
+        json.dump(feature_extracted, f, indent=4, ensure_ascii=False)
 
     # 关闭数据库连接
     connection.close()
