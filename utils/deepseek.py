@@ -1,5 +1,6 @@
 from openai import OpenAI
 import logging
+import time
 
 # 配置 deepseek
 deepseek_api_key = 'sk-c875aefe59f5412a919c431bac6c7cea'
@@ -15,14 +16,20 @@ class deepseek:
 
         logger.debug(f"invoking deepseek with prompt:\n{prompt}")
 
-        response = self.client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant"},
-                {"role": "user", "content": prompt},
-            ],
-            stream=False
-        )
+        while True:
+            try:
+                response = self.client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant"},
+                        {"role": "user", "content": prompt},
+                    ],
+                    stream=False
+                )
+                break
+            except Exception as e:
+                logger.error(f"Request failed in deepseek.get_response(), retrying in 10 seconds: {e}")
+                time.sleep(10)
 
         logger.debug(f"deepseek response:\n{response}")
 
