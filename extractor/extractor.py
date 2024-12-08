@@ -1,8 +1,8 @@
 import pymysql
 from bs4 import BeautifulSoup
 import requests
-from prompts.expand import expandPrompt
-from prompts.extract import extractPrompt
+from prompts.extractEntity import extractEntityPrompt
+from prompts.extractTriple import extractTriplePrompt
 from utils.deepseek import deepseek
 import json
 import logging
@@ -64,6 +64,7 @@ def curl_commit(commit_id):
     while True:
         try:
             time.sleep(1)
+            logger.debug(f"curling url: {url}")
             response = requests.get(url)
             break
         except Exception as e:
@@ -78,6 +79,21 @@ def curl_commit(commit_id):
     commit_msg = soup.find('div', class_='commit-msg').text
 
     return {"commit_subject": commit_subject, "commit_message": commit_msg}
+
+
+# 查询数据库（如果存在）或者爬网页来获取某个 commit 的 subject 和 message
+def get_commit(commit_id, connection):
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM commit_info WHERE commit_id = %s", (commit_id,))
+    commit = cursor.fetchone()
+    if commit is None:
+        commit = curl_commit(commit_id)
+        cursor.execute("INSERT INTO commit_info (commit_id, commit_subject, commit_message) VALUES (%s, %s, %s);", (commit_id, commit['commit_subject'], commit['commit_message']))
+        connection.commit()
+    else:
+        commit = {"commit_subject": commit[1], "commit_message": commit[2]}
+    return commit
+
 
 # 去除 llm response 的开头 ```json 和末尾 ``` 两行
 def strip_json(json_str):
@@ -101,44 +117,41 @@ def main():
         
         logger.info(f"---------Processing feature {id + 1}/{len(mm_features)}---------")
 
+        if version != '6.6':
+            continue
+
         # 查询 feature_id 对应的 commit
         cursor.execute(query_commit_sql, (feature_id,))
         commit_ids = cursor.fetchall()
         commits = []
         for _, commit_id in tqdm(commit_ids, desc=f"curling commits of feature {id + 1}", leave=False):
-            commit = curl_commit(commit_id)
+            commit = get_commit(commit_id, connection)
             commits.append(commit)
-        
-        prompt = expandPrompt(feature_description=feature_description, commits=commits).format()
-        expand_response = llm.get_response(prompt)
-        expand_response = strip_json(expand_response)
 
-        # 反序列化，拼接得到扩写后的 feature 信息
-        expand_object = json.loads(expand_response)
-        feature_expanded = {
-            "feature_description": feature_description,
-            "commits": commits,
-            **expand_object
-        }
+        prompt_entity = extractEntityPrompt(feature_description=feature_description, commits=commits).format()
+        response_entity = llm.get_response(prompt_entity)
+        response_entity = strip_json(response_entity)
+        object_entity = json.loads(response_entity)
 
-        prompt = extractPrompt(**feature_expanded).format()
-        extract_response = llm.get_response(prompt)
-        extract_response = strip_json(extract_response)
+        prompt_triple = extractTriplePrompt(feature_description=feature_description, commits=commits).format()
+        response_triple = llm.get_response(prompt_triple)
+        response_triple = strip_json(response_triple)
+        object_triple = json.loads(response_triple)
 
-        # 反序列化，拼接得到提取实体后的 feature 信息
-        extract_object = json.loads(extract_response)
         feature_extracted = {
             "feature_id": feature_id,
             "feature_description": feature_description,
             "version": version,
             "commits": commits,
-            **expand_object,
-            **extract_object
+            **object_entity,
+            **object_triple
         }
 
         logger.debug(f"feature_extracted of feature_id={feature_id}:\n{json.dumps(feature_extracted, ensure_ascii=False, indent=4)}")
 
         features_output.append(feature_extracted)
+
+        break
 
         # 写入文件
         if id % 10 == 0:
