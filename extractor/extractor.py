@@ -2,7 +2,7 @@ import pymysql
 from bs4 import BeautifulSoup
 import requests
 from prompts.extractEntity import extractEntityPrompt
-from prompts.extractTriple import extractTriplePrompt
+from prompts.extractTriple_e import extractTriplePrompt
 from utils.deepseek import deepseek
 import json
 import logging
@@ -24,7 +24,7 @@ db_config = {
 query_mm_sql = """
 SELECT feature_id, text, version
     FROM newbies_feature
-	WHERE h1 = 'Memory management'
+	WHERE h1 = 'Memory management' and version = '6.6'
     ORDER BY feature_id DESC;
 """
 
@@ -117,9 +117,6 @@ def main():
         
         logger.info(f"---------Processing feature {id + 1}/{len(mm_features)}---------")
 
-        if version != '6.6':
-            continue
-
         # 查询 feature_id 对应的 commit
         cursor.execute(query_commit_sql, (feature_id,))
         commit_ids = cursor.fetchall()
@@ -128,39 +125,53 @@ def main():
             commit = get_commit(commit_id, connection)
             commits.append(commit)
 
-        prompt_entity = extractEntityPrompt(feature_description=feature_description, commits=commits).format()
-        response_entity = llm.get_response(prompt_entity)
-        response_entity = strip_json(response_entity)
-        object_entity = json.loads(response_entity)
+        entities = []
+        triples = []
 
-        prompt_triple = extractTriplePrompt(feature_description=feature_description, commits=commits).format()
-        response_triple = llm.get_response(prompt_triple)
-        response_triple = strip_json(response_triple)
-        object_triple = json.loads(response_triple)
+        if len(commits) >= 15:
+            continue
+        
+        # 至多 5 个 commit 为一组
+        for i in range(0, len(commits), 5):
+            commits_group = commits[i:i+10]
+            prompt_entity = extractEntityPrompt(feature_description=feature_description, commits=commits_group).format()
+            response_entity = llm.get_response(prompt_entity)
+            response_entity = strip_json(response_entity)
+            object_entity = json.loads(response_entity)
+
+            prompt_triple = extractTriplePrompt(feature_description=feature_description, commits=commits_group, entities=object_entity).format()
+            response_triple = llm.get_response(prompt_triple)
+            response_triple = strip_json(response_triple)
+            object_triple = json.loads(response_triple)
+
+            entities.extend(object_entity['entities'])
+            triples.extend(object_triple['triples'])
 
         feature_extracted = {
             "feature_id": feature_id,
             "feature_description": feature_description,
             "version": version,
             "commits": commits,
-            **object_entity,
-            **object_triple
+            "entities": entities,
+            "triples": triples
         }
 
         logger.debug(f"feature_extracted of feature_id={feature_id}:\n{json.dumps(feature_extracted, ensure_ascii=False, indent=4)}")
 
         features_output.append(feature_extracted)
 
-        break
-
         # 写入文件
-        if id % 10 == 0:
+        if id % 5 == 0:
             with open(f'data/features/features_output_{nowtime}.json', 'w') as f:
-                json.dump(feature_extracted, f, indent=4, ensure_ascii=False)
+                json.dump(features_output, f, indent=4, ensure_ascii=False)
+
+        if id >= 10:
+            break
+
 
     # 写入文件
     with open(f'data/features/features_output_{nowtime}.json', 'w') as f:
-        json.dump(feature_extracted, f, indent=4, ensure_ascii=False)
+        json.dump(features_output, f, indent=4, ensure_ascii=False)
 
     # 关闭数据库连接
     connection.close()
