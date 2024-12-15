@@ -26,6 +26,10 @@ class deepseek:
                     ],
                     stream=False
                 )
+                if response.choices[0].finish_reason != "stop":
+                    logger.error(f"Request failed in deepseek.get_response(), retrying in 10 seconds: {response.choices[0].finish_reason}")
+                    time.sleep(10)
+                    continue
                 break
             except Exception as e:
                 logger.error(f"Request failed in deepseek.get_response(), retrying in 10 seconds: {e}")
