@@ -2,8 +2,11 @@ import pymysql
 from bs4 import BeautifulSoup
 import requests
 from prompts.extractEntity import extractEntityPrompt
-from prompts.extractTriple_e import extractTriplePrompt
+from prompts.extractTriple import extractTriplePrompt
+from prompts.extractTripleOpen import extractTripleOpenPrompt
+from prompts.verify import verifyPrompt
 from utils.deepseek import deepseek
+from utils.utils import *
 import json
 import logging
 from datetime import datetime
@@ -30,10 +33,9 @@ SELECT feature_id, text, version
 
 # 查询 feature_id 对应的 commit 的 SQL
 query_commit_sql = """
-SELECT min(id) as minimum_id, commit_id FROM feature_file
+SELECT id, commit_id FROM newbies_mapping
 	WHERE feature_id = %s
-    GROUP BY commit_id
-    ORDER BY minimum_id;
+    ORDER BY id ASC;
 """
 
 # 初始化 llm
@@ -54,6 +56,15 @@ logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
+def clean_commit_message(message):
+    # 按行分割消息
+    lines = message.split('\n')
+    # 定义需要过滤的前缀
+    prefixes_to_remove = ['Cc:', 'Link:', 'Signed-off-by:', 'Tested-by:', 'Acked-by:', 'Reported-by:', 'Suggested-by', 'Co-developed-by', 'Reviewed-by']
+    # 过滤掉指定前缀开头的行
+    filtered_lines = [line for line in lines if not any(line.strip().startswith(prefix) for prefix in prefixes_to_remove)]
+    # 重新组合消息
+    return '\n'.join(filtered_lines)
 
 # 访问 linux 内核 git 仓库获取 commit subject/message
 def curl_commit(commit_id):
@@ -75,8 +86,16 @@ def curl_commit(commit_id):
     soup = BeautifulSoup(response.text, 'html.parser')
 
     # 提取 commit-subject 和 commit-msg 两个 div 的 text
-    commit_subject = soup.find('div', class_='commit-subject').text
-    commit_msg = soup.find('div', class_='commit-msg').text
+    try:
+        commit_subject = soup.find('div', class_='commit-subject').text
+        commit_msg = soup.find('div', class_='commit-msg').text
+    except Exception as e:
+        logger.error(f"failed to extract commit subject and message! commit_id={commit_id}")
+        commit_subject = ""
+        commit_msg = ""
+
+    # 清洗 commit message
+    commit_msg = clean_commit_message(commit_msg)
 
     return {"commit_subject": commit_subject, "commit_message": commit_msg}
 
@@ -95,11 +114,6 @@ def get_commit(commit_id, connection):
     return commit
 
 
-# 去除 llm response 的开头 ```json 和末尾 ``` 两行
-def strip_json(json_str):
-    return json_str.lstrip('```json').rstrip('```')
-
-
 def main():
 
     # 建立数据库连接
@@ -115,6 +129,9 @@ def main():
 
     for id, (feature_id, feature_description, version) in enumerate(mm_features):
         
+        if id < 13:
+            continue
+
         logger.info(f"---------Processing feature {id + 1}/{len(mm_features)}---------")
 
         # 查询 feature_id 对应的 commit
@@ -128,24 +145,43 @@ def main():
         entities = []
         triples = []
 
-        if len(commits) >= 15:
-            continue
-        
         # 至多 5 个 commit 为一组
-        for i in range(0, len(commits), 5):
-            commits_group = commits[i:i+10]
+        for group_index, i in enumerate(range(0, len(commits), 5)):
+            commits_group = commits[i:i+5]
             prompt_entity = extractEntityPrompt(feature_description=feature_description, commits=commits_group).format()
             response_entity = llm.get_response(prompt_entity)
             response_entity = strip_json(response_entity)
             object_entity = json.loads(response_entity)
 
-            prompt_triple = extractTriplePrompt(feature_description=feature_description, commits=commits_group, entities=object_entity).format()
+            prompt_triple = extractTriplePrompt(feature_description=feature_description, commits=commits_group).format()
             response_triple = llm.get_response(prompt_triple)
             response_triple = strip_json(response_triple)
             object_triple = json.loads(response_triple)
 
-            entities.extend(object_entity['entities'])
-            triples.extend(object_triple['triples'])
+            prompt_tripleOpen = extractTripleOpenPrompt(feature_description=feature_description, commits=commits_group).format()
+            response_tripleOpen = llm.get_response(prompt_tripleOpen)
+            response_tripleOpen = strip_json(response_tripleOpen)
+            object_tripleOpen = json.loads(response_tripleOpen)
+
+            # 合并两种方式得到的三元组
+            all_triples = object_triple['triples'] + object_tripleOpen['triples']
+
+            # 验证实体和关系三元组
+            prompt_verify = verifyPrompt(feature_description=feature_description, commits=commits_group, entities=object_entity['entities'], triples=all_triples).format()
+            response_verify = llm.get_response(prompt_verify)
+            response_verify = strip_json(response_verify)
+            object_verify = json.loads(response_verify)
+
+            # 去重添加实体和关系
+            entities.extend([e for e in object_verify['entities'] if e not in entities])
+            triples.extend([t for t in object_verify['triples'] if t not in triples])
+
+            logger.debug(f"feature_id={feature_id}, group={group_index}, object_entity: {object_entity}")
+            logger.debug(f"feature_id={feature_id}, group={group_index}, object_triple: {object_triple}")
+            logger.debug(f"feature_id={feature_id}, group={group_index}, object_tripleOpen: {object_tripleOpen}")
+            logger.debug(f"feature_id={feature_id}, group={group_index}, object_verify: {object_verify}")
+
+
 
         feature_extracted = {
             "feature_id": feature_id,
@@ -161,17 +197,8 @@ def main():
         features_output.append(feature_extracted)
 
         # 写入文件
-        if id % 5 == 0:
-            with open(f'data/features/features_output_{nowtime}.json', 'w') as f:
-                json.dump(features_output, f, indent=4, ensure_ascii=False)
-
-        if id >= 10:
-            break
-
-
-    # 写入文件
-    with open(f'data/features/features_output_{nowtime}.json', 'w') as f:
-        json.dump(features_output, f, indent=4, ensure_ascii=False)
+        with open(f'data/features/features_output_{nowtime}.json', 'w') as f:
+            json.dump(features_output, f, indent=4, ensure_ascii=False)
 
     # 关闭数据库连接
     connection.close()
