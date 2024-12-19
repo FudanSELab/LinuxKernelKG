@@ -12,6 +12,8 @@ import logging
 from datetime import datetime
 import time
 from tqdm import tqdm
+import os
+from utils.logger import setup_logger
 
 # MySQL 数据库配置
 db_config = {
@@ -44,11 +46,14 @@ llm = deepseek()
 
 # 日志配置
 nowtime = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+log_dir = 'data/log'
+os.makedirs(log_dir, exist_ok=True)  # Create the directory if it doesn't exist
+
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
-file_handler = logging.FileHandler(f'data/log/extractor_{nowtime}.log', mode='w', encoding='utf-8')
+file_handler = logging.FileHandler(f'{log_dir}/extractor_{nowtime}.log', mode='w', encoding='utf-8')
 file_handler.setLevel(logging.DEBUG)
 file_handler.setFormatter(formatter)
 logger = logging.getLogger("extractor")
@@ -114,94 +119,119 @@ def get_commit(commit_id, connection):
     return commit
 
 
-def main():
-
-    # 建立数据库连接
-    connection = pymysql.connect(**db_config)
-    cursor = connection.cursor()
-
-    # 查询 mm 相关 feature
-    cursor.execute(query_mm_sql)
-    mm_features = cursor.fetchall()
-
-    # 输出
-    features_output = []
-
-    for id, (feature_id, feature_description, version) in enumerate(mm_features):
+class EntityRelationExtractor:
+    def __init__(self, config):
+        self.logger = setup_logger()
+        self.llm = deepseek()
+        self.config = config
         
-        if id < 13:
-            continue
-
-        logger.info(f"---------Processing feature {id + 1}/{len(mm_features)}---------")
-
-        # 查询 feature_id 对应的 commit
-        cursor.execute(query_commit_sql, (feature_id,))
-        commit_ids = cursor.fetchall()
-        commits = []
-        for _, commit_id in tqdm(commit_ids, desc=f"curling commits of feature {id + 1}", leave=False):
-            commit = get_commit(commit_id, connection)
-            commits.append(commit)
-
-        entities = []
-        triples = []
-
-        # 至多 5 个 commit 为一组
-        for group_index, i in enumerate(range(0, len(commits), 5)):
-            commits_group = commits[i:i+5]
-            prompt_entity = extractEntityPrompt(feature_description=feature_description, commits=commits_group).format()
-            response_entity = llm.get_response(prompt_entity)
-            response_entity = strip_json(response_entity)
-            object_entity = json.loads(response_entity)
-
-            prompt_triple = extractTriplePrompt(feature_description=feature_description, commits=commits_group).format()
-            response_triple = llm.get_response(prompt_triple)
-            response_triple = strip_json(response_triple)
-            object_triple = json.loads(response_triple)
-
-            prompt_tripleOpen = extractTripleOpenPrompt(feature_description=feature_description, commits=commits_group).format()
-            response_tripleOpen = llm.get_response(prompt_tripleOpen)
-            response_tripleOpen = strip_json(response_tripleOpen)
-            object_tripleOpen = json.loads(response_tripleOpen)
-
-            # 合并两种方式得到的三元组
-            all_triples = object_triple['triples'] + object_tripleOpen['triples']
-
-            # 验证实体和关系三元组
-            prompt_verify = verifyPrompt(feature_description=feature_description, commits=commits_group, entities=object_entity['entities'], triples=all_triples).format()
-            response_verify = llm.get_response(prompt_verify)
-            response_verify = strip_json(response_verify)
-            object_verify = json.loads(response_verify)
-
-            # 去重添加实体和关系
-            entities.extend([e for e in object_verify['entities'] if e not in entities])
-            triples.extend([t for t in object_verify['triples'] if t not in triples])
-
-            logger.debug(f"feature_id={feature_id}, group={group_index}, object_entity: {object_entity}")
-            logger.debug(f"feature_id={feature_id}, group={group_index}, object_triple: {object_triple}")
-            logger.debug(f"feature_id={feature_id}, group={group_index}, object_tripleOpen: {object_tripleOpen}")
-            logger.debug(f"feature_id={feature_id}, group={group_index}, object_verify: {object_verify}")
-
-
-
-        feature_extracted = {
-            "feature_id": feature_id,
-            "feature_description": feature_description,
-            "version": version,
-            "commits": commits,
-            "entities": entities,
-            "triples": triples
+    def extract_entities_and_relations(self, features):
+        """抽取实体和关系"""
+        connection = pymysql.connect(**self.config.DB_CONFIG)
+        try:
+            features_output = []
+            for feature in features:
+                feature_id = feature['feature_id']
+                feature_description = feature['feature_description']
+                version = feature['version']
+                
+                # 获取commits
+                cursor = connection.cursor()
+                cursor.execute(self.config.QUERY_COMMIT_SQL, (feature_id,))
+                commit_ids = cursor.fetchall()
+                commits = []
+                for _, commit_id in commit_ids:
+                    commit = self._get_commit_info(commit_id)
+                    commits.append(commit)
+                
+                # 添加日志记录commits数量
+                self.logger.info(f"Processing feature_id {feature_id} with {len(commits)} commits")
+                
+                entities = []
+                triples = []
+                
+                # 简单的分组处理，无论commits数量多少
+                for i in range(0, len(commits), 5):
+                    commits_group = commits[i:i+5]
+                    
+                    # 实体抽取
+                    prompt_entity = extractEntityPrompt(
+                        feature_description=feature_description, 
+                        commits=commits_group
+                    ).format()
+                    response_entity = self.llm.get_response(prompt_entity)
+                    object_entity = json.loads(strip_json(response_entity))
+                    
+                    # 关系抽取
+                    prompt_triple = extractTriplePrompt(
+                        feature_description=feature_description, 
+                        commits=commits_group
+                    ).format()
+                    response_triple = self.llm.get_response(prompt_triple)
+                    object_triple = json.loads(strip_json(response_triple))
+                    
+                    # 开放关系抽取
+                    prompt_tripleOpen = extractTripleOpenPrompt(
+                        feature_description=feature_description, 
+                        commits=commits_group
+                    ).format()
+                    response_tripleOpen = self.llm.get_response(prompt_tripleOpen)
+                    object_tripleOpen = json.loads(strip_json(response_tripleOpen))
+                    
+                    # 合并三元组
+                    all_triples = object_triple['triples'] + object_tripleOpen['triples']
+                    
+                    # 验证
+                    prompt_verify = verifyPrompt(
+                        feature_description=feature_description,
+                        commits=commits_group,
+                        entities=object_entity['entities'],
+                        triples=all_triples
+                    ).format()
+                    response_verify = self.llm.get_response(prompt_verify)
+                    object_verify = json.loads(strip_json(response_verify))
+                    
+                    # 去重添加
+                    entities.extend([e for e in object_verify['entities'] if e not in entities])
+                    triples.extend([t for t in object_verify['triples'] if t not in triples])
+                
+                feature_extracted = {
+                    "feature_id": feature_id,
+                    "feature_description": feature_description,
+                    "version": version,
+                    "commits": commits,
+                    "entities": entities,
+                    "triples": triples
+                }
+                features_output.append(feature_extracted)
+                
+            return features_output
+            
+        finally:
+            connection.close()
+            
+    def _get_commit_info(self, commit_id):
+        """获取commit信息"""
+        url = f'https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id={commit_id}'
+        
+        # 重试机制
+        for _ in range(self.config.MAX_RETRIES):
+            try:
+                response = requests.get(url)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                commit_subject = soup.find('div', class_='commit-subject').text
+                commit_msg = soup.find('div', class_='commit-msg').text
+                commit_msg = clean_commit_message(commit_msg)
+                return {
+                    "commit_subject": commit_subject,
+                    "commit_message": commit_msg
+                }
+            except Exception as e:
+                self.logger.error(f"Request failed: {e}, retrying...")
+                time.sleep(1)
+        
+        self.logger.error(f"Failed to get commit info for {commit_id}")
+        return {
+            "commit_subject": "",
+            "commit_message": ""
         }
-
-        logger.debug(f"feature_extracted of feature_id={feature_id}:\n{json.dumps(feature_extracted, ensure_ascii=False, indent=4)}")
-
-        features_output.append(feature_extracted)
-
-        # 写入文件
-        with open(f'data/features/features_output_{nowtime}.json', 'w') as f:
-            json.dump(features_output, f, indent=4, ensure_ascii=False)
-
-    # 关闭数据库连接
-    connection.close()
-
-if __name__ == '__main__':
-    main()
