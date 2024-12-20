@@ -11,7 +11,6 @@ import json
 import logging
 from datetime import datetime
 import time
-from tqdm import tqdm
 import os
 from utils.logger import setup_logger
 
