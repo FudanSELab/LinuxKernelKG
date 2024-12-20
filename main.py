@@ -58,18 +58,13 @@ async def run_pipeline():
             # 合并结果
             all_results['fusion'].extend(matching_result['fusion'])
             all_results['linking'].extend(matching_result['linking'])
-            
             # 保存当前进度
-            progress_file = output_dir / f"kg_results_{timestamp}_progress_{i}.json"
-            with open(progress_file, "w", encoding="utf-8") as f:
+            progress_file = output_dir / f"kg_results_{timestamp}.json"
+            with open(progress_file, "a", encoding="utf-8") as f:
                 json.dump(all_results, f, ensure_ascii=False, indent=2)
+                f.write("\n")  # 添加换行符分隔每次追加的内容
             
-            logger.info(f"Intermediate results saved to {progress_file}")
-        
-        # 保存最终结果
-        final_file = output_dir / f"kg_results_{timestamp}_final.json"
-        with open(final_file, "w", encoding="utf-8") as f:
-            json.dump(all_results, f, ensure_ascii=False, indent=2)
+            logger.info(f"Progress saved to {progress_file}")
             
         logger.info(f"Final results saved to {final_file}")
         logger.info(f"Found {len(all_results['fusion'])} matched entities and {len(all_results['linking'])} external links")

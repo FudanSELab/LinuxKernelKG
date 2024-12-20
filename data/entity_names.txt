@@ -1,0 +1,101 @@
+实体名
+handle_pte_fault
+mmu cache update
+PTE_MARKER_POISONED
+CONFIG_NUMA
+NUMA PTE faults
+destroy_large_folio()
+in hpage_collapse_scan_file()
+Static random selection
+mmap lock hold time
+do_cow_fault
+THPs
+per-page to per-folio
+kunit
+THP
+gup test matrix
+cacheline
+VMA insertion
+buffer
+userfaultfd API
+destroy_large_folio
+VMA operations
+for large folio
+Per-page to Per-folio
+MADV_UNMERGEABLE
+Entirely
+filemap_map_folio_range()
+Unneeded
+__lruvec_stat for large folio
+folio_add_file_rmap_range()
+slab allocator
+KSM-placed zeropages
+If cachefiles object contains data when opened
+truncate_inode_pages_final
+critical section
+vma_assert_write_locked()
+bio_first_folio_all()
+pgtable management
+OSQ_Lock
+NUMA migration handling
+hugetlb gup requests
+folio_undo_large_rmappable()
+ops->migrate_to_ram
+KVM
+replace_page_tables()
+page table range API
+vma lock
+own ioremap_prot(), ioremap() and iounmap() definitions
+Architectures
+do_shared_fault
+accessed bit
+page_add_file_rmap
+Per-VMA locks
+change in flag granularity
+Nios2 architecture
+follow_hugetlb_page
+numa_cma=
+OpenRISC architecture
+collapse_pte_mapped_thp()
+swapcache
+specifying optional tests
+cma_declare_contiguous_nid()
+DAMON
+lseek after HWPOISON subpage
+multiple copies of generic slab caches
+vma_start_write()
+__get_user_pages()
+DMA_PERNUMA_CMA
+PG_dcache_clean
+DAMOS tried regions
+CoW
+gup_test
+Operations on file's i_mmap tree
+HUGETLB_PAGE_DTOR
+i_mmap tree
+llist_del_all
+flush_dcache_folio()
+pmd_ptlock_init()
+vma locking
+pgtable_pte_ctor
+free_transhuge_folio()
+separate cache line
+descriptor
+Minor performance overhead
+Parisc architecture
+page_add_file_rmap()
+page flags
+heap spraying prevention
+Unsharing KSM-placed zero pages
+gup
+__split_huge_page_tail()
+Setting up N page table entries at once
+Retrieving monitoring results snapshot
+jbd2_journal_write_metadata_buffer
+ARM architecture
+FOLL_PIN
+update_mmu_cache_range
+FSCACHE_COOKIE_NO_DATA_TO_READ
+free table page
+mmap_write_lock()
+pmd_t

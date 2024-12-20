@@ -28,44 +28,34 @@ class KnowledgeGraphBuilder:
         batches = [entities[i:i + batch_size] 
                   for i in range(0, len(entities), batch_size)]
         
-        # 并行处理所有批次
-        all_results = await asyncio.gather(
-            *[self.process_batch(batch) for batch in batches]
-        )
-        
-        # 合并结果
-        return self._merge_batch_results(all_results)
-        
-    async def process_batch(self, batch):
-        """处理单个批次的实体"""
-        # 并行执行实体融合和链接
-        fusion_task = self.fuse_entities(batch)
-        linking_task = self.link_entities(batch)
-        
-        fusion_result, linking_result = await asyncio.gather(fusion_task, linking_task)
-        
-        return {
-            'fusion': fusion_result,  # 匹配到的实体概念
-            'linking': linking_result # 链接到的外部知识
+        all_results = {
+            'linking': [],
+            'fusion': []
         }
         
-    def _merge_batch_results(self, batch_results):
-        """合并所有批次的结果"""
-        merged = {
-            'fusion': [],
-            'linking': []
-        }
-        
-        for result in batch_results:
-            merged['fusion'].extend(result['fusion'])
-            merged['linking'].extend(result['linking'])
+        # 先处理所有批次的实体链接
+        for batch in batches:
+            # 实体链接
+            linking_results = await self.process_linking_batch(batch)
+            all_results['linking'].extend(linking_results)
             
-        return merged
-
-    async def fuse_entities(self, entities):
-        """异步方法：实体融合"""
-        return self.entity_processor.process_fusion_batch(entities)
-    
-    async def link_entities(self, entities):
-        """异步方法：实体链接"""
-        return await self.entity_processor.process_linking_batch(entities)
+            # 获取未链接的实体
+            unlinked_entities = [
+                entity for entity, result in zip(batch, linking_results)
+                if not result.get('linked_entity')
+            ]
+            
+            # 对未链接实体进行融合
+            if unlinked_entities:
+                fusion_results = await self.process_fusion_batch(unlinked_entities)
+                all_results['fusion'].extend(fusion_results)
+        
+        return all_results
+        
+    async def process_linking_batch(self, batch):
+        """处理单个批次的实体链接"""
+        return await self.entity_processor.process_linking_batch(batch)
+        
+    async def process_fusion_batch(self, batch):
+        """处理单个批次的实体融合"""
+        return await self.entity_processor.process_fusion_batch(batch)

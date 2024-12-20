@@ -35,37 +35,58 @@ class EntityLinker:
         )
      
     async def link_entity(self, entity, context):
-        """链接单个实体到知识库"""
+        """链接单个实体到知识库，返回所有可能的匹配结果"""
         self.logger.info(f"Processing entity linking for: {entity}")
         
-        # 1. 生成实体的全称和别名
+        # 1. 尝试原始实体及其变体匹配
         variations = await self._generate_variations(entity)
-        
-        # 2. 生成 n-gram 子序列
-        ngrams = self._generate_ngrams(entity)
-        
-        # 合并所有可能的搜索词
-        search_terms = list(set(variations + ngrams))
-        
-        # 3. 搜索维基百科
-        candidates = []
-        for term in search_terms:
+        primary_candidates = []
+        for term in variations:
             wiki_results = await self._search_wikipedia(term, context)
-            candidates.extend(wiki_results)
-            
-        # 去重
-        candidates = self._deduplicate_candidates(candidates)
+            primary_candidates.extend(wiki_results)
+        # 2. 生成 n-gram 子序列
+        primary_candidates = self._deduplicate_candidates(primary_candidates)
+        primary_match = await self._select_best_match(entity, context, primary_candidates)
         
+        # 2. 独立尝试n-gram子序列匹配
+        ngrams = self._generate_ngrams(entity)
+        # 3. 搜索维基百科
+        ngram_candidates = []
+        for term in ngrams:
+            wiki_results = await self._search_wikipedia(term, context)
+            ngram_candidates.extend(wiki_results)
+            
+        ngram_candidates = self._deduplicate_candidates(ngram_candidates)
         # 4. 使用 LLM 选择最佳匹配
-        best_match = await self._select_best_match(entity, context, candidates)
+        ngram_match = await self._select_best_match(entity, context, ngram_candidates)
+        
+        # 3. 整理所有匹配结果
+        matches = []
+        
+        if primary_match and primary_match.confidence > 0.5:  # 可配置的最低置信度阈值
+            matches.append({
+                'linked_entity': primary_match.title,
+                'wikipedia_url': primary_match.url,
+                'confidence': primary_match.confidence,
+                'search_terms': variations,
+                'candidates_count': len(primary_candidates),
+                'match_type': 'primary'
+            })
+            
+        if ngram_match and ngram_match.confidence > 0.5:
+            matches.append({
+                'linked_entity': ngram_match.title,
+                'wikipedia_url': ngram_match.url,
+                'confidence': ngram_match.confidence,
+                'search_terms': ngrams,
+                'candidates_count': len(ngram_candidates),
+                'match_type': 'ngram'
+            })
         
         return {
             'mention': entity,
-            'linked_entity': best_match.title if best_match else None,
-            'wikipedia_url': best_match.url if best_match else None,
-            'confidence': best_match.confidence if best_match else 0.0,
-            'search_terms': search_terms,
-            'candidates_count': len(candidates)
+            'matches': matches,
+            'total_candidates_count': len(primary_candidates) + len(ngram_candidates)
         }
         
     async def _generate_variations(self, mention: str) -> List[str]:
