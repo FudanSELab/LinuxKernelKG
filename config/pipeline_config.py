@@ -1,3 +1,5 @@
+import jsonschema
+
 class PipelineConfig:
     # 数据库配置
     DB_CONFIG = {
@@ -45,3 +47,70 @@ class PipelineConfig:
         "temperature": 0.7,
         "max_tokens": 2000
     } 
+
+    # JSON Schema definition
+    SCHEME_DEFINITION = {
+        "type": "object",
+        "properties": {
+            "entities": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "name": {"type": "string"},
+                        "type": {"type": "string"}
+                    },
+                    "required": ["id", "name", "type"]
+                }
+            },
+            "relations": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "from_id": {"type": "string"},
+                        "to_id": {"type": "string"},
+                        "type": {"type": "string"},
+                        "properties": {"type": "object"}
+                    },
+                    "required": ["from_id", "to_id", "type"]
+                }
+            }
+        },
+        "required": ["entities", "relations"]
+    }
+
+class KnowledgeGraphConfig:
+    def __init__(self):
+        # 使用Docker配置的Neo4j连接信息
+        self.neo4j_config = {
+            'uri': 'bolt://localhost:7687',     # Docker映射的本地端口
+            'user': 'neo4j',                    # Docker环境变量中配置的用户名
+            'password': 'cloudfdse',            # Docker环境变量中配置的密码
+            'max_connection_lifetime': 3600
+        }
+
+    def validate_connection(self):
+        """验证Neo4j连接配置"""
+        required_fields = ['uri', 'user', 'password']
+        missing_fields = []
+        
+        for field in required_fields:
+            if not self.neo4j_config.get(field):
+                missing_fields.append(field)
+                
+        if missing_fields:
+            raise ValueError(
+                f"Missing required Neo4j configuration fields: {', '.join(missing_fields)}"
+            )
+            
+        # 验证URI格式
+        uri = self.neo4j_config['uri']
+        if not uri.startswith(('bolt://', 'neo4j://')):
+            raise ValueError(
+                f"Invalid Neo4j URI format: {uri}. "
+                "Must start with 'bolt://' or 'neo4j://'"
+            )
+            
+        return True

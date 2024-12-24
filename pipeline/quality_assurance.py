@@ -1,4 +1,5 @@
 from utils.logger import setup_logger
+import jsonschema
 
 class QualityAssurance:
     def __init__(self, config):
@@ -228,3 +229,12 @@ class QualityMonitor:
         except Exception as e:
             self.logger.error(f"Error in linking coverage check: {str(e)}")
             return 0.0
+
+    def validate_scheme(self, data):
+        """验证数据是否符合定义的scheme"""
+        try:
+            jsonschema.validate(instance=data, schema=self.config.SCHEME_DEFINITION)
+            return True
+        except jsonschema.exceptions.ValidationError as e:
+            self.logger.error(f"Data does not match scheme: {e.message}")
+            return False
