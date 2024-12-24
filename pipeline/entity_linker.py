@@ -10,10 +10,12 @@ from utils.deepseek import deepseek
 from utils.utils import strip_json
 from prompts.link import linkPrompt
 import wikipediaapi  # 添加新的导入
+import re
 
 
 @dataclass
 class LinkingCandidate:
+    mention: str
     title: str
     url: str
     summary: str
@@ -22,7 +24,7 @@ class LinkingCandidate:
 
 class EntityLinker:
     def __init__(self, config):
-        self.logger = setup_logger('entity_linker')
+        self.logger = setup_logger('entity_linker', file_output=True)
         self.config = config
         self.llm = deepseek()
         # 设置请求超时和重试次数
@@ -31,7 +33,8 @@ class EntityLinker:
         self.wiki = wikipediaapi.Wikipedia(
             language='en',
             extract_format=wikipediaapi.ExtractFormat.HTML,
-            user_agent='YourAppName/1.0'  # 建议设置自定义user-agent
+            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+            proxies=self.config.WIKIPEDIA_PROXY_URL
         )
      
     async def link_entity(self, entity, context):
@@ -44,9 +47,11 @@ class EntityLinker:
         for term in variations:
             wiki_results = await self._search_wikipedia(term, context)
             primary_candidates.extend(wiki_results)
-        # 2. 生成 n-gram 子序列
+        
         primary_candidates = self._deduplicate_candidates(primary_candidates)
+        self.logger.info(f"for entity {entity} overall linking, got {len(primary_candidates)} page candidates:\n{self._format_candidates(primary_candidates)}")
         primary_match = await self._select_best_match(entity, context, primary_candidates)
+        
         
         # 2. 独立尝试n-gram子序列匹配
         ngrams = self._generate_ngrams(entity)
@@ -55,10 +60,11 @@ class EntityLinker:
         for term in ngrams:
             wiki_results = await self._search_wikipedia(term, context)
             ngram_candidates.extend(wiki_results)
-            
+        
         ngram_candidates = self._deduplicate_candidates(ngram_candidates)
-        # 4. 使用 LLM 选择最佳匹配
-        ngram_match = await self._select_best_match(entity, context, ngram_candidates)
+        self.logger.info(f"for entity {entity} ngram linking, ngrams:\n{ngrams}\ngot {len(ngram_candidates)} page candidates:\n{self._format_candidates(ngram_candidates)}")
+        # 4. 使用 LLM 选择 n-grams 最佳匹配
+        ngram_match = await self._select_best_match_ngrams(ngrams, context, ngram_candidates)
         
         # 3. 整理所有匹配结果
         matches = []
@@ -80,7 +86,8 @@ class EntityLinker:
                 'confidence': ngram_match.confidence,
                 'search_terms': ngrams,
                 'candidates_count': len(ngram_candidates),
-                'match_type': 'ngram'
+                'match_type': 'ngram',
+                'matched_ngram': ngram_match.mention
             })
         
         return {
@@ -94,17 +101,21 @@ class EntityLinker:
         response = await self._get_llm_response(prompt)
         return self._parse_variations_response(response, mention)
             
-    def _generate_ngrams(self, text: str, min_length: int = 3) -> List[str]:
-        """生成文本的 n-gram 子序列"""
-        words = text.split()
+    def _generate_ngrams(self, text: str, min_n: int = 1, max_n: int = 3) -> List[str]:
+        """生成文本的 n-gram 子序列，利用 config 中定义的分隔符"""
+        words = re.split(f"[{re.escape(self.config.NGRAM_DELIMITERS)}]+", text)
         ngrams = []
         
-        for n in range(1, len(words) + 1):
+        # 生成所有 min_n...max_n-gram 子序列，注意不能和原始文本相同
+        for n in range(min_n, max_n + 1):
             for i in range(len(words) - n + 1):
-                ngram = ' '.join(words[i:i+n])
-                if len(ngram) >= min_length:
+                ngram = " ".join(words[i:i + n])
+                if i != 0 or i + n != len(words): # 不是整个文本
                     ngrams.append(ngram)
-                    
+        
+        # 去重，但保留顺序不变
+        ngrams = list(dict.fromkeys(ngrams))
+
         return ngrams
         
     async def _search_wikipedia(self, term: str, context: str = None) -> List[LinkingCandidate]:
@@ -132,6 +143,7 @@ class EntityLinker:
                 # 检查页面相关性
                 if await self._check_page_relevance(page.title, page.summary, term, context):
                     candidate = LinkingCandidate(
+                        mention=term,
                         title=page.title,
                         url=page.fullurl,
                         summary=page.summary[:200],
@@ -186,6 +198,7 @@ class EntityLinker:
                     continue
                     
                 candidate = LinkingCandidate(
+                    mention="",
                     title=linked_page.title,
                     url=linked_page.fullurl,
                     summary=linked_page.summary[:200],
@@ -257,7 +270,61 @@ class EntityLinker:
         except Exception as e:
             self.logger.error(f"Failed to select best match for {mention}: {e}")
             return None
+
+
+    async def _select_best_match_ngrams(self, mentions: list[str], context: str,
+                                        ngram_candidates: List[LinkingCandidate]) -> Optional[LinkingCandidate]:
+        """使用 LLM 从n-grams候选中选择最佳匹配的一对，增强消歧义处理"""
+        if not ngram_candidates:
+            return None
             
+        try:
+            # 改进提示以更好地处理消歧义情况
+            prompt = f"""{{
+                "task": "Entity Linking and Disambiguation",
+                "context": "Given some mentions from Linux kernel documentation and their context, select the most appropriate pair of (mention, Wikipedia page) from the mentions and candidate pages. Please note that the mention and page you choose must describe the EXACT SAME concept. For instance, the mention 'mmu cache' and the page 'memory management unit' are related but NOT describing the exact same concept, while the mention 'mmu' and the page 'memory management unit' are describing the exact same concept. Some candidates might come from disambiguation pages.",
+                "mention": "{mentions}",
+                "original_context": "{context}",
+                "candidate pages": [
+                    {self._format_candidates(ngram_candidates)}
+                ],
+                "instructions": "Please analyze each candidate carefully and return a JSON object with:
+                    1. 'selected_index_mention': index of the best matching mention (or -1 if none matches)
+                    2. 'selected_index_page': index of the best matching page (or -1 if none matches)
+                    3. 'confidence': confidence score between 0 and 1
+                    4. 'reasoning': brief explanation of your choice, especially if this came from a disambiguation page
+                    5. 'disambiguation_source': whether the selected page was from a disambiguation resolution"
+            }}"""
+            
+            # 其余代码保持不变
+            response = await self._get_llm_response(prompt)
+            if not response:
+                return None
+                
+            cleaned_response = strip_json(response)
+            if not cleaned_response:
+                return None
+                
+            result = json.loads(cleaned_response)
+            
+            if isinstance(result, dict) and 'selected_index_mention' in result and 'selected_index_page' in result:
+                if result['selected_index_mention'] >= 0 and result['selected_index_mention'] < len(mentions) and \
+                    result['selected_index_page'] >= 0 and result['selected_index_page'] < len(ngram_candidates):
+    
+                    selected = ngram_candidates[result['selected_index_page']]
+                    selected.mention = mentions[result['selected_index_mention']]                    
+                    selected.confidence = result.get('confidence', 0.0)
+                    # 记录消歧义处理的结果
+                    self.logger.info(f"For mention {selected.mention}: Selected '{selected.title}' with confidence {selected.confidence}. "
+                                   f"Reasoning: {result.get('reasoning', 'No reasoning provided')}")
+                    return selected
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Failed to select best match for {mentions}: {e}")
+            return None
+
+
     def _deduplicate_candidates(self, candidates: List[LinkingCandidate]) -> List[LinkingCandidate]:
         """去除重复的候选项"""
         seen = set()
@@ -327,7 +394,7 @@ class EntityLinker:
 
     async def _check_page_relevance(self, title: str, content: str, original_term: str, context: str) -> bool:
         """使用LLM判断维基百科页面是否相关"""
-        prompt = f"""Given a term from Linux kernel documentation and its context, determine if this Wikipedia page is relevant.
+        prompt = f"""Given a term from Linux kernel documentation and its context, determine if this Wikipedia page is describing the EXACT SAME concept as used in the Linux context.
 
         Original term: {original_term}
         Context from documentation: {context[:300]}
@@ -337,7 +404,7 @@ class EntityLinker:
         Content: {content[:500]}
 
         Consider:
-        1. Does this Wikipedia page describe the same concept as used in the Linux context?
+        1. Does this Wikipedia page describe the EXACT SAME concept as used in the Linux context? For instance, "handle_pte_fault" and "Page table" are related but NOT the exact same concept.
         2. Is this the technical meaning of the term we're looking for?
 
         Return only 'true' or 'false'.

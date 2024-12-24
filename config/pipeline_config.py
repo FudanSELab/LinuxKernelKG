@@ -45,3 +45,12 @@ class PipelineConfig:
         "temperature": 0.7,
         "max_tokens": 2000
     } 
+
+    # 实体链接中，n-gram 分割符配置
+    NGRAM_DELIMITERS = " -_"
+
+    # 访问 Wikipedia 的代理配置
+    WIKIPEDIA_PROXY_URL = {
+        "http": "http://127.0.0.1:7897",
+        "https": "http://127.0.0.1:7897"
+    }
