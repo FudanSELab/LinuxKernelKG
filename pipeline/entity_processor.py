@@ -12,17 +12,14 @@ class EntityProcessor:
         self.config = config
         self.entity_linker = EntityLinker(config)
         
-    async def process_linking_batch(self, entities):
+    async def process_linking_batch(self, entities, contexts):
         """处理一批实体的链接"""
         self.logger.info(f"Processing linking batch of {len(entities)} entities")
-        
-        # 获取实体的上下文
-        context = self._get_entity_context()
         
         # 并行处理实体链接
         tasks = [
             self.entity_linker.link_entity(entity, context)
-            for entity in entities
+            for entity, context in zip(entities, contexts)
         ]
         
         # 等待所有链接任务完成
@@ -45,10 +42,6 @@ class EntityProcessor:
             fusion_results.append(fusion_group)
             
         return fusion_results
-        
-    def _get_entity_context(self):
-        """获取实体的上下文信息"""
-        return "Linux kernel memory management context"
         
     async def _generate_variations(self, entity):
         """生成实体的变体形式"""
