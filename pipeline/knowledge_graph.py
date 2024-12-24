@@ -50,6 +50,11 @@ class KnowledgeGraphBuilder:
                 fusion_results = await self.process_fusion_batch(unlinked_entities)
                 all_results['fusion'].extend(fusion_results)
         
+        # Validate scheme within the process method
+        if not self.validate_scheme(all_results):
+            self.logger.error("Data does not match the defined scheme")
+            return None  # Return None or handle as needed
+
         return all_results
         
     async def process_linking_batch(self, batch):
@@ -59,3 +64,7 @@ class KnowledgeGraphBuilder:
     async def process_fusion_batch(self, batch):
         """处理单个批次的实体融合"""
         return await self.entity_processor.process_fusion_batch(batch)
+
+    def validate_scheme(self, results):
+        """Validate the scheme of the results."""
+        return self.quality_monitor.validate_scheme(results)
