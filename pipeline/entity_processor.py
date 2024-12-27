@@ -12,18 +12,20 @@ class EntityProcessor:
         self.config = config
         self.entity_linker = EntityLinker(config)
         
-    async def process_linking_batch(self, entities, contexts):
-        """处理一批实体的链接"""
-        self.logger.info(f"Processing linking batch of {len(entities)} entities")
-        
-        # 并行处理实体链接
-        tasks = [
-            self.entity_linker.link_entity(entity, context)
-            for entity, context in zip(entities, contexts)
-        ]
-        
-        # 等待所有链接任务完成
-        results = await asyncio.gather(*tasks)
+    async def process_linking_batch(self, entities, contexts, feature_ids=None, commit_ids_list=None):
+        """批量处理实体链接"""
+        results = []
+        for i, (entity, context) in enumerate(zip(entities, contexts)):
+            feature_id = feature_ids[i] if feature_ids else None
+            commit_ids = commit_ids_list[i] if commit_ids_list else None
+            
+            result = await self.entity_linker.link_entity(
+                entity, 
+                context,
+                feature_id=feature_id,
+                commit_ids=commit_ids
+            )
+            results.append(result)
         return results
         
     async def process_fusion_batch(self, unlinked_entities):

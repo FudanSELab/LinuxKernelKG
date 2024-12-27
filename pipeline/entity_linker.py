@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import asyncio
 import json
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Union
 from dataclasses import dataclass
 from utils.logger import setup_logger
 from utils.deepseek import deepseek
@@ -11,16 +11,10 @@ from utils.utils import strip_json
 from prompts.link import linkPrompt
 import wikipediaapi  # 添加新的导入
 import re
+from utils.link_cache import LinkCache
+from models.linking import LinkingCandidate
 
 
-@dataclass
-class LinkingCandidate:
-    mention: str
-    title: str
-    url: str
-    summary: str
-    confidence: float
-    is_disambiguation: bool
 
 class EntityLinker:
     def __init__(self, config):
@@ -34,42 +28,50 @@ class EntityLinker:
             language='en',
             extract_format=wikipediaapi.ExtractFormat.HTML,
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
-            proxies=self.config.WIKIPEDIA_PROXY_URL
+            # proxies=self.config.WIKIPEDIA_PROXY_URL
         )
+        self.cache = LinkCache()
      
-    async def link_entity(self, entity, context):
+    async def link_entity(self, entity, context, feature_id=None, commit_ids=None):
         """链接单个实体到知识库，返回所有可能的匹配结果"""
         self.logger.info(f"Processing entity linking for: {entity}")
         
-        # 1. 尝试原始实体及其变体匹配
+        # 1. 生成所有可能的搜索词（包括原始词变体）
         variations = await self._generate_variations(entity)
+        
+        # 2. 搜索维基百科
         primary_candidates = []
         for term in variations:
-            wiki_results = await self._search_wikipedia(term, context)
+            # 直接搜索维基百科（缓存逻辑已在_search_wikipedia内部处理）
+            wiki_results = await self._search_wikipedia(term, context, feature_id, commit_ids)
             primary_candidates.extend(wiki_results)
         
         primary_candidates = self._deduplicate_candidates(primary_candidates)
-        self.logger.info(f"for entity {entity} overall linking, got {len(primary_candidates)} page candidates:\n{self._format_candidates(primary_candidates)}")
+        self.logger.info(f"for entity {entity} overall linking, got {len(primary_candidates)} ")
         primary_match = await self._select_best_match(entity, context, primary_candidates)
         
-        
-        # 2. 独立尝试n-gram子序列匹配
+        # 3. 处理n-gram子序列匹配
         ngrams = self._generate_ngrams(entity)
-        # 3. 搜索维基百科
         ngram_candidates = []
-        for term in ngrams:
-            wiki_results = await self._search_wikipedia(term, context)
-            ngram_candidates.extend(wiki_results)
+        
+        # 为每个n-gram生成变体并搜索
+        for ngram in ngrams:
+            ngram_variations = await self._generate_variations(ngram)
+            for term in ngram_variations:
+                # 直接搜索维基百科（缓存逻辑已在_search_wikipedia内部处理）
+                wiki_results = await self._search_wikipedia(term, context, feature_id, commit_ids)
+                ngram_candidates.extend(wiki_results)
         
         ngram_candidates = self._deduplicate_candidates(ngram_candidates)
-        self.logger.info(f"for entity {entity} ngram linking, ngrams:\n{ngrams}\ngot {len(ngram_candidates)} page candidates:\n{self._format_candidates(ngram_candidates)}")
-        # 4. 使用 LLM 选择 n-grams 最佳匹配
-        ngram_match = await self._select_best_match_ngrams(ngrams, context, ngram_candidates)
+        self.logger.info(f"for entity {entity} ngram linking, ngrams:\n{ngrams}\ngot {len(ngram_candidates)}")
         
+        # 获取所有合理的ngram匹配
+        ngram_matches = await self._select_valid_ngram_matches(ngrams, context, ngram_candidates)
+
         # 3. 整理所有匹配结果
         matches = []
         
-        if primary_match and primary_match.confidence > 0.5:  # 可配置的最低置信度阈值
+        if primary_match and primary_match.confidence > 0.5:
             matches.append({
                 'linked_entity': primary_match.title,
                 'wikipedia_url': primary_match.url,
@@ -78,23 +80,27 @@ class EntityLinker:
                 'candidates_count': len(primary_candidates),
                 'match_type': 'primary'
             })
-            
-        if ngram_match and ngram_match.confidence > 0.5:
-            matches.append({
-                'linked_entity': ngram_match.title,
-                'wikipedia_url': ngram_match.url,
-                'confidence': ngram_match.confidence,
-                'search_terms': ngrams,
-                'candidates_count': len(ngram_candidates),
-                'match_type': 'ngram',
-                'matched_ngram': ngram_match.mention
-            })
         
-        return {
+        # 添加所有合理的ngram匹配    
+        for ngram_match in ngram_matches:
+            if ngram_match.confidence > 0.5:
+                matches.append({
+                    'linked_entity': ngram_match.title,
+                    'wikipedia_url': ngram_match.url,
+                    'confidence': ngram_match.confidence,
+                    'search_terms': ngrams,
+                    'candidates_count': len(ngram_candidates),
+                    'match_type': 'ngram',
+                    'matched_ngram': ngram_match.mention
+                })
+
+        result = {
             'mention': entity,
             'matches': matches,
             'total_candidates_count': len(primary_candidates) + len(ngram_candidates)
         }
+        
+        return result
         
     async def _generate_variations(self, mention: str) -> List[str]:
         prompt = self._create_variation_prompt(mention)
@@ -118,39 +124,125 @@ class EntityLinker:
 
         return ngrams
         
-    async def _search_wikipedia(self, term: str, context: str = None) -> List[LinkingCandidate]:
-        """使用wikipedia-api搜索维基百科，处理消歧义页面"""
+    def _process_sections(self, page, term, sections, depth=0):
+        """递归处理所有层级的章节
+        
+        Args:
+            page: 维基百科页面对象
+            term: 搜索词
+            sections: 章节列表
+            depth: 当前递归深度
+        
+        Returns:
+            List[LinkingCandidate]: 匹配的候选项列表
+        """
+        candidates = []
+        
+        for section in sections:
+            # 严格匹配：章节标题必须与搜索词完全一致（忽略大小写）
+            if section.title.lower() == term.lower():
+                # 构建章节的完整路径（用于URL锚点）
+                section_path = []
+                current = section
+                for _ in range(depth + 1):
+                    section_path.insert(0, current.title)
+                    if not hasattr(current, 'parent'):
+                        break
+                    current = current.parent
+                
+                # 创建URL安全的锚点
+                anchor = '_'.join(
+                    title.replace(' ', '_')
+                    .replace('(', '.28')
+                    .replace(')', '.29')
+                    .replace(',', '.2C')
+                    for title in section_path
+                )
+                
+                candidate = LinkingCandidate(
+                    mention=term,
+                    title=f"{page.title}#{' > '.join(section_path)}",
+                    url=f"{page.fullurl}#{anchor}",
+                    summary=section.text[:200],
+                    confidence=0.0,
+                    is_disambiguation=False
+                )
+                candidates.append(candidate)
+            
+            # 递归处理子章节
+            if section.sections:
+                candidates.extend(self._process_sections(page, term, section.sections, depth + 1))
+        
+        return candidates
+
+    async def _search_wikipedia(self, term: str, context: str = None, feature_id: str = None, commit_ids: list = None) -> List[LinkingCandidate]:
+        """使用wikipedia-api搜索维基百科，支持章节级别的搜索"""
         try:
+            # 首先检查缓存
+            if feature_id and commit_ids:
+                cached = self.cache.get(term, feature_id, commit_ids)
+                if cached:
+                    self.logger.info(f"Cache hit for term: {term}")
+                    return cached
+
+            # 1. 首先尝试直接搜索完整术语
             page = self.wiki.page(term)
             candidates = []
             
             if not page.exists():
                 return []
-            
-            # 通过检查页面内容来判断是否为消歧义页面
-            is_disambiguation = self._is_disambiguation_page(page)
                 
+         
+            # 处理所有层级的章节
+            candidates = self._process_sections(page, term, page.sections)
+            
+            if candidates:
+                # 缓存并返回找到的章节相关结果
+                if feature_id and commit_ids:
+                    self.cache.set(term, feature_id, commit_ids, candidates)
+                return candidates
+            
+            # 3. 如果直接找到页面，按原有逻辑处理
+            is_disambiguation = self._is_disambiguation_page(page)
+            
             if is_disambiguation:
                 # 处理消歧义页面
-                disambig_candidates = await self._handle_disambiguation_page(page)
+                disambig_candidates = self._handle_disambiguation_page(term, page)
                 # 对消歧义候选进行相关性过滤
-                filtered_candidates = [
-                    candidate for candidate in disambig_candidates 
-                    if await self._check_page_relevance(candidate.title, candidate.summary, term, context)
-                ]
+                filtered_candidates = []
+                for candidate in disambig_candidates:
+                    is_match, confidence = await self._check_page_relevance(
+                        candidate.title, 
+                        candidate.summary, 
+                        term, 
+                        context
+                    )
+                    if is_match:
+                        candidate.confidence = confidence
+                        filtered_candidates.append(candidate)
                 candidates.extend(filtered_candidates)
             else:
                 # 检查页面相关性
-                if await self._check_page_relevance(page.title, page.summary, term, context):
+                is_match, confidence = await self._check_page_relevance(
+                    page.title, 
+                    page.summary, 
+                    term, 
+                    context
+                )
+                if is_match:
                     candidate = LinkingCandidate(
                         mention=term,
                         title=page.title,
                         url=page.fullurl,
                         summary=page.summary[:200],
-                        confidence=0.0,
+                        confidence=confidence,
                         is_disambiguation=False
                     )
                     candidates.append(candidate)
+            
+            # 缓存搜索结果
+            if feature_id and commit_ids:
+                self.cache.set(term, feature_id, commit_ids, candidates)
             
             return candidates
             
@@ -185,7 +277,7 @@ class EntityLinker:
             self.logger.error(f"Failed to check disambiguation for page {page.title}: {e}")
             return False
 
-    async def _handle_disambiguation_page(self, disambig_page) -> List[LinkingCandidate]:
+    def _handle_disambiguation_page(self,mention, disambig_page) -> List[LinkingCandidate]:
         """处理消歧义页面，提取所有可能的具体页面"""
         candidates = []
         try:
@@ -198,7 +290,7 @@ class EntityLinker:
                     continue
                     
                 candidate = LinkingCandidate(
-                    mention="",
+                    mention=mention,
                     title=linked_page.title,
                     url=linked_page.fullurl,
                     summary=linked_page.summary[:200],
@@ -272,61 +364,76 @@ class EntityLinker:
             return None
 
 
-    async def _select_best_match_ngrams(self, mentions: list[str], context: str,
-                                        ngram_candidates: List[LinkingCandidate]) -> Optional[LinkingCandidate]:
-        """使用 LLM 从n-grams候选中选择最佳匹配的一对，增强消歧义处理"""
+    async def _select_valid_ngram_matches(self, mentions: list[str], context: str,
+                                        ngram_candidates: List[LinkingCandidate]) -> List[LinkingCandidate]:
+        """从n-grams候选中选择所有合理的匹配"""
         if not ngram_candidates:
-            return None
-            
+            return []
+        
         try:
-            # 改进提示以更好地处理消歧义情况
-            prompt = f"""{{
-                "task": "Entity Linking and Disambiguation",
-                "context": "Given some mentions from Linux kernel documentation and their context, select the most appropriate pair of (mention, Wikipedia page) from the mentions and candidate pages. Please note that the mention and page you choose must describe the EXACT SAME concept. For instance, the mention 'mmu cache' and the page 'memory management unit' are related but NOT describing the exact same concept, while the mention 'mmu' and the page 'memory management unit' are describing the exact same concept. Some candidates might come from disambiguation pages.",
-                "mention": "{mentions}",
-                "original_context": "{context}",
-                "candidate pages": [
-                    {self._format_candidates(ngram_candidates)}
-                ],
-                "instructions": "Please analyze each candidate carefully and return a JSON object with:
-                    1. 'selected_index_mention': index of the best matching mention (or -1 if none matches)
-                    2. 'selected_index_page': index of the best matching page (or -1 if none matches)
-                    3. 'confidence': confidence score between 0 and 1
-                    4. 'reasoning': brief explanation of your choice, especially if this came from a disambiguation page
-                    5. 'disambiguation_source': whether the selected page was from a disambiguation resolution"
-            }}"""
+            # Improved prompt formatting to ensure valid JSON response
+            prompt = f"""Given mentions from Linux kernel documentation and their context, select appropriate pairs of (mention, Wikipedia page).
             
-            # 其余代码保持不变
+            Mentions: {json.dumps(mentions)}
+            Context: {context}
+            Candidates: {self._format_candidates(ngram_candidates)}
+            
+            Return a JSON array of matches in this exact format:
+            [
+                {{
+                    "mention_index": <index of matching mention>,
+                    "page_index": <index of matching page>,
+                    "confidence": <score between 0 and 1>,
+                    "reasoning": "<brief explanation>"
+                }}
+            ]
+            
+            Only include pairs where the mention and page describe the exact same concept."""
+            
             response = await self._get_llm_response(prompt)
             if not response:
-                return None
-                
-            cleaned_response = strip_json(response)
-            if not cleaned_response:
-                return None
-                
-            result = json.loads(cleaned_response)
+                return []
             
-            if isinstance(result, dict) and 'selected_index_mention' in result and 'selected_index_page' in result:
-                if result['selected_index_mention'] >= 0 and result['selected_index_mention'] < len(mentions) and \
-                    result['selected_index_page'] >= 0 and result['selected_index_page'] < len(ngram_candidates):
-    
-                    selected = ngram_candidates[result['selected_index_page']]
-                    selected.mention = mentions[result['selected_index_mention']]                    
-                    selected.confidence = result.get('confidence', 0.0)
-                    # 记录消歧义处理的结果
-                    self.logger.info(f"For mention {selected.mention}: Selected '{selected.title}' with confidence {selected.confidence}. "
-                                   f"Reasoning: {result.get('reasoning', 'No reasoning provided')}")
-                    return selected
-            return None
+            # More robust JSON parsing
+            try:
+                # First try to find JSON array within the response
+                json_start = response.find('[')
+                json_end = response.rfind(']') + 1
+                if json_start >= 0 and json_end > json_start:
+                    cleaned_response = response[json_start:json_end]
+                else:
+                    cleaned_response = strip_json(response)
+                
+                results = json.loads(cleaned_response)
+                
+            except json.JSONDecodeError:
+                self.logger.error(f"Failed to parse JSON response: {response}")
+                return []
+            
+            valid_matches = []
+            
+            for result in results:
+                if isinstance(result, dict) and 'mention_index' in result and 'page_index' in result:
+                    if (0 <= result['mention_index'] < len(mentions) and 
+                        0 <= result['page_index'] < len(ngram_candidates)):
+                        
+                        selected = ngram_candidates[result['page_index']]
+                        selected.mention = mentions[result['mention_index']]
+                        selected.confidence = result.get('confidence', 0.0)
+                        valid_matches.append(selected)
+                        
+                        self.logger.info(f"Matched: {selected.mention} -> {selected.title} "
+                                       f"(confidence: {selected.confidence})")
+            
+            return valid_matches
             
         except Exception as e:
-            self.logger.error(f"Failed to select best match for {mentions}: {e}")
-            return None
+            self.logger.error(f"Failed to select valid matches for {mentions}: {str(e)}")
+            return []
 
 
     def _deduplicate_candidates(self, candidates: List[LinkingCandidate]) -> List[LinkingCandidate]:
-        """去除重复的候选项"""
+        """去除重复的候选"""
         seen = set()
         unique_candidates = []
         
@@ -379,22 +486,39 @@ class EntityLinker:
             self.logger.error(f"LLM request failed: {e}")
             raise
             
-    def _format_candidates(self, candidates: List[LinkingCandidate]) -> str:
-        """格式化候选项为 JSON 字符串"""
-        return ",".join([
-            f"""{{
-                "index": {i},
-                "title": "{c.title}",
-                "url": "{c.url}",
-                "summary": "{c.summary}",
-                "is_disambiguation": {str(c.is_disambiguation).lower()}
-            }}"""
-            for i, c in enumerate(candidates)
-        ])
+    def _format_candidates(self, candidates: List[Union[LinkingCandidate, str]]) -> str:
+        """格式化候选项为 JSON 字符串
+        
+        Args:
+            candidates: 候选项列表，可以是 LinkingCandidate 对象或字符串
+            
+        Returns:
+            格式化后的 JSON 字符串
+        """
+        formatted = []
+        for i, c in enumerate(candidates):
+            if isinstance(c, str):
+                formatted.append(f"""{{
+                    "index": {i},
+                    "title": "{c}"
+                }}""")
+            else:
+                formatted.append(f"""{{
+                    "index": {i}, 
+                    "title": "{c.title}",
+                    "url": "{c.url}",
+                    "summary": "{c.summary}",
+                    "is_disambiguation": {str(c.is_disambiguation).lower()}
+                }}""")
+        return ",".join(formatted)
 
-    async def _check_page_relevance(self, title: str, content: str, original_term: str, context: str) -> bool:
-        """使用LLM判断维基百科页面是否相关"""
-        prompt = f"""Given a term from Linux kernel documentation and its context, determine if this Wikipedia page is describing the EXACT SAME concept as used in the Linux context.
+    async def _check_page_relevance(self, title: str, content: str, original_term: str, context: str) -> Tuple[bool, float]:
+        """使用LLM判断维基百科页面是否相关，并提供分析依据
+        
+        Returns:
+            Tuple[bool, float]: 返回(是否匹配, 置信度)的元组
+        """
+        prompt = f"""Given a term from Linux kernel documentation and its context, analyze if this Wikipedia page appropriately matches the concept as used in the Linux context.
 
         Original term: {original_term}
         Context from documentation: {context[:300]}
@@ -404,15 +528,35 @@ class EntityLinker:
         Content: {content[:500]}
 
         Consider:
-        1. Does this Wikipedia page describe the EXACT SAME concept as used in the Linux context? For instance, "handle_pte_fault" and "Page table" are related but NOT the exact same concept.
-        2. Is this the technical meaning of the term we're looking for?
+        1. Does this Wikipedia page describe the same concept or a directly relevant concept as used in the Linux context?
+        2. While they don't need to be exactly identical, the core concept should match. For example:
+           - Good match: "MMU" and "Memory Management Unit" (one is abbreviation of the other)
+           - Poor match: "handle_pte_fault" and "Page table" (only indirectly related)
+        3. Is this the technical meaning of the term we're looking for?
 
-        Return only 'true' or 'false'.
+        Return a JSON object with the following structure:
+        {{
+            "linux_meaning": "Brief explanation of the term's meaning in Linux context",
+            "wiki_meaning": "Brief explanation of the Wikipedia page's concept",
+            "confidence": 0-1, // A value between 0 and 1 indicating how confident we are in the match, where 0 means no confidence and 1 means complete confidence
+            "reasoning": "Brief explanation of why they match or don't match",
+            "is_match": true/false
+        }}
         """
         
         try:
             response = await self._get_llm_response(prompt)
-            return response.strip().lower() == 'true'
+            cleaned_response = strip_json(response)
+            result = json.loads(cleaned_response)
+            
+            # 记录详细分析结果
+            self.logger.info(f"Relevance analysis for {original_term} -> {title}:\n{json.dumps(result, indent=2)}")
+            
+            is_match = result.get('is_match', False)
+            confidence = result.get('confidence', 0.0)
+            
+            return is_match, confidence
+            
         except Exception as e:
             self.logger.error(f"Failed to check page relevance for {title}: {e}")
-            return False
+            return False, 0.0
