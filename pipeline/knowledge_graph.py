@@ -17,16 +17,40 @@ class KnowledgeGraphBuilder:
         if not self.quality_monitor.check_extraction_quality(features):
             self.logger.warning("Extraction quality check failed")
         
-        # 获取所有实体
+        # 获取所有实体和上下文
         entities = []
+        contexts = []
+        feature_ids = []  # 新增：存储feature_ids
+        commit_ids_list = []  # 新增：存储commit_ids
+        
         for feature in features:
             if 'entities' in feature:
-                entities.extend(feature['entities'])
+                feature_name = feature.get('name', '')
+                feature_id = feature.get('id')  # 新增：获取feature_id
+                commits = feature.get('commits', [])
+                
+                # 新增：获取当前feature的所有commit_ids
+                commit_ids = [commit.get('id') for commit in commits]
+                
+                # 从commits字典列表中提取commit_subject
+                commit_messages = "\n".join(
+                    commit.get('commit_message', '') 
+                    for commit in commits
+                )
+                context = f"feature_name: {feature_name}\n\n{commit_messages}"
+                
+                for entity in feature['entities']:
+                    entities.append(entity)
+                    contexts.append(context)
+                    feature_ids.append(feature_id)  # 新增：为每个实体添加对应的feature_id
+                    commit_ids_list.append(commit_ids)  # 新增：为每个实体添加对应的commit_ids
         
         # 批量处理
         batch_size = self.config.BATCH_SIZE
-        batches = [entities[i:i + batch_size] 
-                  for i in range(0, len(entities), batch_size)]
+        entity_batches = [entities[i:i + batch_size] 
+                       for i in range(0, len(entities), batch_size)]
+        context_batches = [contexts[i:i + batch_size]
+                        for i in range(0, len(contexts), batch_size)]
         
         all_results = {
             'linking': [],
@@ -34,14 +58,14 @@ class KnowledgeGraphBuilder:
         }
         
         # 先处理所有批次的实体链接
-        for batch in batches:
+        for entity_batch, context_batch in zip(entity_batches, context_batches):
             # 实体链接
-            linking_results = await self.process_linking_batch(batch)
+            linking_results = await self.process_linking_batch(entity_batch, context_batch, feature_ids, commit_ids_list)
             all_results['linking'].extend(linking_results)
             
             # 获取未链接的实体
             unlinked_entities = [
-                entity for entity, result in zip(batch, linking_results)
+                entity for entity, result in zip(entity_batch, linking_results)
                 if not result.get('linked_entity')
             ]
             
@@ -57,9 +81,17 @@ class KnowledgeGraphBuilder:
 
         return all_results
         
-    async def process_linking_batch(self, batch):
-        """处理单个批次的实体链接"""
-        return await self.entity_processor.process_linking_batch(batch)
+    async def process_linking_batch(self, batch, context_batch):
+        """处理单个批次的实体链接
+        
+        Args:
+            batch: 实体批次列表
+            context_batch: 对应的上下文信息列表
+        
+        Returns:
+            list: 实体链接结果列表
+        """
+        return await self.entity_processor.process_linking_batch(batch, context_batch, feature_ids, commit_ids_list)
         
     async def process_fusion_batch(self, batch):
         """处理单个批次的实体融合"""

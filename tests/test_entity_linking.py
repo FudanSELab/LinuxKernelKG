@@ -3,6 +3,7 @@ from pathlib import Path
 import asyncio
 import json
 import pandas as pd
+from datetime import datetime
 
 # 添加项目根目录到 Python 路径
 project_root = Path(__file__).parent.parent
@@ -57,9 +58,9 @@ class EntityLinkBenchmarkLoader:
 
         for i in range(len(self.data)):
             row = self.data.iloc[i]
-            gt_overall_linkable = (row['overall_linkable'] == 'TRUE')
+            gt_overall_linkable = (row['overall_linkable'] == True)
             gt_overall_wikipedia_link = row['overall_wikipedia_link'] if gt_overall_linkable else None
-            gt_ngram_linkable = (row['ngram_linkable'] == 'TRUE')
+            gt_ngram_linkable = (row['ngram_linkable'] == True)
             gt_ngram = json.loads(row['ngram_wikipedia_link'].replace("'", '"'))[0] if gt_ngram_linkable else None
             gt_ngram_mention = gt_ngram['ngram_mention'] if gt_ngram else None
             gt_ngram_wikipedia_link = gt_ngram['wikipedia_link'] if gt_ngram else None
@@ -125,50 +126,84 @@ class EntityLinkBenchmarkLoader:
         self.logger.info(f"Ngram Linkable Recall: {nl_recall:.2f}")
         self.logger.info(f"Ngram Linkable Correct Count: {nl_correct}")
 
-async def test_entity_linking():
+async def test_entity_linking(eval_only=False, result_file=None):
     logger = setup_logger('test_entity_linking', file_output=True)
     config = PipelineConfig()
     
+    # 从数据文件中加载测试数据
+    loader = EntityLinkBenchmarkLoader('data/entity_link_benchmark_1225.xlsx', logger)
+    
+    if eval_only and result_file:
+        logger.info(f"Loading existing results from {result_file}")
+        try:
+            with open(result_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                all_results = data['results']
+            logger.info("Calculating metrics for existing results...")
+            loader.calculate_metric(all_results)
+            return
+        except Exception as e:
+            logger.error(f"Failed to load results file: {str(e)}")
+            return
+    
     BATCH_SIZE = 5
+    
+    # 添加时间戳到文件名
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+    output_file = f'output/test/entity_linking_test_results_{timestamp}.json'
+    Path('output/test').mkdir(parents=True, exist_ok=True)
 
     logger.info("Starting entity linking test")
 
-    # 从数据文件中加载测试数据
-    loader = EntityLinkBenchmarkLoader('data/entity_link_benchmark.xlsx', logger)
-    
     # 初始化处理器
     processor = EntityProcessor(config)
     
+    # 用于存储所有结果
+    all_results = []
+    
     # 分批处理实体链接
-    results = []
     for i in range(0, len(loader.data), BATCH_SIZE):
         try:
             test_entities = loader.data['original_mention'][i:i+BATCH_SIZE]
             test_context = loader.data['context'][i:i+BATCH_SIZE]
             
+            # 修改这部分以正确处理 feature_ids 和 commit_ids
+            batch_data = loader.data.iloc[i:i+BATCH_SIZE]
+            test_feature_ids = batch_data['feature_id'].tolist()
+            test_commit_ids = [
+                json.loads(commit_ids_str.replace("'", '"'))
+                for commit_ids_str in batch_data['commit_ids']
+            ]
+            
             logger.info(f"\nProcessing batch {i//BATCH_SIZE + 1}, entities: {test_entities}")
-            batch_results = await processor.process_linking_batch(test_entities, test_context)
-            results.extend(batch_results)
+            batch_results = await processor.process_linking_batch(
+                test_entities, 
+                test_context,
+                feature_ids=test_feature_ids,
+                commit_ids_list=test_commit_ids
+            )
+            all_results.extend(batch_results)
+            
+            # 每个批次完成后立即保存结果
+            with open(output_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'input': {
+                        'entities': list(loader.data['original_mention']),
+                        'context': list(loader.data['context'])
+                    },
+                    'results': all_results,
+                    'completed_batches': (i + BATCH_SIZE) // BATCH_SIZE,
+                    'total_batches': len(loader.data) // BATCH_SIZE + 1,
+                    'last_update': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                }, f, ensure_ascii=False, indent=4)
+                
         except Exception as e:
-            logger.error(f"Test failed: {str(e)}")
+            logger.error(f"Test failed at batch {i//BATCH_SIZE + 1}: {str(e)}")
             raise
-    
-        
-    # 保存结果用于分析
-    output_file = 'data/test/entity_linking_test_results.json'
-    Path('data/test').mkdir(parents=True, exist_ok=True)
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump({
-            'input': {
-                'entities': list(test_entities),
-                'context': list(test_context)
-            },
-            'results': results
-        }, f, ensure_ascii=False, indent=4)
 
     # 打印详细结果
     logger.info("\nDetailed Results:")
-    for result in results:
+    for result in all_results:
         # result: {'mention': str, 'matches': {'linked_entity': str, 'match_type': 'primary'|'ngram', ['matched_ngram': str]}, 'total_candicates_count': int}
         mention = result['mention']
         linked_to_primary = None
@@ -199,7 +234,11 @@ async def test_entity_linking():
         else:
             logger.info(f"Entity: {mention:25} -> ngram LINKING FAILED")
         
-    loader.calculate_metric(results)
+    loader.calculate_metric(all_results)
 
 if __name__ == "__main__":
-    asyncio.run(test_entity_linking())
+    # 直接设置参数，不再使用命令行参数
+    eval_only = False  # 是否只进行评估
+    result_file = 'output/test/entity_linking_test_results_20241226_1408.json'  # 如果eval_only为True，这里可以指定结果文件路径，例如: 'output/test/entity_linking_test_results_20240101_1200.json'
+    
+    asyncio.run(test_entity_linking(eval_only=eval_only, result_file=result_file))
