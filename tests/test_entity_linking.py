@@ -58,12 +58,11 @@ class EntityLinkBenchmarkLoader:
 
         for i in range(len(self.data)):
             row = self.data.iloc[i]
-            gt_overall_linkable = (row['overall_linkable'] == True)
+            gt_overall_linkable = row['overall_linkable']
             gt_overall_wikipedia_link = row['overall_wikipedia_link'] if gt_overall_linkable else None
-            gt_ngram_linkable = (row['ngram_linkable'] == True)
-            gt_ngram = json.loads(row['ngram_wikipedia_link'].replace("'", '"'))[0] if gt_ngram_linkable else None
-            gt_ngram_mention = gt_ngram['ngram_mention'] if gt_ngram else None
-            gt_ngram_wikipedia_link = gt_ngram['wikipedia_link'] if gt_ngram else None
+            gt_ngram_linkable = row['ngram_linkable']
+            gt_ngram = json.loads(row['ngram_wikipedia_link'].replace("'", '"')) if gt_ngram_linkable else None
+            gt_ngram = [(item['ngram_mention'], item['wikipedia_link']) for item in gt_ngram] if gt_ngram else None
 
             result = results[i]
             overall_linkable = False
@@ -96,7 +95,7 @@ class EntityLinkBenchmarkLoader:
             # 2. 部分链接
             if ngram_linkable and gt_ngram_linkable:
                 tp_nl += 1
-                if (ngram_matched_ngram, ngram_wikipedia_link) == (gt_ngram_mention, gt_ngram_wikipedia_link):
+                if (ngram_matched_ngram, ngram_wikipedia_link) in gt_ngram:
                     nl_correct += 1
             elif ngram_linkable and not gt_ngram_linkable:
                 fp_nl += 1
