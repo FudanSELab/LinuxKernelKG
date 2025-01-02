@@ -32,5 +32,5 @@ def check_json_column(file_path, column_index=6):  # 因为是第7列，索引�
         print(f"读取文件时发生错误: {str(e)}")
 
 if __name__ == "__main__":
-    file_path = "/home/fdse/ytest/LinuxKernelKG/data/entity_link_benchmark.xlsx"
+    file_path = "/home/fdse/ytest/LinuxKernelKG/data/entity_link_benchmark_1231.xlsx"
     check_json_column(file_path)

@@ -27,6 +27,14 @@ async def run_pipeline():
     kg_config = KnowledgeGraphConfig()
     quality_monitor = QualityMonitor(pipeline_config)
     
+    # 验证 Neo4j 配置
+    try:
+        pipeline_config.validate_neo4j_config()
+        logger.info("Neo4j configuration validated successfully")
+    except ValueError as e:
+        logger.error(f"Invalid Neo4j configuration: {str(e)}")
+        return
+        
     # 验证Neo4j配置
     try:
         kg_config.validate_connection()
