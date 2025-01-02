@@ -41,20 +41,6 @@ class PipelineConfig:
         'charset': 'utf8mb4'
     }
     
-    # SQL查询
-    QUERY_MM_SQL = """
-    SELECT feature_id, text, version
-        FROM newbies_feature
-        WHERE h1 = 'Memory management' and version = '6.6'
-        ORDER BY feature_id DESC;
-    """
-    
-    QUERY_COMMIT_SQL = """
-    SELECT id, commit_id FROM newbies_mapping
-        WHERE feature_id = %s
-        ORDER BY id ASC;
-    """
-    
     # 处理配置
     BATCH_SIZE = 50
     MAX_RETRIES = 3
