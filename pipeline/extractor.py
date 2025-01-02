@@ -117,6 +117,39 @@ def get_commit(commit_id, connection):
         commit = {"commit_subject": commit[1], "commit_message": commit[2]}
     return commit
 
+def strip_json(text):
+    """
+    从文本中提取JSON字符串并清理
+    Args:
+        text: 包含JSON的文本
+    Returns:
+        清理后的JSON字符串
+    """
+    # 找到第一个 { 和最后一个 } 的位置
+    start = text.find('{')
+    end = text.rfind('}')
+    
+    if start == -1 or end == -1:
+        raise ValueError("No valid JSON found in the text")
+        
+    # 提取JSON部分
+    json_str = text[start:end + 1]
+    
+    try:
+        # 验证是否为有效的JSON
+        json.loads(json_str)
+        return json_str
+    except json.JSONDecodeError:
+        # 如果解析失败，尝试进一步清理
+        # 移除可能的多行注释、空行等
+        lines = json_str.split('\n')
+        cleaned_lines = []
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('//') and not line.startswith('/*'):
+                cleaned_lines.append(line)
+        cleaned_json = ' '.join(cleaned_lines)
+        return cleaned_json
 
 class EntityRelationExtractor:
     def __init__(self, config):
@@ -187,8 +220,15 @@ class EntityRelationExtractor:
                         entities=object_entity['entities'],
                         triples=all_triples
                     ).format()
-                    response_verify = self.llm.get_response(prompt_verify)
-                    object_verify = json.loads(strip_json(response_verify))
+                    try:
+                        response_verify = self.llm.get_response(prompt_verify)
+                        json_str = strip_json(response_verify)
+                        object_verify = json.loads(json_str)
+                    except json.JSONDecodeError as e:
+                        self.logger.error(f"Failed to parse JSON response: {e}")
+                        self.logger.debug(f"Raw response: {response_verify}")
+                        # 使用空的结果作为后备
+                        object_verify = {"entities": [], "triples": []}
                     
                     # 去重添加
                     entities.extend([e for e in object_verify['entities'] if e not in entities])

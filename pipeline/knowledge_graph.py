@@ -81,12 +81,14 @@ class KnowledgeGraphBuilder:
 
         return all_results
         
-    async def process_linking_batch(self, batch, context_batch):
+    async def process_linking_batch(self, batch, context_batch, feature_ids, commit_ids_list):
         """处理单个批次的实体链接
         
         Args:
             batch: 实体批次列表
             context_batch: 对应的上下文信息列表
+            feature_ids: 特征ID列表
+            commit_ids_list: commit ID列表
         
         Returns:
             list: 实体链接结果列表
@@ -95,7 +97,7 @@ class KnowledgeGraphBuilder:
         
     async def process_fusion_batch(self, batch):
         """处理单个批次的实体融合"""
-        return await self.entity_processor.process_fusion_batch(batch)
+        return await self.entity_processor.process_fusion(batch)
 
     def validate_scheme(self, results):
         """Validate the scheme of the results."""

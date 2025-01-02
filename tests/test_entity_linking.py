@@ -130,7 +130,7 @@ async def test_entity_linking(eval_only=False, result_file=None):
     config = PipelineConfig()
     
     # 从数据文件中加载测试数据
-    loader = EntityLinkBenchmarkLoader('data/entity_link_benchmark_1225.xlsx', logger)
+    loader = EntityLinkBenchmarkLoader('data/entity_link_benchmark_1231.xlsx', logger)
     
     if eval_only and result_file:
         logger.info(f"Loading existing results from {result_file}")
@@ -237,7 +237,7 @@ async def test_entity_linking(eval_only=False, result_file=None):
 
 if __name__ == "__main__":
     # 直接设置参数，不再使用命令行参数
-    eval_only = False  # 是否只进行评估
-    result_file = 'output/test/entity_linking_test_results_20241226_1408.json'  # 如果eval_only为True，这里可以指定结果文件路径，例如: 'output/test/entity_linking_test_results_20240101_1200.json'
+    eval_only = True  # 是否只进行评估
+    result_file = 'output/test/entity_linking_test_results_20241227_1723.json'  # 如果eval_only为True，这里可以指定结果文件路径，例如: 'output/test/entity_linking_test_results_20240101_1200.json'
     
     asyncio.run(test_entity_linking(eval_only=eval_only, result_file=result_file))

@@ -145,6 +145,42 @@ class EnhancedNeo4jHandler:
                 'secondary_ids': secondary_ids
             })
 
+    async def get_related_entities(self, entities):
+        """获取与给定实体相关的所有实体
+        TODO: 根据实际数据结构实现
+        """
+        return []
+
+    async def find_fusion_group(self, entity):
+        """查找实体是否存在于已有的融合组中
+        TODO: 根据实际数据结构实现
+        """
+        return None
+
+    async def get_known_synonyms(self, entity):
+        """获取实体的已知同义词
+        TODO: 根据实际数据结构实现
+        """
+        return []
+
+    async def get_historical_fusions(self, entity):
+        """获取实体的历史融合记录
+        TODO: 根据实际数据结构实现
+        """
+        return []
+
+    async def update_fusion_group(self, fusion_group):
+        """更新或创建融合组
+        TODO: 根据实际数据结构实现
+        """
+        pass
+
+    async def add_synonym_relation(self, canonical, variation, confidence):
+        """添加同义词关系
+        TODO: 根据实际数据结构实现
+        """
+        pass
+
 class KnowledgeGraphSyncManager:
     def __init__(self, config, neo4j_handler):
         self.config = config
