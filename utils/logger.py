@@ -6,7 +6,7 @@ nowtime = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
 log_dir = 'data/log'
 os.makedirs(log_dir, exist_ok=True)  # Create the directory if it doesn't exist
 
-def setup_logger(name='pipeline', level=logging.INFO, console_output=True, file_output=False):
+def setup_logger(name='pipeline', level="INFO", console_output=True, file_output=False):
     """Set up and return a logger instance"""
     logger = logging.getLogger(name)
     logger.setLevel(level)
