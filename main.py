@@ -75,6 +75,7 @@ async def run_pipeline():
                 enhanced_feature = enhancer.enhance_features([feature])
                 
                 # 3. 实体和关系抽取
+                # todo commit里面抽取mention 可以考虑一个一个抽取？
                 extractor = EntityRelationExtractor(pipeline_config)
                 extraction_result = extractor.extract_entities_and_relations(enhanced_feature)
                 
