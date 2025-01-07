@@ -1,40 +1,13 @@
-from openai import OpenAI
-import logging
-import time
-from utils.logger import setup_logger
+from utils.llm_factory import LLMFactory, BaseLLM
+from config.llm_config import LLMType
 
-# 配置 deepseek
-deepseek_api_key = 'sk-c875aefe59f5412a919c431bac6c7cea'
-
-class deepseek:
-
+class deepseek(BaseLLM):
+    """保持原有的 deepseek 类名以保证向后兼容"""
     def __init__(self):
-        self.client = OpenAI(api_key=deepseek_api_key, base_url="https://api.deepseek.com")
-        self.logger = setup_logger("deepseek", logging.DEBUG, console_output=False, file_output=True)
+        # 使用工厂创建 OpenAI LLM 实例
+        self._llm = LLMFactory.create_llm(LLMType.DEEPSEEK)
+        self.logger = self._llm.logger
 
     def get_response(self, prompt):
-
-        self.logger.debug(f"invoking deepseek with prompt:\n{prompt}")
-
-        while True:
-            try:
-                response = self.client.chat.completions.create(
-                    model="deepseek-chat",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant"},
-                        {"role": "user", "content": prompt},
-                    ],
-                    stream=False
-                )
-                if response.choices[0].finish_reason != "stop":
-                    self.logger.error(f"Request failed in deepseek.get_response(), retrying in 10 seconds: {response.choices[0].finish_reason}")
-                    time.sleep(10)
-                    continue
-                break
-            except Exception as e:
-                self.logger.error(f"Request failed in deepseek.get_response(), retrying in 10 seconds: {e}")
-                time.sleep(10)
-
-        self.logger.debug(f"deepseek response:\n{response.choices[0].message.content}")
-
-        return response.choices[0].message.content
+        """代理到实际的 LLM 实例"""
+        return self._llm.get_response(prompt)

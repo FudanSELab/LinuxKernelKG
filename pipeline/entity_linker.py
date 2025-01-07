@@ -13,6 +13,7 @@ import wikipediaapi  # 添加新的导入
 import re
 from utils.link_cache import LinkCache
 from models.linking import LinkingCandidate
+from srctoolkit import Delimiter
 
 
 
@@ -36,8 +37,19 @@ class EntityLinker:
         """链接单个实体到知识库，返回所有可能的匹配结果"""
         self.logger.info(f"Processing entity linking for: {entity}")
         
-        # 1. 生成所有可能的搜索词（包括原始词变体）
+        # 1. 生成所有可能的搜索词（包括原始词变体和分词后的变体）
         variations = await self._generate_variations(entity)
+        
+        # 使用 Delimiter 进行分词
+        words = Delimiter.split_camel(entity)
+        # 为分词生成变体并合并
+        word_variations = await self._generate_variations(words)
+        
+        variations.extend(word_variations)
+        # if words in variations and len(variations) > 1:
+        #     variations.remove(words)
+        # 去重
+        variations = list(dict.fromkeys(variations))
         
         # 2. 搜索维基百科
         primary_candidates = []
@@ -108,8 +120,15 @@ class EntityLinker:
         return self._parse_variations_response(response, mention)
             
     def _generate_ngrams(self, text: str, min_n: int = 1, max_n: int = 3) -> List[str]:
-        """生成文本的 n-gram 子序列，利用 config 中定义的分隔符"""
-        words = re.split(f"[{re.escape(self.config.NGRAM_DELIMITERS)}]+", text)
+        """生成文本的 n-gram 子序列，支持驼峰分割和配置的分隔符"""
+        # 首先进行驼峰分割，并按空格分割成列表
+        camel_split = Delimiter.split_camel(text)
+        words = camel_split.split()
+        
+        # 如果驼峰分割无效（只有一个词），则使用配置的分隔符
+        if len(words) <= 1:
+            words = re.split(f"[{re.escape(self.config.NGRAM_DELIMITERS)}]+", text)
+       
         ngrams = []
         
         # 生成所有 min_n...max_n-gram 子序列，注意不能和原始文本相同
@@ -179,11 +198,11 @@ class EntityLinker:
         """使用wikipedia-api搜索维基百科，支持章节级别的搜索"""
         try:
             # 首先检查缓存
-            if feature_id and commit_ids:
-                cached = self.cache.get(term, feature_id, commit_ids)
-                if cached:
-                    self.logger.info(f"Cache hit for term: {term}")
-                    return cached
+            # if feature_id and commit_ids:
+            #     cached = self.cache.get(term, feature_id, commit_ids)
+            #     if cached:
+            #         self.logger.info(f"Cache hit for term: {term}")
+            #         return cached
 
             # 1. 首先尝试直接搜索完整术语
             page = self.wiki.page(term)
@@ -206,7 +225,8 @@ class EntityLinker:
             is_disambiguation = self._is_disambiguation_page(page)
             
             if is_disambiguation:
-                # 处理消歧义页面
+                # 处理消歧义页面。
+                # todo 给一组候选，然后直接从里面挑选出最合适的
                 disambig_candidates = self._handle_disambiguation_page(term, page)
                 # 对消歧义候选进行相关性过滤
                 filtered_candidates = []

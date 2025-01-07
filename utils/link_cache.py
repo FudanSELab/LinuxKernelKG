@@ -5,7 +5,7 @@ from typing import List, Optional, Union, Dict
 from models.linking import LinkingCandidate
 
 class LinkCache:
-    def __init__(self, cache_file: str = "data/cache/link_cache.json"):
+    def __init__(self, cache_file: str = "data/cache/link_cache_gpt4o-mini.json"):
         self.cache_file = cache_file
         self.cache = self._load_cache()  # 初始化时从文件加载缓存
 

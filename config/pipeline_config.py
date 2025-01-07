@@ -1,4 +1,5 @@
 import jsonschema
+from config.llm_config import LLMType
 
 class Neo4jConfig:
     """Neo4j配置基类"""
@@ -59,10 +60,17 @@ class PipelineConfig:
     
     # LLM配置
     LLM_CONFIG = {
-        "model": "deepseek-chat",
-        "temperature": 0.7,
-        "max_tokens": 2000
-    } 
+        LLMType.OPENAI: {
+            "api_key": "sk-OIA8e1b5f9e53736bf8a045d17bb205403a6be38d49h7PYl",
+            "base_url": "https://api.gptsapi.net/v1",
+            "model": "gpt-4o-mini"
+        },
+        LLMType.DEEPSEEK: {
+            "api_key": "sk-c875aefe59f5412a919c431bac6c7cea",
+            "base_url": "https://api.deepseek.com",
+            "model": "deepseek-chat"
+        }
+    }
 
     # 实体链接中，n-gram 分割符配置
     NGRAM_DELIMITERS = " -_"
@@ -108,6 +116,9 @@ class PipelineConfig:
 
     # Neo4j配置
     neo4j_config = Neo4jConfig.DEFAULT_CONFIG
+
+    # 添加 LLM 类型配置
+    LLM_TYPE = LLMType.OPENAI  # 修改为使用 OpenAI
 
     @classmethod
     def validate_neo4j_config(cls):

@@ -131,7 +131,6 @@ async def test_entity_linking(input_file, eval_only=False, result_file=None):
     
     # 从数据文件中加载测试数据
     loader = EntityLinkBenchmarkLoader(input_file, logger)
-    loader = EntityLinkBenchmarkLoader('data/entity_link_benchmark_1231.xlsx', logger)
     
     if eval_only and result_file:
         logger.info(f"Loading existing results from {result_file}")
@@ -239,7 +238,13 @@ async def test_entity_linking(input_file, eval_only=False, result_file=None):
 if __name__ == "__main__":
     # 直接设置参数，不再使用命令行参数
     eval_only = False  # 是否只进行评估
-    result_file = 'output/test/entity_linking_test_results_20241226_1408.json'  # 如果eval_only为True，这里可以指定结果文件路径，例如: 'output/test/entity_linking_test_results_20240101_1200.json'
-    input_file = 'data/features_output_20250102.xlsx'  # 测试数据文件路径
+    # 如果eval_only为True，这里可以指定结果文件路径
+    result_file = 'output/test/entity_linking_test_results_20241227_1723.json'    # 初始版本
+    # result_file = 'output/test/entity_linking_test_results_20250104_1525.json'  # 使用srctoolkit
+    # result_file = 'output/test/entity_linking_test_results_20250104_2242.json'  # 使用gpt-4omini
+    
+    
+    # input_file = 'data/features_output_20250102.xlsx'  # 测试数据文件路径
+    input_file = 'data/entity_link_benchmark_0103.xlsx'
 
     asyncio.run(test_entity_linking(input_file=input_file, eval_only=eval_only, result_file=result_file))
