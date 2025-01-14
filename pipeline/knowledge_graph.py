@@ -1,4 +1,5 @@
 import asyncio
+import time
 from utils.logger import setup_logger
 from pipeline.quality_assurance import QualityMonitor
 from pipeline.entity_processor import EntityProcessor
@@ -13,23 +14,28 @@ class KnowledgeGraphBuilder:
         
     async def process(self, features):
         """异步处理实体识别和匹配"""
+        total_start_time = time.time()
+        
         # 质量检查
+        qa_start_time = time.time()
         if not self.quality_monitor.check_extraction_quality(features):
             self.logger.warning("Extraction quality check failed")
+        self.logger.info(f"Quality check took {time.time() - qa_start_time:.2f} seconds")
         
         # 获取所有实体和上下文
+        extract_start_time = time.time()
         entities = []
         contexts = []
-        feature_ids = []  # 新增：存储feature_ids
-        commit_ids_list = []  # 新增：存储commit_ids
+        feature_ids = []
+        commit_ids_list = []
         
         for feature in features:
             if 'entities' in feature:
                 feature_name = feature.get('name', '')
-                feature_id = feature.get('id')  # 新增：获取feature_id
+                feature_id = feature.get('id')
                 commits = feature.get('commits', [])
                 
-                # 新增：获取当前feature的所有commit_ids
+                # 获取当前feature的所有commit_ids
                 commit_ids = [commit.get('id') for commit in commits]
                 
                 # 从commits字典列表中提取commit_subject
@@ -42,25 +48,42 @@ class KnowledgeGraphBuilder:
                 for entity in feature['entities']:
                     entities.append(entity)
                     contexts.append(context)
-                    feature_ids.append(feature_id)  # 新增：为每个实体添加对应的feature_id
-                    commit_ids_list.append(commit_ids)  # 新增：为每个实体添加对应的commit_ids
+                    feature_ids.append(feature_id)
+                    commit_ids_list.append(commit_ids)
+        
+        self.logger.info(f"Entity extraction took {time.time() - extract_start_time:.2f} seconds")
+        self.logger.info(f"Total entities extracted: {len(entities)}")
         
         # 批量处理
+        batch_start_time = time.time()
         batch_size = self.config.BATCH_SIZE
         entity_batches = [entities[i:i + batch_size] 
                        for i in range(0, len(entities), batch_size)]
         context_batches = [contexts[i:i + batch_size]
                         for i in range(0, len(contexts), batch_size)]
         
+        self.logger.info(f"Batch preparation took {time.time() - batch_start_time:.2f} seconds")
+        self.logger.info(f"Number of batches: {len(entity_batches)}, Batch size: {batch_size}")
+        
         all_results = {
             'linking': [],
             'fusion': []
         }
         
-        # 先处理所有批次的实体链接
+        # 处理所有批次
+        processing_start_time = time.time()
+        batch_count = 0
+        
         for entity_batch, context_batch in zip(entity_batches, context_batches):
+            batch_count += 1
+            batch_process_start = time.time()
+            
             # 实体链接
+            linking_start = time.time()
             linking_results = await self.process_linking_batch(entity_batch, context_batch, feature_ids, commit_ids_list)
+            linking_time = time.time() - linking_start
+            self.logger.info(f"Batch 链接{batch_count} linking took {linking_time:.2f} seconds")
+            
             all_results['linking'].extend(linking_results)
             
             # 获取未链接的实体
@@ -71,14 +94,27 @@ class KnowledgeGraphBuilder:
             
             # 对未链接实体进行融合
             if unlinked_entities:
-                fusion_results = await self.process_fusion_batch(unlinked_entities)
+                fusion_start = time.time()
+                fusion_results = await self.process_fusion_batch(unlinked_entities, feature_ids, commit_ids_list)
+                fusion_time = time.time() - fusion_start
+                self.logger.info(f"Batch {batch_count} fusion took {fusion_time:.2f} seconds")
                 all_results['fusion'].extend(fusion_results)
+            
+            self.logger.info(f"Batch 融合 {batch_count}/{len(entity_batches)} completed in {time.time() - batch_process_start:.2f} seconds")
         
-        # Validate scheme within the process method
+        self.logger.info(f"Total processing time: {time.time() - processing_start_time:.2f} seconds")
+        
+        # Validate scheme
+        validation_start = time.time()
         if not self.validate_scheme(all_results):
             self.logger.error("Data does not match the defined scheme")
-            return None  # Return None or handle as needed
-
+            return None
+        self.logger.info(f"Schema validation took {time.time() - validation_start:.2f} seconds")
+        
+        total_time = time.time() - total_start_time
+        self.logger.info(f"Total execution time: {total_time:.2f} seconds")
+        self.logger.info(f"Results summary: {len(all_results['linking'])} linked, {len(all_results['fusion'])} fused")
+        
         return all_results
         
     async def process_linking_batch(self, batch, context_batch, feature_ids, commit_ids_list):
@@ -95,9 +131,9 @@ class KnowledgeGraphBuilder:
         """
         return await self.entity_processor.process_linking_batch(batch, context_batch, feature_ids, commit_ids_list)
         
-    async def process_fusion_batch(self, batch):
+    async def process_fusion_batch(self, batch, feature_id, commit_ids):
         """处理单个批次的实体融合"""
-        return await self.entity_processor.process_fusion(batch)
+        return await self.entity_processor.process_fusion(batch, feature_id, commit_ids)
 
     def validate_scheme(self, results):
         """Validate the scheme of the results."""
