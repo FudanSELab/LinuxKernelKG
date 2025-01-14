@@ -3,36 +3,113 @@ import os
 from dataclasses import asdict
 from typing import List, Optional, Union, Dict
 from models.linking import LinkingCandidate
+from functools import wraps
+import logging
 
 class LinkCache:
-    def __init__(self, cache_file: str = "data/cache/link_cache_gpt4o-mini.json"):
+    def __init__(self, cache_file: str = "data/cache/link_cache_deepseek.json"):
         self.cache_file = cache_file
-        self.cache = self._load_cache()  # 初始化时从文件加载缓存
+        self.cache_files = {
+            'main': self.cache_file,
+            'variations': self.cache_file.replace('.json', '_variations.json'),
+            'disambig': self.cache_file.replace('.json', '_disambig.json')
+        }
+        self.caches = {
+            'main': self._load_cache_file('main'),
+            'variations': self._load_cache_file('variations'),
+            'disambig': self._load_cache_file('disambig')
+        }
 
-    def _load_cache(self) -> dict:
-        """从文件加载缓存数据"""
+    def _load_cache_file(self, cache_type: str) -> dict:
+        """统一的缓存文件加载方法"""
         try:
-            if os.path.exists(self.cache_file):
-                with open(self.cache_file, 'r', encoding='utf-8') as f:
+            if os.path.exists(self.cache_files[cache_type]):
+                with open(self.cache_files[cache_type], 'r', encoding='utf-8') as f:
                     return json.load(f)
         except Exception as e:
-            print(f"Error loading cache file: {e}")
+            print(f"Error loading {cache_type} cache file: {e}")
         return {}
 
-    def _save_cache(self) -> None:
-        """将缓存数据保存到文件"""
+    def _save_cache_file(self, cache_type: str) -> None:
+        """统一的缓存文件保存方法"""
         try:
-            with open(self.cache_file, 'w', encoding='utf-8') as f:
-                json.dump(self.cache, f, ensure_ascii=False, indent=2)
+            os.makedirs(os.path.dirname(self.cache_files[cache_type]), exist_ok=True)
+            with open(self.cache_files[cache_type], 'w', encoding='utf-8') as f:
+                json.dump(self.caches[cache_type], f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"Error saving cache file: {e}")
+            print(f"Error saving {cache_type} cache file: {e}")
 
+    def _get_cache_key(self, term: str, feature_id: str, commit_ids: list, cache_type: str) -> str:
+        """统一的缓存键生成方法"""
+        commit_ids_str = '_'.join(sorted(commit_ids))
+        prefix = f"{cache_type}_" if cache_type != 'main' else ""
+        return f"{prefix}{term}_{feature_id}_{commit_ids_str}"
+
+    def cache_operation(self, operation: str, cache_type: str, term: str, feature_id: str, 
+                       commit_ids: list, data: any = None) -> Optional[any]:
+        """统一的缓存操作方法
+        
+        Args:
+            operation: 'get' 或 'set'
+            cache_type: 缓存类型 ('main', 'variations', 'disambig')
+            term: 搜索词
+            feature_id: 特征ID
+            commit_ids: 提交ID列表
+            data: 要缓存的数据 (仅在 set 操作时需要)
+            
+        Returns:
+            获取操作时返回缓存的数据，设置操作时返回 None
+        """
+        cache_key = self._get_cache_key(term, feature_id, commit_ids, cache_type)
+        
+        if operation == 'get':
+            cached = self.caches[cache_type].get(cache_key)
+            if not cached:
+                return None
+                
+            if cache_type == 'variations':
+                return cached
+            else:
+                try:
+                    return [self._deserialize_candidate(item, term) for item in cached]
+                except Exception as e:
+                    print(f"Error deserializing {cache_type} cache for {term}: {e}")
+                    return None
+                    
+        elif operation == 'set':
+            if cache_type == 'variations':
+                self.caches[cache_type][cache_key] = data
+            else:
+                serialized_data = [self._serialize_candidate(item) for item in data]
+                self.caches[cache_type][cache_key] = serialized_data
+            self._save_cache_file(cache_type)
+            
+        return None
+
+    # 简化后的公共接口方法
+    def get(self, term: str, feature_id: str, commit_ids: list) -> Optional[List[LinkingCandidate]]:
+        return self.cache_operation('get', 'main', term, feature_id, commit_ids)
+
+    def set(self, term: str, feature_id: str, commit_ids: list, candidates: List[LinkingCandidate]) -> None:
+        self.cache_operation('set', 'main', term, feature_id, commit_ids, candidates)
+
+    def get_variations(self, term: str, feature_id: str, commit_ids: list) -> Optional[List[str]]:
+        return self.cache_operation('get', 'variations', term, feature_id, commit_ids)
+
+    def set_variations(self, term: str, feature_id: str, commit_ids: list, variations: List[str]) -> None:
+        self.cache_operation('set', 'variations', term, feature_id, commit_ids, variations)
+
+    def get_disambig_results(self, term: str, feature_id: str, commit_ids: list) -> Optional[List[LinkingCandidate]]:
+        return self.cache_operation('get', 'disambig', term, feature_id, commit_ids)
+
+    def set_disambig_results(self, term: str, feature_id: str, commit_ids: list, candidates: List[LinkingCandidate]) -> None:
+        self.cache_operation('set', 'disambig', term, feature_id, commit_ids, candidates)
+
+    # 保留序列化相关的辅助方法
     def _serialize_candidate(self, candidate: LinkingCandidate) -> dict:
-        """将 LinkingCandidate 对象序列化为字典"""
         return asdict(candidate)
 
     def _deserialize_candidate(self, data: dict, term: str) -> LinkingCandidate:
-        """将字典反序列化为 LinkingCandidate 对象"""
         return LinkingCandidate(
             mention=data.get('mention', term),
             title=data.get('title', ''),
@@ -42,43 +119,70 @@ class LinkCache:
             is_disambiguation=data.get('is_disambiguation', False)
         )
 
-    def get(self, term: str, feature_id: str, commit_ids: list) -> Optional[List[LinkingCandidate]]:
-        """获取缓存的结果并转换为 LinkingCandidate 对象"""
-        cache_key = self._make_key(term, feature_id, commit_ids)
-        cached = self.cache.get(cache_key)
+    def cached_operation(cache_type: str):
+        """缓存操作的装饰器
         
-        if not cached:
-            return None
-
-        try:
-            if isinstance(cached, list):
-                return [
-                    self._deserialize_candidate(item, term)
-                    for item in cached
-                    if isinstance(item, dict)
-                ]
-            elif isinstance(cached, dict) and 'result' in cached:
-                return [
-                    self._deserialize_candidate(item, term)
-                    for item in cached['result']
-                    if isinstance(item, dict)
-                ]
-            return None
-        except Exception as e:
-            print(f"Error deserializing cache for {term}: {e}")
-            return None
-
-    def set(self, term: str, feature_id: str, commit_ids: list, candidates: List[LinkingCandidate]) -> None:
-        """将 LinkingCandidate 对象列表序列化后存入缓存并保存到文件"""
-        cache_key = self._make_key(term, feature_id, commit_ids)
-        serialized_candidates = [
-            self._serialize_candidate(candidate)
-            for candidate in candidates
-        ]
-        self.cache[cache_key] = serialized_candidates
-        self._save_cache()  # 每次设置缓存后保存到文件
-
-    def _make_key(self, term: str, feature_id: str, commit_ids: list) -> str:
-        """生成缓存键"""
-        commit_str = '_'.join(sorted(commit_ids)) if commit_ids else ''
-        return f"{term}:{feature_id}:{commit_str}"
+        Args:
+            cache_type: 缓存类型 ('main', 'variations', 'disambig')
+            
+        Example:
+            @LinkCache.cached_operation('variations')
+            async def get_variations(self, mention, feature_id, commit_ids):
+                # 只需要实现实际的获取逻辑
+                return await self._actual_get_variations(mention)
+        """
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(linker_instance, term, feature_id=None, commit_ids=None, *args, **kwargs):
+                logger = logging.getLogger('entity_linker')
+                
+                # 添加更详细的日志
+                logger.debug(f"Checking cache for term: {term}, feature_id: {feature_id}, cache_type: {cache_type}")
+                logger.debug(f"Linker instance attributes: {dir(linker_instance)}")
+                
+                # 检查 linker_instance 是否正确初始化
+                if not hasattr(linker_instance, 'link_cache'):
+                    logger.error(f"EntityLinker instance missing link_cache attribute. Instance type: {type(linker_instance)}")
+                    logger.error(f"Available attributes: {dir(linker_instance)}")
+                    # 尝试初始化 link_cache
+                    try:
+                        linker_instance.link_cache = LinkCache()
+                        logger.info("Successfully created new LinkCache instance")
+                    except Exception as e:
+                        logger.error(f"Failed to create LinkCache: {e}")
+                        return await func(linker_instance, term, feature_id, commit_ids, *args, **kwargs)
+                
+                link_cache = linker_instance.link_cache
+                
+                # 如果没有提供缓存所需的参数，直接执行原函数
+                if not (feature_id and commit_ids):
+                    logger.warning(f"Missing required cache parameters - feature_id: {feature_id}, commit_ids: {commit_ids}")
+                    return await func(linker_instance, term, feature_id, commit_ids, *args, **kwargs)
+                
+                # 尝试从缓存获取
+                try:
+                    cached = link_cache.cache_operation('get', cache_type, term, feature_id, commit_ids)
+                    if cached:
+                        logger.info(f"Cache hit for {cache_type} of: {term}")
+                        return cached
+                    logger.debug(f"Cache miss for {cache_type} of: {term}")
+                except Exception as e:
+                    logger.error(f"Error accessing cache: {e}")
+                    return await func(linker_instance, term, feature_id, commit_ids, *args, **kwargs)
+                
+                # 缓存未命中，执行原函数
+                result = await func(linker_instance, term, feature_id, commit_ids, *args, **kwargs)
+                
+                # 缓存结果
+                if result is not None:
+                    try:
+                        link_cache.cache_operation('set', cache_type, term, feature_id, commit_ids, result)
+                        logger.info(f"Cached {cache_type} result for: {term}")
+                    except Exception as e:
+                        logger.error(f"Error saving to cache: {e}")
+                else:
+                    logger.debug(f"No result to cache for {term}")
+                
+                return result
+            return wrapper
+        return decorator

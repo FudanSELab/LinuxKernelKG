@@ -14,6 +14,7 @@ import re
 from utils.link_cache import LinkCache
 from models.linking import LinkingCandidate
 from srctoolkit import Delimiter
+import time 
 
 
 
@@ -35,54 +36,56 @@ class EntityLinker:
      
     async def link_entity(self, entity, context, feature_id=None, commit_ids=None):
         """链接单个实体到知识库，返回所有可能的匹配结果"""
+        start_time = time.time()
         self.logger.info(f"Processing entity linking for: {entity}")
         
-        # 1. 生成所有可能的搜索词（包括原始词变体和分词后的变体）
-        variations = await self._generate_variations(entity)
+        # 1. 生成所有可能的搜索词
+        variations_start = time.time()
         
-        # 使用 Delimiter 进行分词
-        words = Delimiter.split_camel(entity)
-        # 为分词生成变体并合并
-        word_variations = await self._generate_variations(words)
-        
+        # 生成变体并合并
+        variations = await self._generate_variations(entity, feature_id, commit_ids)
+        word_variations = await self._generate_variations(Delimiter.split_camel(entity), feature_id, commit_ids)
         variations.extend(word_variations)
-        # if words in variations and len(variations) > 1:
-        #     variations.remove(words)
-        # 去重
         variations = list(dict.fromkeys(variations))
         
+        self.logger.info(f"Variations generation took {time.time() - variations_start:.2f}s")
+        
         # 2. 搜索维基百科
+        wiki_search_start = time.time()
         primary_candidates = []
         for term in variations:
-            # 直接搜索维基百科（缓存逻辑已在_search_wikipedia内部处理）
             wiki_results = await self._search_wikipedia(term, context, feature_id, commit_ids)
             primary_candidates.extend(wiki_results)
         
         primary_candidates = self._deduplicate_candidates(primary_candidates)
-        self.logger.info(f"for entity {entity} overall linking, got {len(primary_candidates)} ")
+        self.logger.info(f"Wikipedia primary search took {time.time() - wiki_search_start:.2f}s")
+        
+        # 选择最佳匹配
+        best_match_start = time.time()
         primary_match = await self._select_best_match(entity, context, primary_candidates)
+        self.logger.info(f"Best match selection took {time.time() - best_match_start:.2f}s")
         
         # 3. 处理n-gram子序列匹配
+        ngram_start = time.time()
         ngrams = self._generate_ngrams(entity)
         ngram_candidates = []
         
-        # 为每个n-gram生成变体并搜索
         for ngram in ngrams:
-            ngram_variations = await self._generate_variations(ngram)
+            ngram_variations = await self._generate_variations(ngram, feature_id, commit_ids)
             for term in ngram_variations:
-                # 直接搜索维基百科（缓存逻辑已在_search_wikipedia内部处理）
                 wiki_results = await self._search_wikipedia(term, context, feature_id, commit_ids)
                 ngram_candidates.extend(wiki_results)
         
         ngram_candidates = self._deduplicate_candidates(ngram_candidates)
-        self.logger.info(f"for entity {entity} ngram linking, ngrams:\n{ngrams}\ngot {len(ngram_candidates)}")
+        self.logger.info(f"N-gram processing took {time.time() - ngram_start:.2f}s")
         
         # 获取所有合理的ngram匹配
+        ngram_match_start = time.time()
         ngram_matches = await self._select_valid_ngram_matches(ngrams, context, ngram_candidates)
+        self.logger.info(f"N-gram matching took {time.time() - ngram_match_start:.2f}s")
 
-        # 3. 整理所有匹配结果
+        # 整理结果
         matches = []
-        
         if primary_match and primary_match.confidence > 0.5:
             matches.append({
                 'linked_entity': primary_match.title,
@@ -93,7 +96,6 @@ class EntityLinker:
                 'match_type': 'primary'
             })
         
-        # 添加所有合理的ngram匹配    
         for ngram_match in ngram_matches:
             if ngram_match.confidence > 0.5:
                 matches.append({
@@ -112,13 +114,28 @@ class EntityLinker:
             'total_candidates_count': len(primary_candidates) + len(ngram_candidates)
         }
         
+        total_time = time.time() - start_time
+        self.logger.info(f"Total entity linking process took {total_time:.2f}s for entity: {entity}")
+        
         return result
         
-    async def _generate_variations(self, mention: str) -> List[str]:
+    @LinkCache.cached_operation('variations')
+    async def _generate_variations(self, mention: str, feature_id: str = None, commit_ids: list = None) -> List[str]:
+        """生成术语的变体
+        
+        Args:
+            mention: 需要生成变体的术语
+            feature_id: 特征ID，用于缓存
+            commit_ids: 提交ID列表，用于缓存
+            
+        Returns:
+            List[str]: 生成的变体列表
+        """
+        # 只需要实现实际的获取逻辑
         prompt = self._create_variation_prompt(mention)
         response = await self._get_llm_response(prompt)
         return self._parse_variations_response(response, mention)
-            
+
     def _generate_ngrams(self, text: str, min_n: int = 1, max_n: int = 3) -> List[str]:
         """生成文本的 n-gram 子序列，支持驼峰分割和配置的分隔符"""
         # 首先进行驼峰分割，并按空格分割成列表
@@ -194,75 +211,67 @@ class EntityLinker:
         
         return candidates
 
+    @LinkCache.cached_operation('main')
+    async def _get_wikipedia_page_candidates(self, term: str, feature_id: str = None, 
+                                       commit_ids: list = None, *, page=None, 
+                                       context: str = None) -> List[LinkingCandidate]:
+        """处理维基百科页面并返回候选项
+        
+        Args:
+            term: 搜索词
+            feature_id: 特征ID，用于缓存
+            commit_ids: 提交ID列表，用于缓存
+            page: 维基百科页面对象
+            context: 上下文内容
+        """
+        candidates = []
+        
+        # 处理所有层级的章节
+        candidates = self._process_sections(page, term, page.sections)
+        
+        if candidates:
+            return candidates
+            
+        # 检查页面相关性
+        is_match, confidence = await self._check_page_relevance(
+            page.title, 
+            page.summary, 
+            term, 
+            context
+        )
+        if is_match:
+            candidate = LinkingCandidate(
+                mention=term,
+                title=page.title,
+                url=page.fullurl,
+                summary=page.summary[:200],
+                confidence=confidence,
+                is_disambiguation=False
+            )
+            candidates.append(candidate)
+            
+        return candidates
+
     async def _search_wikipedia(self, term: str, context: str = None, feature_id: str = None, commit_ids: list = None) -> List[LinkingCandidate]:
         """使用wikipedia-api搜索维基百科，支持章节级别的搜索"""
         try:
-            # 首先检查缓存
-            # if feature_id and commit_ids:
-            #     cached = self.cache.get(term, feature_id, commit_ids)
-            #     if cached:
-            #         self.logger.info(f"Cache hit for term: {term}")
-            #         return cached
-
-            # 1. 首先尝试直接搜索完整术语
             page = self.wiki.page(term)
             candidates = []
             
             if not page.exists():
                 return []
-                
-         
-            # 处理所有层级的章节
-            candidates = self._process_sections(page, term, page.sections)
             
-            if candidates:
-                # 缓存并返回找到的章节相关结果
-                if feature_id and commit_ids:
-                    self.cache.set(term, feature_id, commit_ids, candidates)
-                return candidates
-            
-            # 3. 如果直接找到页面，按原有逻辑处理
-            is_disambiguation = self._is_disambiguation_page(page)
-            
-            if is_disambiguation:
-                # 处理消歧义页面。
-                # todo 给一组候选，然后直接从里面挑选出最合适的
-                disambig_candidates = self._handle_disambiguation_page(term, page)
-                # 对消歧义候选进行相关性过滤
-                filtered_candidates = []
-                for candidate in disambig_candidates:
-                    is_match, confidence = await self._check_page_relevance(
-                        candidate.title, 
-                        candidate.summary, 
-                        term, 
-                        context
-                    )
-                    if is_match:
-                        candidate.confidence = confidence
-                        filtered_candidates.append(candidate)
-                candidates.extend(filtered_candidates)
+            if self._is_disambiguation_page(page):
+                candidates.extend(await self._handle_disambiguation_with_relevance(
+                    term, feature_id, commit_ids, page=page, context=context
+                ))
             else:
-                # 检查页面相关性
-                is_match, confidence = await self._check_page_relevance(
-                    page.title, 
-                    page.summary, 
-                    term, 
-                    context
+                # 使用装饰器处理的函数获取主搜索结果
+                page_candidates = await self._get_wikipedia_page_candidates(
+                    term, feature_id=feature_id, commit_ids=commit_ids, 
+                    page=page, context=context
                 )
-                if is_match:
-                    candidate = LinkingCandidate(
-                        mention=term,
-                        title=page.title,
-                        url=page.fullurl,
-                        summary=page.summary[:200],
-                        confidence=confidence,
-                        is_disambiguation=False
-                    )
-                    candidates.append(candidate)
-            
-            # 缓存搜索结果
-            if feature_id and commit_ids:
-                self.cache.set(term, feature_id, commit_ids, candidates)
+                candidates.extend(page_candidates)
             
             return candidates
             
@@ -297,6 +306,35 @@ class EntityLinker:
             self.logger.error(f"Failed to check disambiguation for page {page.title}: {e}")
             return False
 
+    @LinkCache.cached_operation('disambig')
+    async def _handle_disambiguation_with_relevance(self, term: str, feature_id: str = None, 
+                                              commit_ids: list = None, *, page=None, 
+                                              context: str = None) -> List[LinkingCandidate]:
+        """处理消歧义页面并检查相关性
+        
+        Args:
+            term: 搜索词
+            feature_id: 特征ID，用于缓存
+            commit_ids: 提交ID列表，用于缓存
+            page: 维基百科页面对象
+            context: 上下文内容
+        """
+        disambig_candidates = self._handle_disambiguation_page(term, page)
+        filtered_candidates = []
+        
+        for candidate in disambig_candidates:
+            is_match, confidence = await self._check_page_relevance(
+                candidate.title, 
+                candidate.summary, 
+                term, 
+                context
+            )
+            if is_match:
+                candidate.confidence = confidence
+                filtered_candidates.append(candidate)
+        
+        return filtered_candidates
+
     def _handle_disambiguation_page(self,mention, disambig_page) -> List[LinkingCandidate]:
         """处理消歧义页面，提取所有可能的具体页面"""
         candidates = []
@@ -304,7 +342,7 @@ class EntityLinker:
             # 获取页面链接
             links = disambig_page.links
             
-            for title in list(links.keys())[:10]:  # 限制处理前10个链接
+            for title in list(links.keys()):
                 linked_page = self.wiki.page(title)
                 if not linked_page.exists() or self._is_disambiguation_page(linked_page):
                     continue
