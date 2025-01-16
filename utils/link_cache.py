@@ -65,7 +65,7 @@ class LinkCache:
         if operation == 'get':
             cached = self.caches[cache_type].get(cache_key)
             if not cached:
-                return None
+                return cached
                 
             if cache_type == 'variations':
                 return cached
@@ -119,6 +119,7 @@ class LinkCache:
             is_disambiguation=data.get('is_disambiguation', False)
         )
 
+    @staticmethod
     def cached_operation(cache_type: str):
         """缓存操作的装饰器
         
@@ -155,17 +156,18 @@ class LinkCache:
                 link_cache = linker_instance.link_cache
                 
                 # 如果没有提供缓存所需的参数，直接执行原函数
-                if not (feature_id and commit_ids):
+                # if not (feature_id and commit_ids):
+                if not feature_id:
                     logger.warning(f"Missing required cache parameters - feature_id: {feature_id}, commit_ids: {commit_ids}")
                     return await func(linker_instance, term, feature_id, commit_ids, *args, **kwargs)
                 
                 # 尝试从缓存获取
                 try:
                     cached = link_cache.cache_operation('get', cache_type, term, feature_id, commit_ids)
-                    if cached:
+                    if cached is not None:
                         logger.info(f"Cache hit for {cache_type} of: {term}")
                         return cached
-                    logger.debug(f"Cache miss for {cache_type} of: {term}")
+                    logger.info(f"Cache miss for {cache_type} of: {term}")
                 except Exception as e:
                     logger.error(f"Error accessing cache: {e}")
                     return await func(linker_instance, term, feature_id, commit_ids, *args, **kwargs)

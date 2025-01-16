@@ -3,6 +3,7 @@ from pathlib import Path
 import asyncio
 import datetime
 import json
+import pymysql
 
 # 在37.1的lkg环境运行
 # 添加项目根目录到 Python 路径
@@ -46,7 +47,7 @@ async def run_pipeline():
     # 测试Neo4j连接
     try:
         with EnhancedNeo4jHandler(**kg_config.neo4j_config) as neo4j_handler:
-            # 测试连接
+            # 测试连接 
             neo4j_handler.driver.verify_connectivity()
             logger.info("Successfully connected to Neo4j database")
             
@@ -87,17 +88,52 @@ async def run_pipeline():
                     continue  # Exit if the scheme validation failed
                 
                 # 5. 存储到Neo4j
-                for entity in matching_result.get('entities', []):
-                    neo4j_handler.import_entity(entity)
+                # 处理链接结果
+                for linked_entity in matching_result.get('linking', []):
+                    # entity_props = {
+                    #     'name': linked_entity['mention'],
+                    #     'matches': linked_entity.get('matches', []),
+                    #     'total_candidates': linked_entity['total_candidates_count'],
+                    #     'entity_type': 'linked'
+                    # }
+                    # neo4j_handler.import_entity(entity_props)
+                    matches = linked_entity.get('matches', [])
+                    for match in matches:
+                        entity_data = {
+                            'name_en': match['linked_entity'],
+                            'rel_desc': feature.get('feature_description', ''),
+                            'source': match.get('wikipedia_url', ''),
+                            'feature_id': feature.get('feature_id', ''),
+                            'wikidata_id': match.get('wikidata_id', '')
+                        }
+                        collector.store_entity(entity_data)
                 
-                for relation in matching_result.get('relations', []):
-                    neo4j_handler.import_relationship(
-                        relation['from_id'],
-                        relation['to_id'],
-                        relation['type'],
-                        relation.get('properties')
-                    )
-                
+                # 检查是否有融合结果
+                for fusion_groups in matching_result.get('fusion', []):
+                    
+                    # entity_props = {
+                    #     'name': fusion_group.get('original', ''),
+                    #     'variations': fusion_group.get('variations', []),
+                    #     'canonical_form': fusion_group.get('canonical_form', ''),
+                    #     'entity_type': 'fused'
+                    # }
+                    # neo4j_handler.import_entity(entity_props)
+                    for fusion_group in fusion_groups:
+                        source_data = json.dumps(fusion_group.get('reference', ''))
+                        if len(source_data) > 1024:
+                            source_data = "reference too long"
+                        entity_data = {
+                            'name_en': fusion_group.get('canonical_form', ''),
+                            'rel_desc': feature.get('feature_description', ''),
+                            'feature_id': feature.get('feature_id', ''),
+                            'aliases': [{'name_en': v} for v in fusion_group.get('variations', [])],
+                            'source': source_data
+                        }
+                        collector.store_entity(entity_data)
+
+                # 新增：验证三元组有效性
+                validate_triples(extraction_result, collector, neo4j_handler)
+
                 # 保存处理结果到JSON（用于后续分析）
                 progress_file = output_dir / f"kg_results_{timestamp}.json"
                 with open(progress_file, "a", encoding="utf-8") as f:
@@ -111,6 +147,21 @@ async def run_pipeline():
     except Exception as e:
         logger.error(f"Failed to connect to Neo4j: {str(e)}")
         raise
+
+def validate_triples(extraction_result, collector, neo4j_handler):
+    """验证三元组的有效性"""
+    for results in extraction_result:
+        triples = results.get('triples', [])
+        for triple in triples:
+            head_entity = triple[0]
+            tail_entity = triple[2]
+
+            # 查询数据库以验证三元组的有效性
+            if collector.db.entity_exists(head_entity) and collector.db.entity_exists(tail_entity):
+                # 如果三元组有效，将其存入Neo4j数据库
+                neo4j_handler.store_triple(head_entity, tail_entity)
+            else:
+                print(f"Invalid triple: {head_entity} - {triple[1]} >  {tail_entity}")
 
 if __name__ == "__main__":
     asyncio.run(run_pipeline())

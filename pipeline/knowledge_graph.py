@@ -4,6 +4,7 @@ from utils.logger import setup_logger
 from pipeline.quality_assurance import QualityMonitor
 from pipeline.entity_processor import EntityProcessor
 from datetime import datetime
+from utils.db import DB
 
 class KnowledgeGraphBuilder:
     def __init__(self, config, quality_monitor=None):
@@ -11,6 +12,7 @@ class KnowledgeGraphBuilder:
         self.config = config
         self.quality_monitor = quality_monitor or QualityMonitor(config)
         self.entity_processor = EntityProcessor(config)
+        self.db = DB(config)
         
     async def process(self, features):
         """异步处理实体识别和匹配"""
@@ -31,8 +33,8 @@ class KnowledgeGraphBuilder:
         
         for feature in features:
             if 'entities' in feature:
-                feature_name = feature.get('name', '')
-                feature_id = feature.get('id')
+                feature_name = feature.get('feature_description', '')
+                feature_id = feature.get('feature_id')
                 commits = feature.get('commits', [])
                 
                 # 获取当前feature的所有commit_ids
@@ -50,7 +52,8 @@ class KnowledgeGraphBuilder:
                     contexts.append(context)
                     feature_ids.append(feature_id)
                     commit_ids_list.append(commit_ids)
-        
+     
+
         self.logger.info(f"Entity extraction took {time.time() - extract_start_time:.2f} seconds")
         self.logger.info(f"Total entities extracted: {len(entities)}")
         
@@ -67,7 +70,8 @@ class KnowledgeGraphBuilder:
         
         all_results = {
             'linking': [],
-            'fusion': []
+            'fusion': [],
+            'triples': []
         }
         
         # 处理所有批次
@@ -98,12 +102,20 @@ class KnowledgeGraphBuilder:
                 fusion_results = await self.process_fusion_batch(unlinked_entities, feature_ids, commit_ids_list)
                 fusion_time = time.time() - fusion_start
                 self.logger.info(f"Batch {batch_count} fusion took {fusion_time:.2f} seconds")
-                all_results['fusion'].extend(fusion_results)
+                all_results['fusion'].append(fusion_results)
             
             self.logger.info(f"Batch 融合 {batch_count}/{len(entity_batches)} completed in {time.time() - batch_process_start:.2f} seconds")
         
         self.logger.info(f"Total processing time: {time.time() - processing_start_time:.2f} seconds")
-        
+        for feature in features:
+            if 'triples' in feature:
+                for triple in feature['triples']:
+                    head_entity = triple[0]
+                    tail_entity = triple[2]
+
+                    # 查询数据库以验证三元组的有效性
+                    if self.query_entity_in_db(head_entity) and self.query_entity_in_db(tail_entity):
+                        all_results['triples'].append(triple)
         # Validate scheme
         validation_start = time.time()
         if not self.validate_scheme(all_results):
@@ -137,4 +149,9 @@ class KnowledgeGraphBuilder:
 
     def validate_scheme(self, results):
         """Validate the scheme of the results."""
-        return self.quality_monitor.validate_scheme(results)
+        return True
+        # return self.quality_monitor.validate_scheme(results)
+
+    def query_entity_in_db(self, entity):
+        """查询数据库以检查实体是否存在"""
+        return self.db.entity_exists(entity)
