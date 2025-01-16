@@ -103,13 +103,13 @@ class FusionCache:
                 fusion_cache = processor_instance.fusion_cache
                 
                 # 如果没有提供缓存所需的参数，直接执行原函数
-                if not all([entity, feature_id, commit_ids]):
+                if not all([entity, feature_id]):
                     return await func(processor_instance, entity, feature_id, commit_ids, *args, **kwargs)
                 
                 # 尝试从缓存获取
                 try:
                     cached = fusion_cache.cache_operation('get', cache_type, entity, feature_id, commit_ids)
-                    if cached:
+                    if cached is not None:
                         logger.info(f"Cache hit for {cache_type} of: {entity}")
                         return cached
                 except Exception as e:

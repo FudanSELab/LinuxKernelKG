@@ -10,7 +10,7 @@ class EnhancedNeo4jHandler:
         self.logger = logging.getLogger(__name__)
         
         # 从配置中提取认证信息
-        auth = (config.pop('user', 'neo4j'), config.pop('password', ''))
+        auth = (config.pop('user', 'neo4j'), config.pop('password', 'cloudfdse'))
         uri = config.pop('uri', 'bolt://localhost:7687')
         
         self.logger.info(f"Connecting to Neo4j at {uri}")
@@ -85,12 +85,14 @@ class EnhancedNeo4jHandler:
                 raise
     
     def import_entity(self, entity_data):
+        # 使用 name 作为唯一标识符，如果没有提供 id
+        entity_id = entity_data.get('id', entity_data['name'])
         with self.driver.session() as session:
             session.run("""
-                MERGE (e:Entity {id: $id})
+                MERGE (e:Entity {name: $name})
                 SET e += $properties
             """, {
-                'id': entity_data['id'],
+                'name': entity_data['name'],
                 'properties': entity_data
             })
     
@@ -180,6 +182,15 @@ class EnhancedNeo4jHandler:
         TODO: 根据实际数据结构实现
         """
         pass
+
+    def store_triple(self, head_entity, tail_entity):
+        """Store a valid triple in the Neo4j database."""
+        query = """
+        MERGE (head:Entity {name: $head_entity})
+        MERGE (tail:Entity {name: $tail_entity})
+        MERGE (head)-[:RELATED_TO]->(tail)
+        """
+        self.driver.session().run(query, head_entity=head_entity, tail_entity=tail_entity)
 
 class KnowledgeGraphSyncManager:
     def __init__(self, config, neo4j_handler):

@@ -1,4 +1,5 @@
 import pymysql
+import json
 
 class DB:
 
@@ -23,17 +24,46 @@ class DB:
     QUERY_FEATURES_ALL_SQL = """
     SELECT feature_id, text, version
         FROM newbies_feature
-        WHERE h1 = 'Memory management' and version = '6.6'
+        WHERE 1=1
         ORDER BY feature_id DESC;
     """
+
+
+    QUERY_FEATURES_VERSION_SQL = """
+    SELECT feature_id, text, version
+        FROM newbies_feature
+        WHERE version = %s
+        ORDER BY feature_id DESC;
+    """
+
+    QUERY_FEATURES_MM_SQL = """
+    SELECT feature_id, text, version
+        FROM newbies_feature
+        WHERE h1 = 'Memory management' and version = '6.6'
+        ORDER BY feature_id DESC;
+    """ 
 
     INSERT_COMMIT_INFO_SQL = """
     INSERT INTO commit_info (commit_id, commit_subject, commit_message)
         VALUES (%s, %s, %s);
     """
 
+    INSERT_ENTITY_SQL = """
+    INSERT INTO entities_extraction (
+        name_en, name_cn, source, definition_en, definition_cn,
+        aliases, rel_desc, wikidata_id, feature_id, create_time, update_time
+    ) VALUES (
+        %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
+    );
+    """
+
     def __init__(self, config):
-        self.connection = pymysql.connect(**config.DB_CONFIG)
+        try:
+            self.connection = pymysql.connect(**config.DB_CONFIG)
+            print("Database connection established successfully.")
+        except pymysql.MySQLError as e:
+            print(f"Error connecting to database: {e}")
+            raise
     
     def __del__(self):
         self.connection.close()
@@ -83,6 +113,66 @@ class DB:
     
     def close(self):
         self.connection.close()
+
+    def insert_entity(self, entity_data: dict):
+        """插入一条实体数据到entities表
+        
+        Args:
+            entity_data: 包含实体信息的字典，包括name_en, name_cn等字段
+        
+        Returns:
+            bool: 插入是否成功
+            
+        Raises:
+            pymysql.Error: 当数据库操作出错时
+        """
+        try:
+            # 检查连接是否有效
+            if not self.connection.open:
+                print("Database connection is not open. Reconnecting...")
+                self.connection.ping(reconnect=True)
+            
+            with self.connection.cursor() as cursor:
+                # 验证必要字段
+                required_fields = ['name_en']
+                for field in required_fields:
+                    if not entity_data.get(field):
+                        print(f"Error: Required field '{field}' is empty or missing")
+                        return False
+                
+                values = (
+                    entity_data.get('name_en', ''),
+                    entity_data.get('name_cn', ''),
+                    entity_data.get('source', ''),
+                    entity_data.get('definition_en', ''),
+                    entity_data.get('definition_cn', ''),
+                    json.dumps(entity_data.get('aliases', [])),
+                    entity_data.get('rel_desc', ''),
+                    entity_data.get('wikidata_id', ''),
+                    entity_data.get('feature_id', '')
+                )
+            
+                
+                cursor.execute(self.INSERT_ENTITY_SQL, values)
+                self.connection.commit()
+                print(f"Successfully inserted entity: {entity_data.get('name_en')}")
+                return True
+            
+        except pymysql.Error as e:
+            print(f"Database error occurred: {repr(e)}")
+            self.connection.rollback()
+            return False
+        except Exception as e:
+            print(f"An unexpected error occurred: {repr(e)}")
+            return False
+
+    def entity_exists(self, entity_name: str) -> bool:
+        """检查实体是否存在于 entities_extraction 表中"""
+        query = "SELECT COUNT(*) FROM entities_extraction WHERE name_en = %s"
+        cursor = self.connection.cursor()
+        cursor.execute(query, (entity_name,))
+        result = cursor.fetchone()
+        return result[0] > 0
 
 
 # class PipelineConfig:

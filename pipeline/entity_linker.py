@@ -32,7 +32,7 @@ class EntityLinker:
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
             # proxies=self.config.WIKIPEDIA_PROXY_URL
         )
-        self.cache = LinkCache()
+        self.link_cache = LinkCache()
      
     async def link_entity(self, entity, context, feature_id=None, commit_ids=None):
         """链接单个实体到知识库，返回所有可能的匹配结果"""

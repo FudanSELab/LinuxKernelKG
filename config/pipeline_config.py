@@ -118,7 +118,7 @@ class PipelineConfig:
     neo4j_config = Neo4jConfig.DEFAULT_CONFIG
 
     # 添加 LLM 类型配置
-    LLM_TYPE = LLMType.OPENAI  # 修改为使用 OpenAI
+    LLM_TYPE = LLMType.DEEPSEEK  # 修改为使用 DeepSeek
 
     @classmethod
     def validate_neo4j_config(cls):

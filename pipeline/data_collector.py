@@ -1,10 +1,11 @@
-import pymysql
 from utils.logger import setup_logger
+from utils.db import DB
 
 class DataCollector:
     def __init__(self, config):
         self.logger = setup_logger('collector')
         self.config = config
+        self.db = DB(config)
         
     def collect_features(self, limit=None):
         """从数据库收集特性数据
@@ -12,23 +13,26 @@ class DataCollector:
         Args:
             limit (int, optional): 限制返回的特性数量，用于测试。默认为None表示返回所有特性。
         """
-        connection = pymysql.connect(**self.config.DB_CONFIG)
         try:
-            cursor = connection.cursor()
-            cursor.execute(self.config.QUERY_MM_SQL)
-            features = []
+            features = self.db.get_all_features()
             
-            for feature_id, text, version in cursor.fetchall():
-                features.append({
-                    'feature_id': feature_id,
-                    'feature_description': text,
-                    'version': version
-                })
-                if limit and len(features) >= limit:
-                    break
+            if limit:
+                features = features[:limit]
                     
             self.logger.info(f"Collected {len(features)} features" + (f" (limited to {limit})" if limit else ""))
             return features
             
         finally:
-            connection.close()
+            self.db.close()
+            
+    def store_entity(self, entity_data):
+        """存储实体数据到数据库
+        
+        Args:
+            entity_data (dict): 实体数据
+        """
+        try:
+            self.db.insert_entity(entity_data)
+        except Exception as e:
+            self.logger.error(f"Failed to store entity: {repr(e)}")
+            raise
