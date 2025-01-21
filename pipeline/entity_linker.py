@@ -34,7 +34,7 @@ class EntityLinker:
         )
         self.link_cache = LinkCache()
      
-    async def link_entity(self, entity, context, feature_id=None, commit_ids=None):
+    async def  lilink_entity(self, entity, context, feature_id=None, commit_ids=None):
         """链接单个实体到知识库，返回所有可能的匹配结果"""
         start_time = time.time()
         self.logger.info(f"Processing entity linking for: {entity}")

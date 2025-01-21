@@ -67,8 +67,12 @@ async def run_pipeline():
             collector = DataCollector(pipeline_config)
             features = collector.collect_features()
             
+            # 设置起始位置
+            start_index = 90  # 从第70个feature开始
+            logger.info(f"Starting processing from feature index {start_index}")
+            
             # 处理每个feature
-            for i, feature in enumerate(features):
+            for i, feature in enumerate(features[start_index:], start=start_index):
                 logger.info(f"Processing feature {i+1}/{len(features)}")
                 
                 # 2. 文本增强
@@ -76,7 +80,6 @@ async def run_pipeline():
                 enhanced_feature = enhancer.enhance_features([feature])
                 
                 # 3. 实体和关系抽取
-                # todo commit里面抽取mention 可以考虑一个一个抽取？
                 extractor = EntityRelationExtractor(pipeline_config)
                 extraction_result = extractor.extract_entities_and_relations(enhanced_feature)
                 
@@ -99,16 +102,23 @@ async def run_pipeline():
                     # neo4j_handler.import_entity(entity_props)
                     matches = linked_entity.get('matches', [])
                     for match in matches:
-                        entity_data = {
-                            'name_en': match['linked_entity'],
-                            'rel_desc': feature.get('feature_description', ''),
-                            'source': match.get('wikipedia_url', ''),
-                            'feature_id': feature.get('feature_id', ''),
-                            'wikidata_id': match.get('wikidata_id', '')
-                        }
-                        collector.store_entity(entity_data)
+                        try:
+                            entity_data = {
+                                'name_en': match['linked_entity'],
+                                'rel_desc': feature.get('feature_description', ''),
+                                'source': match.get('wikipedia_url', ''),
+                                'feature_id': [feature.get('feature_id', '')],
+                                'wikidata_id': match.get('wikidata_id', ''),
+                                'type': 'link',
+                                'class': match.get('class', '')
+                            }
+                            logger.info(f"Storing linked entity: {entity_data['name_en']}")
+                            collector.store_entity(entity_data)
+                        except ValueError as e:
+                            logger.error(f"Failed to store linked entity: {str(e)}")
+                            continue
                 
-                # 检查是否有融合结果
+                # 处理融合结果
                 for fusion_groups in matching_result.get('fusion', []):
                     
                     # entity_props = {
@@ -119,20 +129,27 @@ async def run_pipeline():
                     # }
                     # neo4j_handler.import_entity(entity_props)
                     for fusion_group in fusion_groups:
-                        source_data = json.dumps(fusion_group.get('reference', ''))
-                        if len(source_data) > 1024:
-                            source_data = "reference too long"
-                        entity_data = {
-                            'name_en': fusion_group.get('canonical_form', ''),
-                            'rel_desc': feature.get('feature_description', ''),
-                            'feature_id': feature.get('feature_id', ''),
-                            'aliases': [{'name_en': v} for v in fusion_group.get('variations', [])],
-                            'source': source_data
-                        }
-                        collector.store_entity(entity_data)
+                        try:
+                            source_data = json.dumps(fusion_group.get('reference', ''))
+                            if len(source_data) > 1024:
+                                source_data = "reference too long"
+                            entity_data = {
+                                'name_en': fusion_group.get('canonical_form', ''),
+                                'rel_desc': feature.get('feature_description', ''),
+                                'feature_id': [feature.get('feature_id', '')],
+                                'aliases': [{'name_en': v} for v in fusion_group.get('variations', [])],
+                                'source': source_data,
+                                'type': 'fusion',
+                                'class': fusion_group.get('class', '')
+                            }
+                            logger.info(f"Storing fused entity: {entity_data['name_en']}")
+                            collector.store_entity(entity_data)
+                        except ValueError as e:
+                            logger.error(f"Failed to store fused entity: {str(e)}")
+                            continue
 
                 # 新增：验证三元组有效性
-                validate_triples(extraction_result, collector, neo4j_handler)
+                validate_triples(extraction_result, collector, neo4j_handler, logger)
 
                 # 保存处理结果到JSON（用于后续分析）
                 progress_file = output_dir / f"kg_results_{timestamp}.json"
@@ -148,20 +165,26 @@ async def run_pipeline():
         logger.error(f"Failed to connect to Neo4j: {str(e)}")
         raise
 
-def validate_triples(extraction_result, collector, neo4j_handler):
+def validate_triples(extraction_result, collector, neo4j_handler, logger):
     """验证三元组的有效性"""
     for results in extraction_result:
         triples = results.get('triples', [])
         for triple in triples:
             head_entity = triple[0]
+            relation = triple[1]
             tail_entity = triple[2]
 
             # 查询数据库以验证三元组的有效性
             if collector.db.entity_exists(head_entity) and collector.db.entity_exists(tail_entity):
-                # 如果三元组有效，将其存入Neo4j数据库
-                neo4j_handler.store_triple(head_entity, tail_entity)
+                # 检查三元组是否已存在
+                if not neo4j_handler.triple_exists(head_entity, relation, tail_entity):
+                    # 如果三元组有效且不存在，将其存入Neo4j数据库
+                    logger.info(f"Storing new triple: {head_entity} -> {relation} -> {tail_entity}")
+                    neo4j_handler.store_triple(head_entity, relation, tail_entity)
+                else:
+                    logger.info(f"Triple already exists: {head_entity} -> {relation} -> {tail_entity}")
             else:
-                print(f"Invalid triple: {head_entity} - {triple[1]} >  {tail_entity}")
+                logger.info(f"Invalid triple: {head_entity} - {relation} > {tail_entity}")
 
 if __name__ == "__main__":
     asyncio.run(run_pipeline())

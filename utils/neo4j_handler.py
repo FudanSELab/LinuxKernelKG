@@ -183,14 +183,51 @@ class EnhancedNeo4jHandler:
         """
         pass
 
-    def store_triple(self, head_entity, tail_entity):
+    def store_triple(self, head_entity, relation, tail_entity):
         """Store a valid triple in the Neo4j database."""
-        query = """
-        MERGE (head:Entity {name: $head_entity})
-        MERGE (tail:Entity {name: $tail_entity})
-        MERGE (head)-[:RELATED_TO]->(tail)
+        relation_type = relation.upper().replace(' ', '_')
+        
+        # 使用动态关系类型的简单版本
+        query = f"""
+        MERGE (head:Entity {{name: $head_entity}})
+        MERGE (tail:Entity {{name: $tail_entity}})
+        MERGE (head)-[r:{relation_type}]->(tail)
         """
-        self.driver.session().run(query, head_entity=head_entity, tail_entity=tail_entity)
+        with self.driver.session() as session:
+            session.run(
+                query, 
+                head_entity=head_entity,
+                tail_entity=tail_entity
+            )
+
+    def triple_exists(self, head_entity, relation, tail_entity):
+        """
+        检查三元组是否已存在于Neo4j数据库中
+        
+        Args:
+            head_entity (str): 头实体
+            relation (str): 关系
+            tail_entity (str): 尾实体
+            
+        Returns:
+            bool: 如果三元组存在返回True，否则返回False
+        """
+        # 将关系转换为Neo4j可接受的格式
+        relation_type = relation.upper().replace(' ', '_')
+        
+        # 使用格式化字符串构建查询，关系类型直接嵌入查询中
+        query = f"""
+            MATCH (h:Entity {{name: $head_entity}})-[r:{relation_type}]->(t:Entity {{name: $tail_entity}})
+            RETURN COUNT(r) > 0 as exists
+        """
+        
+        with self.driver.session() as session:
+            result = session.run(
+                query,
+                head_entity=head_entity,
+                tail_entity=tail_entity
+            )
+            return result.single()["exists"]
 
 class KnowledgeGraphSyncManager:
     def __init__(self, config, neo4j_handler):
