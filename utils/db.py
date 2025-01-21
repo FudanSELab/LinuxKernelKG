@@ -49,13 +49,16 @@ class DB:
     """
 
     INSERT_ENTITY_SQL = """
-    INSERT INTO entities_extraction (
+    INSERT INTO entities_ext (
         name_en, name_cn, source, definition_en, definition_cn,
-        aliases, rel_desc, wikidata_id, feature_id, create_time, update_time
+        aliases, rel_desc, wikidata_id, feature_id, type, class
     ) VALUES (
-        %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW()
+        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
     );
     """
+
+    # 添加有效的type枚举值
+    VALID_ENTITY_TYPES = {'link', 'fusion'}  # 定义允许的type值集合
 
     def __init__(self, config):
         try:
@@ -132,47 +135,99 @@ class DB:
                 print("Database connection is not open. Reconnecting...")
                 self.connection.ping(reconnect=True)
             
-            with self.connection.cursor() as cursor:
-                # 验证必要字段
-                required_fields = ['name_en']
-                for field in required_fields:
-                    if not entity_data.get(field):
-                        print(f"Error: Required field '{field}' is empty or missing")
-                        return False
-                
-                values = (
-                    entity_data.get('name_en', ''),
-                    entity_data.get('name_cn', ''),
-                    entity_data.get('source', ''),
-                    entity_data.get('definition_en', ''),
-                    entity_data.get('definition_cn', ''),
-                    json.dumps(entity_data.get('aliases', [])),
-                    entity_data.get('rel_desc', ''),
-                    entity_data.get('wikidata_id', ''),
-                    entity_data.get('feature_id', '')
-                )
+            # 验证type字段
+            entity_type = entity_data.get('type', '')
+            if not entity_type:
+                raise ValueError("Entity type cannot be empty")
+            if entity_type not in self.VALID_ENTITY_TYPES:
+                raise ValueError(f"Invalid entity type: {entity_type}. Must be one of: {', '.join(self.VALID_ENTITY_TYPES)}")
             
-                
-                cursor.execute(self.INSERT_ENTITY_SQL, values)
-                self.connection.commit()
-                print(f"Successfully inserted entity: {entity_data.get('name_en')}")
-                return True
+            # 使用改进后的entity_exists函数检查实体是否存在
+            exists = self.entity_exists(
+                entity_name=entity_data['name_en'],
+                entity_type=entity_type,
+                source=entity_data.get('source', '')
+            )
             
-        except pymysql.Error as e:
-            print(f"Database error occurred: {repr(e)}")
-            self.connection.rollback()
-            return False
-        except Exception as e:
-            print(f"An unexpected error occurred: {repr(e)}")
-            return False
+            if exists:
+                # 如果实体已存在，获取现有的feature_id并更新
+                cursor = self.connection.cursor()
+                cursor.execute("SELECT feature_id FROM entities_ext WHERE name_en = %s", (entity_data['name_en'],))
+                existing_record = cursor.fetchone()
+                
+                existing_feature_ids = json.loads(existing_record[0]) if existing_record[0] else []
+                new_feature_id = entity_data.get('feature_id', [])[0]  # 假设新数据中只有一个feature_id
+                
+                # 检查新的feature_id是否已存在
+                if new_feature_id not in existing_feature_ids:
+                    # 将新的feature_id添加到列表中
+                    existing_feature_ids.append(new_feature_id)
+                    # 更新数据库中的feature_id字段
+                    cursor.execute("UPDATE entities_ext SET feature_id = %s WHERE name_en = %s",
+                                 (json.dumps(existing_feature_ids), entity_data['name_en']))
+                    self.connection.commit()
+                    print(f"Updated feature_id for entity {entity_data['name_en']}")
+                return
 
-    def entity_exists(self, entity_name: str) -> bool:
-        """检查实体是否存在于 entities_extraction 表中"""
-        query = "SELECT COUNT(*) FROM entities_extraction WHERE name_en = %s"
-        cursor = self.connection.cursor()
-        cursor.execute(query, (entity_name,))
-        result = cursor.fetchone()
-        return result[0] > 0
+            # 如果实体不存在，执行插入操作
+            required_fields = ['name_en', 'type']
+            for field in required_fields:
+                if not entity_data.get(field):
+                    raise ValueError(f"Required field '{field}' is empty or missing")
+            
+            values = (
+                entity_data.get('name_en', ''),
+                entity_data.get('name_cn', ''),
+                entity_data.get('source', ''),
+                entity_data.get('definition_en', ''),
+                entity_data.get('definition_cn', ''),
+                json.dumps(entity_data.get('aliases', [])),
+                entity_data.get('rel_desc', ''),
+                entity_data.get('wikidata_id', ''),
+                json.dumps(entity_data.get('feature_id', [])),
+                entity_type,
+                entity_data.get('class', '')
+            )
+            
+            cursor = self.connection.cursor()
+            cursor.execute(self.INSERT_ENTITY_SQL, values)
+            self.connection.commit()
+            print(f"Inserted new entity: {entity_data['name_en']}")
+
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"Failed to insert/update entity: {str(e)}")
+
+    def entity_exists(self, entity_name: str, entity_type: str = None, source: str = None) -> bool:
+        """检查实体是否存在于 entities_ext 表中
+        
+        Args:
+            entity_name: 实体名称
+            entity_type: 实体类型 ('link' 或 'fusion')
+            source: 实体来源 (用于 'link' 类型的实体判断)
+        
+        Returns:
+            bool: 实体是否存在
+        """
+        try:
+            cursor = self.connection.cursor()
+            
+            query = """
+            SELECT COUNT(*) FROM entities_ext 
+            WHERE name_en = %s 
+            AND (
+                (type = 'fusion') 
+                OR 
+                (type = 'link' AND source = %s)
+            )
+            """
+            cursor.execute(query, (entity_name, source))
+            result = cursor.fetchone()
+            return result[0] > 0
+            
+        except Exception as e:
+            print(f"Error checking entity existence: {str(e)}")
+            return False
 
 
 # class PipelineConfig:

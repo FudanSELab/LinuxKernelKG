@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from utils.name_handler import NameHandler
 
 class EntityFusion:
     def __init__(self, config):
@@ -33,7 +34,7 @@ class EntityFusion:
             dict: 包含融合结果的字典
         """
         # 1. 预处理 - 标准化和保留上下文信息
-        processed_entities = self._preprocess_entities(new_entities, feature_ids, commit_ids_list)
+        processed_entities = await self._preprocess_entities(new_entities, feature_ids, commit_ids_list)
         
         # 2. 分离有引用源和无引用源的实体
         entities_with_refs = {}
@@ -123,7 +124,7 @@ class EntityFusion:
         return fusion_groups
 
 
-    def _preprocess_entities(self, entities, feature_ids=None, commit_ids_list=None):
+    async def _preprocess_entities(self, entities, feature_ids=None, commit_ids_list=None):
         """预处理实体，但不进行上下文去重
         - 只进行基础的标准化和清洗
         - 保留所有上下文信息供后续融合使用
@@ -133,7 +134,7 @@ class EntityFusion:
         for i, entity in enumerate(entities):
             # TODO基于规则生成一些变体
             # normalized = self._normalize_entity_name(entity)
-            candidates = self._generate_candidates(entity)
+            candidates = await self._generate_candidates(entity)
             # if not normalized:
             #     continue
             
@@ -163,7 +164,7 @@ class EntityFusion:
         
     #     return normalized if normalized else None
 
-    def _generate_candidates(self, entity):
+    async def _generate_candidates(self, entity):
         """生成实体的候选变体
         
         结合规则和大模型方式生成变体：
@@ -176,7 +177,7 @@ class EntityFusion:
         # candidates.update(self._generate_naming_variants(entity))
         
         # 2. 使用大模型处理复杂缩写
-        abbreviation_variants = self._generate_abbreviation_variants(entity)
+        abbreviation_variants = await self._generate_abbreviation_variants(entity)
         candidates.update(abbreviation_variants)
         
         # 移除无效候选项
@@ -215,7 +216,7 @@ class EntityFusion:
         
         return variants
 
-    def _generate_abbreviation_variants(self, entity):
+    async def _generate_abbreviation_variants(self, entity):
         """使用大模型生成复杂的缩写变体
         """
         # 如果实体长度小于3，不处理缩写
@@ -240,8 +241,9 @@ Variant: None
 """
 
         try:
+            # 直接调用同步方法
             response = self._get_llm_response(prompt)
-            if not response or response.isspace():
+            if not response:
                 return []
             
             # 处理响应
@@ -286,16 +288,17 @@ Variant: None
             'fusion_rate': (total_entities - total_groups) / total_entities if total_entities > 0 else 0
         }
 
-    def _apply_fusion_rules(self, entity, context,fusion_pool):
+    def _apply_fusion_rules(self, entity, context, fusion_pool):
         """应用启发式规则进行匹配"""
         candidates = set()
-        
+        # name_handler = NameHandler.get_inst()
+
         # 1. 大小写变体
         lower_entity = entity.lower()
         for other in fusion_pool:
             if other != entity and other.lower() == lower_entity:
                 candidates.add(other)
-        
+
         # 2. 常见缩写模式
         if '(' in entity:
             main_part = entity.split('(')[0].strip()
@@ -303,7 +306,7 @@ Variant: None
             for other in fusion_pool:
                 if other == main_part or other == abbrev:
                     candidates.add(other)
-        
+
         # 3. 驼峰命名和下划线分隔
         words = self._split_identifier(entity)
         if len(words) > 1:
@@ -312,8 +315,11 @@ Variant: None
                 if other == acronym:
                     candidates.add(other)
 
-        # TODO memory 缩写成 mem. 需要一个规则来处理：
-        
+        # # 4. 使用 NameHandler 进行同义词和缩写检查
+        # for other in fusion_pool:
+        #     if name_handler.check_synonym(entity, other) or name_handler.check_abbr(entity, other):
+        #         candidates.add(other)
+
         return candidates
 
     def _split_identifier(self, identifier: str) -> list:
@@ -638,7 +644,7 @@ Variant: None
         return list(matches)
 
     async def _verify_fusion_pair_with_context(self, entity1, entity2, contexts1, contexts2, reference):
-        """使用LLM验证两个实体是否可以融合，考虑上下文和引用源
+        """使用LLM验证两个实体是否可以融合
         
         Args:
             entity1 (str): 第一个实体
@@ -656,7 +662,8 @@ Variant: None
         prompt = self._create_fusion_verification_prompt(entity1, entity2, contexts_str)
         
         try:
-            response = await self._get_llm_response(prompt)
+            # 修改：移除 await，直接调用同步方法
+            response = self._get_llm_response(prompt)
             return self._parse_llm_verification_response(response)
         except Exception as e:
             self.logger.error(f"LLM verification failed: {str(e)}")
