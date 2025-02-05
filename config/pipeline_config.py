@@ -73,7 +73,8 @@ class PipelineConfig:
     }
 
     # 实体链接中，n-gram 分割符配置
-    NGRAM_DELIMITERS = " -_"
+    # 包含空格、连字符、下划线、点号、斜杠、反斜杠、逗号、分号、括号等常见分隔符
+    NGRAM_DELIMITERS = " -_.,/\\;()[]{}|"
 
     # 访问 Wikipedia 的代理配置
     WIKIPEDIA_PROXY_URL = {

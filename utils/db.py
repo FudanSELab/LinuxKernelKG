@@ -82,6 +82,9 @@ class DB:
 
     def get_commits_info(self, commit_ids: list[str]):
         """获取一组提交的信息，包括提交主题和消息，顺序与输入的 commit_ids 一致，返回值为字符串列表"""
+        if not commit_ids:
+            return []  # 如果 commit_ids 为空，直接返回空列表
+
         cursor = self.connection.cursor()
         # 将 commit_ids 转换为逗号分隔的字符串
         formatted_ids = ','.join(['%s'] * len(commit_ids))

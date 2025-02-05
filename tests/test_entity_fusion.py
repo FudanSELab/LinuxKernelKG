@@ -38,6 +38,9 @@ class EntityFusionBenchmarkLoader:
         """
         data = pd.read_excel(self.data_file)
         
+        # 确保 fused_to 列为字符串类型
+        data['fused_to'] = data['fused_to'].astype(str)
+        
         # 清理 fused_to 列
         data['fused_to'] = data['fused_to'].replace({
             '/': pd.NA,  # 将'/'替换为NA
@@ -70,7 +73,6 @@ class EntityFusionBenchmarkLoader:
         # 1. 从数据集获取所有应该融合的实体对
         ground_truth_pairs = set()
         for _, row in self.data.iterrows():
-            # 只处理 fused_to 列中有效值的行
             if pd.notna(row['fused_to']):
                 ground_truth_pairs.add((row['original_mention'], row['fused_to']))
         
@@ -128,10 +130,11 @@ async def test_entity_fusion(input_file, eval_only=False, result_file=None):
             with open(result_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 fusion_results = data['results']
-                feature_ids = data['feature_ids']
-                commit_ids_list = data['commit_ids_list']
+                # feature_ids = data['feature_ids']
+                # commit_ids_list = data['commit_ids_list']
             logger.info("Calculating metrics for existing results...")
-            loader.calculate_metric(fusion_results, feature_ids, commit_ids_list)
+            # loader.calculate_metric(fusion_results, feature_ids, commit_ids_list)
+            loader.calculate_metric(fusion_results)
             return
         except Exception as e:
             logger.error(f"Failed to load results file: {str(e)}")
@@ -187,8 +190,8 @@ async def test_entity_fusion(input_file, eval_only=False, result_file=None):
 
 if __name__ == "__main__":
     # 直接设置参数
-    eval_only = False
-    result_file = 'output/test/entity_fusion_test_results_20240105_1200.json'
-    input_file = 'data/entity_fusion_benchmark_0108.xlsx'  # 融合测试数据文件
+    eval_only = True
+    result_file = 'output/test/entity_fusion_test_results_20250124_0138.json'
+    input_file = 'data/entity_link_fusion_benchmark_0122.xlsx'  # 融合测试数据文件
 
     asyncio.run(test_entity_fusion(input_file=input_file, eval_only=eval_only, result_file=result_file)) 

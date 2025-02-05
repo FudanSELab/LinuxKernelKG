@@ -34,7 +34,7 @@ class EntityLinker:
         )
         self.link_cache = LinkCache()
      
-    async def  lilink_entity(self, entity, context, feature_id=None, commit_ids=None):
+    async def link_entity(self, entity, context, feature_id=None, commit_ids=None):
         """链接单个实体到知识库，返回所有可能的匹配结果"""
         start_time = time.time()
         self.logger.info(f"Processing entity linking for: {entity}")
@@ -45,6 +45,7 @@ class EntityLinker:
         # 生成变体并合并
         variations = await self._generate_variations(entity, feature_id, commit_ids)
         word_variations = await self._generate_variations(Delimiter.split_camel(entity), feature_id, commit_ids)
+        variations.append(entity)
         variations.extend(word_variations)
         variations = list(dict.fromkeys(variations))
         
@@ -137,28 +138,52 @@ class EntityLinker:
         return self._parse_variations_response(response, mention)
 
     def _generate_ngrams(self, text: str, min_n: int = 1, max_n: int = 3) -> List[str]:
-        """生成文本的 n-gram 子序列，支持驼峰分割和配置的分隔符"""
-        # 首先进行驼峰分割，并按空格分割成列表
-        camel_split = Delimiter.split_camel(text)
-        words = camel_split.split()
+        """生成文本的 n-gram 子序列，根据分隔符切割并拼接形成
         
-        # 如果驼峰分割无效（只有一个词），则使用配置的分隔符
-        if len(words) <= 1:
-            words = re.split(f"[{re.escape(self.config.NGRAM_DELIMITERS)}]+", text)
-       
+        Args:
+            text: 输入文本
+            min_n: 最小n-gram长度，默认为1
+            max_n: 最大n-gram长度，默认为3
+            
+        Returns:
+            List[str]: n-gram子序列列表
+        """
+        # # 原有实现（注释保留）
+        # # 首先进行驼峰分割，并按空格分割成列表
+        # camel_split = Delimiter.split_camel(text)
+        # words = camel_split.split()
+        # 
+        # # 如果驼峰分割无效（只有一个词），则使用配置的分隔符
+        # if len(words) <= 1:
+        #     words = re.split(f"[{re.escape(self.config.NGRAM_DELIMITERS)}]+", text)
+        #    
+        # ngrams = []
+        # 
+        # # 生成所有 min_n...max_n-gram 子序列，注意不能和原始文本相同
+        # for n in range(min_n, max_n + 1):
+        #     for i in range(len(words) - n + 1):
+        #         ngram = " ".join(words[i:i + n])
+        #         if i != 0 or i + n != len(words): # 不是整个文本
+        #             ngrams.append(ngram)
+        # 
+        # # 去重，但保留顺序不变
+        # ngrams = list(dict.fromkeys(ngrams))
+        
+        # 新实现：直接根据分隔符切割
+        words = re.split(f"[{re.escape(self.config.NGRAM_DELIMITERS)}]+", text)
+        words = [w.strip() for w in words if w.strip()]  # 移除空字符串和前后空格
+        
         ngrams = []
-        
-        # 生成所有 min_n...max_n-gram 子序列，注意不能和原始文本相同
-        for n in range(min_n, max_n + 1):
+        # 生成所有可能的n-gram组合
+        for n in range(min_n, min(max_n + 1, len(words) + 1)):
             for i in range(len(words) - n + 1):
                 ngram = " ".join(words[i:i + n])
-                if i != 0 or i + n != len(words): # 不是整个文本
+                # 只添加非完整文本的n-gram
+                if ngram != text:
                     ngrams.append(ngram)
         
-        # 去重，但保留顺序不变
-        ngrams = list(dict.fromkeys(ngrams))
-
-        return ngrams
+        # 去重但保持顺序
+        return list(dict.fromkeys(ngrams))
         
     def _process_sections(self, page, term, sections, depth=0):
         """递归处理所有层级的章节
@@ -226,13 +251,12 @@ class EntityLinker:
         """
         candidates = []
         
-        # 处理所有层级的章节
-        candidates = self._process_sections(page, term, page.sections)
-        
-        if candidates:
-            return candidates
+        # 1. 首先尝试在章节中查找精确匹配
+        section_candidates = await self._find_matching_sections(page, term)
+        if section_candidates:
+            return section_candidates
             
-        # 检查页面相关性
+        # 2. 如果没有找到章节匹配，检查页面相关性
         is_match, confidence = await self._check_page_relevance(
             page.title, 
             page.summary, 
@@ -249,6 +273,60 @@ class EntityLinker:
                 is_disambiguation=False
             )
             candidates.append(candidate)
+            
+        return candidates
+
+    async def _find_matching_sections(self, page, term: str) -> List[LinkingCandidate]:
+        """查找匹配的章节并构建带锚点的URL
+        
+        Args:
+            page: 维基百科页面对象
+            term: 搜索词
+            
+        Returns:
+            List[LinkingCandidate]: 匹配的候选项列表，URL包含章节锚点
+        """
+        candidates = []
+        
+        def process_section(section, parent_path=[]):
+            current_path = parent_path + [section.title]
+            
+            # 检查章节标题或内容是否匹配搜索词
+            if (section.title.lower() == term.lower() or 
+                term.lower() in section.text.lower()[:200]):
+                
+                # 构建章节锚点
+                anchor = '_'.join(
+                    title.replace(' ', '_')
+                    .replace('(', '.28')
+                    .replace(')', '.29')
+                    .replace(',', '.2C')
+                    for title in current_path
+                )
+                
+                # 创建完整的URL，包含章节锚点
+                section_url = f"{page.fullurl}#{anchor}"
+                
+                # 创建标题，包含完整的章节路径
+                full_title = f"{page.title}#{' > '.join(current_path)}"
+                
+                candidate = LinkingCandidate(
+                    mention=term,
+                    title=full_title,
+                    url=section_url,
+                    summary=section.text[:200],
+                    confidence=0.8 if section.title.lower() == term.lower() else 0.6,
+                    is_disambiguation=False
+                )
+                candidates.append(candidate)
+            
+            # 递归处理子章节
+            for subsection in section.sections:
+                process_section(subsection, current_path)
+        
+        # 处理所有顶级章节
+        for section in page.sections:
+            process_section(section)
             
         return candidates
 

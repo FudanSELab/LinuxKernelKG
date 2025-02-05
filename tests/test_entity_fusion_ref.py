@@ -38,11 +38,11 @@ class EntityFusionBenchmarkLoader:
         """
         data = pd.read_excel(self.data_file)
         
-        # 清理 fused_to 列
-        data['fused_to'] = data['fused_to'].replace({
-            '/': pd.NA,  # 将'/'替换为NA
-            '': pd.NA,   # 将空字符串替换为NA
-        }).str.strip()   # 清理前后空白字符
+        # # 清理 fused_to 列
+        # data['fused_to'] = data['fused_to'].replace({
+        #     '/': pd.NA,  # 将'/'替换为NA
+        #     '': pd.NA,   # 将空字符串替换为NA
+        # }).str.strip()   # 清理前后空白字符
         
         return data
     
@@ -70,49 +70,78 @@ class EntityFusionBenchmarkLoader:
         # 1. 从数据集获取所有应该融合的实体对
         ground_truth_pairs = set()
         for _, row in self.data.iterrows():
-            # 只处理 fused_to 列中有效值的行
             if pd.notna(row['fused_to']):
-                ground_truth_pairs.add((row['original_mention'], row['fused_to']))
-        
-        # 记录地面真值数据
-        self.logger.info(f"\n地面真值统计:")
-        self.logger.info(f"需要融合的实体对数量: {len(ground_truth_pairs)}")
-        if len(ground_truth_pairs) > 0:
-            self.logger.info("示例实体对:")
-            for pair in list(ground_truth_pairs)[:5]:
-                self.logger.info(f"  {pair[0]} -> {pair[1]}")
+                # 确保实体对的顺序一致性（变体 -> 原始形式）
+                ground_truth_pairs.add((row['original_mention'].strip(), row['fused_to'].strip()))
         
         # 2. 从结果中获取所有实际融合的实体对
         predicted_pairs = set()
-        for group in results.get('fusion_groups', []):
-            if not group.get('variations'):  # 跳过没有variations的组
+        for group in results:
+            # 确保group是字典类型且包含必要的字段
+            if not isinstance(group, dict):
                 continue
-            original = group['original']
-            for variation in group['variations']:
-                predicted_pairs.add((variation, original))
+                
+            # 获取原始实体（canonical form）
+            original = group.get('original')
+            if not original:
+                continue
+                
+            # 获取变体列表
+            variations = group.get('variations', [])
+            if not variations:
+                continue
+                
+            # 添加所有变体到原始实体的映射
+            for variation in variations:
+                # 确保实体对的顺序一致性（变体 -> 原始形式）
+                predicted_pairs.add((variation.strip(), original.strip()))
         
         # 3. 计算正确的融合对数量
         correct_pairs = ground_truth_pairs & predicted_pairs
         
         # 4. 计算指标
-        precision = len(correct_pairs) / len(predicted_pairs) if predicted_pairs else 0
-        recall = len(correct_pairs) / len(ground_truth_pairs) if ground_truth_pairs else 0
+        total_predicted = len(predicted_pairs) if predicted_pairs else 0
+        total_ground_truth = len(ground_truth_pairs) if ground_truth_pairs else 0
+        total_correct = len(correct_pairs)
+        
+        precision = total_correct / total_predicted if total_predicted > 0 else 0
+        recall = total_correct / total_ground_truth if total_ground_truth > 0 else 0
         f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
 
-        # 5. 记录结果
-        self.logger.info(f"Fusion Results:")
-        self.logger.info(f"Ground Truth Pairs: {len(ground_truth_pairs)}")
-        self.logger.info(f"Predicted Pairs: {len(predicted_pairs)}")
-        self.logger.info(f"Correct Pairs: {len(correct_pairs)}")
+        # 5. 记录详细结果
+        self.logger.info("\nFusion Evaluation Results:")
+        self.logger.info(f"Ground Truth Pairs: {total_ground_truth}")
+        self.logger.info(f"Predicted Pairs: {total_predicted}")
+        self.logger.info(f"Correct Pairs: {total_correct}")
         self.logger.info(f"Precision: {precision:.4f}")
         self.logger.info(f"Recall: {recall:.4f}")
         self.logger.info(f"F1 Score: {f1:.4f}")
+        
+        # 6. 记录错误分析
+        false_positives = predicted_pairs - ground_truth_pairs
+        false_negatives = ground_truth_pairs - predicted_pairs
+        
+        if false_positives:
+            self.logger.info("\nFalse Positive Examples (up to 5):")
+            for pair in list(false_positives)[:5]:
+                self.logger.info(f"  {pair[0]} -> {pair[1]}")
+                
+        if false_negatives:
+            self.logger.info("\nFalse Negative Examples (up to 5):")
+            for pair in list(false_negatives)[:5]:
+                self.logger.info(f"  {pair[0]} -> {pair[1]}")
 
         return {
             'precision': precision,
             'recall': recall,
             'f1': f1,
-            'statistics': results.get('statistics', {})
+            'statistics': {
+                'ground_truth_pairs': total_ground_truth,
+                'predicted_pairs': total_predicted,
+                'correct_pairs': total_correct,
+                'false_positives': len(false_positives),
+                'false_negatives': len(false_negatives)
+            }
         }
 
 async def test_entity_fusion(input_file, eval_only=False, result_file=None):
@@ -124,18 +153,18 @@ async def test_entity_fusion(input_file, eval_only=False, result_file=None):
     
     if eval_only and result_file:
         logger.info(f"Loading existing results from {result_file}")
-        try:
-            with open(result_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                fusion_results = data['results']
-                feature_ids = data['feature_ids']
-                commit_ids_list = data['commit_ids_list']
-            logger.info("Calculating metrics for existing results...")
-            loader.calculate_metric(fusion_results, feature_ids, commit_ids_list)
-            return
-        except Exception as e:
-            logger.error(f"Failed to load results file: {str(e)}")
-            return
+        # try:
+        with open(result_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            fusion_results = data['results']
+            # feature_ids = data['featurse_ids']
+            # commit_ids_list = data['commit_ids_list']
+        logger.info("Calculating metrics for existing results...")
+        loader.calculate_metric(fusion_results)
+        return
+        # except Exception as e:
+        #     logger.error(f"Failed to load results file: {str(e)}")
+        #     return
     
     BATCH_SIZE = 10
     
@@ -188,7 +217,7 @@ async def test_entity_fusion(input_file, eval_only=False, result_file=None):
 if __name__ == "__main__":
     # 直接设置参数
     eval_only = False
-    result_file = 'output/test/entity_fusion_test_results_20240105_1200.json'
-    input_file = 'data/entity_fusion_benchmark_0108.xlsx'  # 融合测试数据文件
+    result_file = 'output/test/entity_fusion_test_results_20250124_0138.json'
+    input_file = 'data/entity_link_fusion_benchmark_0124.xlsx'  # 融合测试数据文件
 
     asyncio.run(test_entity_fusion(input_file=input_file, eval_only=eval_only, result_file=result_file)) 
