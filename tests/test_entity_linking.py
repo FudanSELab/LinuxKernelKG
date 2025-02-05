@@ -56,7 +56,9 @@ class EntityLinkBenchmarkLoader:
         # 分类为 true positive 的情况下，链接也正确的数量
         ol_correct, nl_correct = 0, 0
 
-        for i in range(len(self.data)):
+        # 修改循环，只取前95个数据
+        # for i in range(len(self.data)):
+        for i in range(min(95, len(self.data))):
             row = self.data.iloc[i]
             gt_overall_linkable = row['overall_linkable']
             gt_overall_wikipedia_link = row['overall_wikipedia_link'] if gt_overall_linkable else None
@@ -134,16 +136,14 @@ async def test_entity_linking(input_file, eval_only=False, result_file=None):
     
     if eval_only and result_file:
         logger.info(f"Loading existing results from {result_file}")
-        try:
-            with open(result_file, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                all_results = data['results']
-            logger.info("Calculating metrics for existing results...")
-            loader.calculate_metric(all_results)
-            return
-        except Exception as e:
-            logger.error(f"Failed to load results file: {str(e)}")
-            return
+        
+        with open(result_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            all_results = data['results']
+        logger.info("Calculating metrics for existing results...")
+        loader.calculate_metric(all_results)
+        return
+     
     
     BATCH_SIZE = 5
     
@@ -233,18 +233,18 @@ async def test_entity_linking(input_file, eval_only=False, result_file=None):
         else:
             logger.info(f"Entity: {mention:25} -> ngram LINKING FAILED")
         
-    # loader.calculate_metric(all_results)
+    loader.calculate_metric(all_results)
 
 if __name__ == "__main__":
     # 直接设置参数，不再使用命令行参数
-    eval_only = False  # 是否只进行评估
+    eval_only = True  # 是否只进行评估
     # 如果eval_only为True，这里可以指定结果文件路径
-    result_file = 'output/test/entity_linking_test_results_20241227_1723.json'    # 初始版本
+    result_file = 'output/test/entity_linking_test_results_20250123_1638.json'    # 初始版本
     # result_file = 'output/test/entity_linking_test_results_20250104_1525.json'  # 使用srctoolkit
     # result_file = 'output/test/entity_linking_test_results_20250104_2242.json'  # 使用gpt-4omini
     
     
     # input_file = 'data/features_output_20250102.xlsx'  # 测试数据文件路径
-    input_file = 'data/entity_link_benchmark_0103.xlsx'
+    input_file = 'data/entity_link_fusion_benchmark_0124.xlsx'
 
     asyncio.run(test_entity_linking(input_file=input_file, eval_only=eval_only, result_file=result_file))

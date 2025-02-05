@@ -1,3 +1,5 @@
 *.pyc
 *.json
 *.log
+wikipedia.db
+enwiki-latest-pages-articles.xml.bz2

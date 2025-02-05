@@ -68,7 +68,7 @@ async def run_pipeline():
             features = collector.collect_features()
             
             # 设置起始位置
-            start_index = 90  # 从第70个feature开始
+            start_index = 400  # 从第70个feature开始
             logger.info(f"Starting processing from feature index {start_index}")
             
             # 处理每个feature
@@ -93,13 +93,6 @@ async def run_pipeline():
                 # 5. 存储到Neo4j
                 # 处理链接结果
                 for linked_entity in matching_result.get('linking', []):
-                    # entity_props = {
-                    #     'name': linked_entity['mention'],
-                    #     'matches': linked_entity.get('matches', []),
-                    #     'total_candidates': linked_entity['total_candidates_count'],
-                    #     'entity_type': 'linked'
-                    # }
-                    # neo4j_handler.import_entity(entity_props)
                     matches = linked_entity.get('matches', [])
                     for match in matches:
                         try:
@@ -120,14 +113,6 @@ async def run_pipeline():
                 
                 # 处理融合结果
                 for fusion_groups in matching_result.get('fusion', []):
-                    
-                    # entity_props = {
-                    #     'name': fusion_group.get('original', ''),
-                    #     'variations': fusion_group.get('variations', []),
-                    #     'canonical_form': fusion_group.get('canonical_form', ''),
-                    #     'entity_type': 'fused'
-                    # }
-                    # neo4j_handler.import_entity(entity_props)
                     for fusion_group in fusion_groups:
                         try:
                             source_data = json.dumps(fusion_group.get('reference', ''))

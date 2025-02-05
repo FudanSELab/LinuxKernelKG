@@ -14,6 +14,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from utils.name_handler import NameHandler
+from selenium.common.exceptions import TimeoutException, WebDriverException
+import concurrent.futures
+from functools import partial
 
 class EntityFusion:
     def __init__(self, config):
@@ -89,14 +92,18 @@ class EntityFusion:
             if entity_data['keys'].issubset(processed_entity_keys):
                 continue
             
-            fusion_candidates = await self._get_fusion_candidates(
-                entity_name,
-                entities_with_refs,
-                processed_entity_keys,
-                entity_data['items']
-            )
+                        # 添加日志来追踪处理进度
+            self.logger.info(f"Processing entity: {entity_name}")
+            self.logger.info(f"Processed entities so far: {processed_entity_keys}")
             
-            if fusion_candidates:
+            # fusion_candidates = await self._get_fusion_candidates(
+            #     entity_name,
+            #     entities_with_refs,
+            #     processed_entity_keys,
+            #     entity_data['items']
+            # )
+            fusion_candidates = None
+            if fusion_candidates is not None:
                 group = self._create_fusion_group(
                     entity_name,
                     fusion_candidates,
@@ -119,7 +126,8 @@ class EntityFusion:
                 self._update_processed_entities(processed_entity_keys, entity_name, [])
 
         # 4. 计算统计信息
-        stats = self._evaluate_fusion_results(fusion_groups)
+        self._evaluate_reference_accuracy(entities_with_refs)
+        # stats = self._evaluate_fusion_results(fusion_groups)
         
         return fusion_groups
 
@@ -134,7 +142,7 @@ class EntityFusion:
         for i, entity in enumerate(entities):
             # TODO基于规则生成一些变体
             # normalized = self._normalize_entity_name(entity)
-            candidates = await self._generate_candidates(entity)
+            candidates = await self._generate_candidates(entity, feature_ids[i] if feature_ids else None)
             # if not normalized:
             #     continue
             
@@ -164,7 +172,8 @@ class EntityFusion:
         
     #     return normalized if normalized else None
 
-    async def _generate_candidates(self, entity):
+    @FusionCache.cached_operation('candidates')
+    async def _generate_candidates(self, entity, feature_id=None, commit_ids=None):
         """生成实体的候选变体
         
         结合规则和大模型方式生成变体：
@@ -177,8 +186,8 @@ class EntityFusion:
         # candidates.update(self._generate_naming_variants(entity))
         
         # 2. 使用大模型处理复杂缩写
-        abbreviation_variants = await self._generate_abbreviation_variants(entity)
-        candidates.update(abbreviation_variants)
+        # abbreviation_variants = await self._generate_abbreviation_variants(entity)
+        # candidates.update(abbreviation_variants)
         
         # 移除无效候选项
         candidates.discard('')
@@ -186,33 +195,77 @@ class EntityFusion:
         
         return list(candidates)
 
-    # 生成基本的命名风格变体
     def _generate_naming_variants(self, entity):
         """使用规则生成基本的命名风格变体
+        
+        Args:
+            entity (str): 输入的实体名称
+            
+        Returns:
+            set: 包含所有生成的命名风格变体的集合
+            
+        Examples:
+            >>> _generate_naming_variants("user input data")
+            {
+                'user_input_data',          # 下划线
+                'userInputData',            # 驼峰
+                'UserInputData',            # 帕斯卡
+                'user_input_data',          # 全小写下划线
+                'USER_INPUT_DATA',          # 全大写下划线
+                'UID',                      # 首字母缩写（大写）
+                'uid'                       # 首字母缩写（小写）
+            }
         """
-        variants = set()
+        if not entity or not isinstance(entity, str):
+            return set()
         
-        # 1. 空格和下划线转换
-        if ' ' in entity:
-            variants.add(entity.replace(' ', '_'))
-        if '_' in entity:
-            variants.add(entity.replace('_', ' '))
+        variants = {entity}  # 包含原始实体
         
-        # 2. 驼峰命名处理
+        # 预处理：清理多余空格
+        entity = ' '.join(entity.split())
+        
+        # 1. 分词处理
         words = self._split_identifier(entity)
+        if not words:
+            return variants
+        
+        # 2. 基本变体生成
         if len(words) > 1:
+            # 下划线形式
+            underscore = '_'.join(words)
+            variants.add(underscore)
+            
+            # 空格形式
+            space = ' '.join(words)
+            variants.add(space)
+            
             # 驼峰命名
-            variants.add(words[0].lower() + ''.join(w.capitalize() for w in words[1:]))
+            camel = words[0].lower() + ''.join(w.capitalize() for w in words[1:])
+            variants.add(camel)
+            
             # 帕斯卡命名
-            variants.add(''.join(w.capitalize() for w in words))
+            pascal = ''.join(w.capitalize() for w in words)
+            variants.add(pascal)
+            
             # 全小写下划线
-            variants.add('_'.join(w.lower() for w in words))
+            lower_underscore = '_'.join(w.lower() for w in words)
+            variants.add(lower_underscore)
+            
             # 全大写下划线
-            variants.add('_'.join(w.upper() for w in words))
-            # 首字母缩写（大写）
-            variants.add(''.join(w[0].upper() for w in words))
-            # 首字母缩写（小写）
-            variants.add(''.join(w[0].lower() for w in words))
+            upper_underscore = '_'.join(w.upper() for w in words)
+            variants.add(upper_underscore)
+            
+            # 首字母缩写（仅当单词数量在2-5之间时生成）
+            if 2 <= len(words) <= 5:
+                # 大写缩写
+                upper_acronym = ''.join(w[0].upper() for w in words)
+                variants.add(upper_acronym)
+                # 小写缩写
+                lower_acronym = ''.join(w[0].lower() for w in words)
+                variants.add(lower_acronym)
+        
+        # 3. 移除无效变体
+        variants = {v for v in variants if v and len(v.strip()) > 0}
         
         return variants
 
@@ -478,38 +531,49 @@ Variant: None
         # 去除标识符末尾的括号
         if entity.endswith('()'):
             entity = entity[:-2]
+
         base_url = 'https://elixir.bootlin.com/linux/v6.12.6/A/ident/'
-        url = f"{base_url}{entity}"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
         }
-        response = requests.get(url, headers=headers)
         
-        result = None
+        # 首先尝试原始搜索
+        url = f"{base_url}{entity}"
+        response = requests.get(url, headers=headers)
         
         if response.status_code == 200:
             print(f'在 Bootlin 找到与 "{entity}" 相关的结果。')
-            result["reference_type"]= "code",
-            result["reference_source"]= "bootlin",
-            result["references"].append({
-                "entity": entity,
-                "references": [{
+            return {
+                'entity': entity,
+                'reference_type': 'code',
+                'reference_source': 'bootlin',
+                'references': [{
                     "url": url,
                     "title": f"Bootlin search result for {entity}"
                 }]
-            })
-            result = {
+            }
+        
+        # 如果原始搜索失败，尝试下划线格式
+        underscored_entity = '_'.join(entity.split())
+        if underscored_entity != entity:  # 只有当下划线格式与原始格式不同时才尝试
+            url = f"{base_url}{underscored_entity}"
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                print(f'在 Bootlin 找到与 "{underscored_entity}" 相关的结果。')
+                return {
                     'entity': entity,
                     'reference_type': 'code',
                     'reference_source': 'bootlin',
                     'references': [{
                         "url": url,
-                        "title": f"Bootlin search result for {entity}"
+                        "title": f"Bootlin search result for {underscored_entity}"
                     }]
-            }
-        else:
-            print(f'Bootlin 请求失败，状态码: {response.status_code}')
-        return result
+                }
+            else:
+                print(f'Bootlin 搜索失败，状态码: {response.status_code}')
+        
+        return None
 
     async def _search_kernel_docs(self, entity):
         """搜索 Kernel Docs 文档引用
@@ -522,11 +586,14 @@ Variant: None
         """
         base_url = 'https://docs.kernel.org/search.html?q='
         
-        # 配置 Chrome 选项
+        # 配置 Chrome 选项，增加了 disable-gpu、固定窗口大小和远程调试端口等参数
         chrome_options = Options()
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-setuid-sandbox')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
         chrome_options.add_argument('--log-level=3')
         chrome_options.add_argument('--silent')
         chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
@@ -538,65 +605,76 @@ Variant: None
             url = f"{base_url}{entity}"
             driver.get(url)
 
-            # 设置等待时间
-            wait = WebDriverWait(driver, 5)
-
-            try:
-                # 等待搜索结果加载
-                search_summary = wait.until(
-                    EC.presence_of_element_located((By.CLASS_NAME, "search-summary"))
-                ).text
-
-                if "did not match any documents" in search_summary:
-                    self.logger.info(f'在 Kernel Docs 没有找到与 "{entity}" 相关的结果。')
-                    return None
-
-                references = []
-                links = driver.find_elements(By.TAG_NAME, "a")
-                
-                for link in links:
-                    try:
-                        result_url = link.get_attribute('href')
-                        if not result_url or not result_url.startswith('http'):
-                            continue
-                        
-                        # 获取链接页面的内容
-                        async with aiohttp.ClientSession() as session:
-                            async with session.get(result_url) as response:
-                                if response.status == 200:
-                                    content = await response.text()
-                                    if entity.lower() in content.lower():
-                                        references.append({
-                                            'url': result_url,
-                                            'title': link.text
-                                        })
-                                        self.logger.info(f'在 Kernel Docs 找到相关内容: {result_url}')
-                    except Exception as e:
-                        self.logger.warning(f"处理链接时出错: {str(e)}")
-                        continue
-
-                if references:
-                    return {
-                        'entity': entity,
-                        'reference_type': 'documentation',
-                        'reference_source': 'kernel_docs',
-                        'references': references
-                    }
-                else:
-                    self.logger.info(f'在 Kernel Docs 没有找到与 "{entity}" 相关的内容。')
-                    return None
-
-            except TimeoutException:
-                self.logger.warning(f'在 Kernel Docs 搜索超时: "{entity}"')
+            # 设置等待时间，并等待 search-summary 元素出现
+            wait = WebDriverWait(driver, 6)
+            search_summary_element = wait.until(
+                EC.presence_of_element_located((By.CLASS_NAME, "search-summary"))
+            )
+            # 获取 search-summary 的文本内容
+            search_summary = search_summary_element.text
+            # 打印 search-summary 的内容到控制台
+            print("Search Summary:", search_summary)
+            
+            if "did not match any documents" in search_summary:
+                self.logger.info(f'在 Kernel Docs 没有找到与 "{entity}" 相关的结果。')
                 return None
 
+            references = []
+            # 修改：使用正确的 class="search" 选择器定位 ul 元素
+            try:
+                search_container = WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "search"))
+                )
+                # 从 ul.search 中查找所有链接
+                links = search_container.find_elements(By.TAG_NAME, "a")
+            except Exception as exc:
+                self.logger.warning(f"无法找到 class='search' 下的链接: {exc}. 尝试从整个页面查找链接。")
+                links = driver.find_elements(By.TAG_NAME, "a")
+
+            for link in links:
+                try:
+                    result_url = link.get_attribute('href')
+                    if not result_url or not result_url.startswith('http'):
+                        continue
+                        
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(result_url) as response:
+                            if response.status == 200:
+                                content = await response.text()
+                                # 使用业务逻辑判断实体是否在目标页面中，限制最多5个引用
+                                if entity.lower() in content.lower():
+                                    references.append({
+                                        'url': result_url,
+                                        'title': link.text
+                                    })
+                                    self.logger.info(f'在 Kernel Docs 找到相关内容: {result_url}')
+                                    # 当找到5个引用后停止搜索
+                                    if len(references) >= 5:
+                                        break
+                except Exception as e:
+                    self.logger.warning(f"处理链接时出错: {str(e)}")
+                    continue
+
+            if references:
+                return {
+                    'entity': entity,
+                    'reference_type': 'documentation',
+                    'reference_source': 'kernel_docs',
+                    'references': references
+                }
+            else:
+                self.logger.info(f'在 Kernel Docs 没有找到与 "{entity}" 相关的内容。')
+                return None
+
+        except TimeoutException:
+            self.logger.warning(f'在 Kernel Docs 搜索超时: "{entity}"')
+            return None
         except WebDriverException as e:
             self.logger.error(f"WebDriver错误: {str(e)}")
             return None
         except Exception as e:
             self.logger.error(f"搜索过程中发生错误: {str(e)}")
             return None
-        
         finally:
             if driver:
                 try:
@@ -836,7 +914,7 @@ Reason: [Your reasoning]
             import pandas as pd
             
             # 读取基准数据集
-            benchmark_df = pd.read_excel('data/entity_fusion_benchmark_0108.xlsx')
+            benchmark_df = pd.read_excel('data/entity_link_fusion_benchmark_0124.xlsx')
             
             # 初始化计数器 - 代码引用
             code_metrics = {
@@ -856,7 +934,7 @@ Reason: [Your reasoning]
             
             # 遍历实体
             for entity_key, entity_data in entities.items():
-                entity_name = entity_data['entity']
+                entity_name = entity_key
                 code_metrics['total_entities'] += 1
                 doc_metrics['total_entities'] += 1
                 
@@ -866,22 +944,23 @@ Reason: [Your reasoning]
                     continue
                 
                 # 获取系统找到的引用
-                references = entity_data.get('references', [])
+                reference_data = entity_data.get('references', [])
                 system_code_refs = []
                 system_doc_refs = []
                 
-                # 分类系统找到的引用
-                system_code_refs = []
-                system_doc_refs = []
-                
-                # 直接获取references属性的值作为引用列表
-                ref_list = references.get('references', [])
-                for ref in ref_list:
-                    if ref.get('reference_type') == 'code':
-                        system_code_refs.append(ref)
-                    elif ref.get('reference_type') == 'documentation':
-                        system_doc_refs.append(ref)
-                
+                # 处理引用列表
+                for ref in reference_data:
+                    # 检查引用列表中的每个引用项
+                    reference = ref.get('references', [])
+                    if isinstance(reference, list):
+                        # 如果是列表，遍历其中的每个引用
+                        for single_ref in reference:
+                            if isinstance(single_ref, dict) and 'reference_type' in single_ref:
+                                ref_type = single_ref['reference_type']
+                                if ref_type == 'code':
+                                    system_code_refs.append(single_ref)
+                                elif ref_type == 'documentation':
+                                    system_doc_refs.append(single_ref)
                 # 评估代码引用
                 has_code_ref = not pd.isna(benchmark_row['reference(code)'].iloc[0])
                 if has_code_ref:
@@ -974,3 +1053,25 @@ Reference Evaluation Metrics:
 └────────────────────┴───────────────┴───────────────┘"""
         
         self.logger.info(metrics_table)
+
+def init_driver_with_enhanced_options():
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-setuid-sandbox")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920,1080")
+    # 建议移除远程调试参数，除非你必须用到它:
+    # chrome_options.add_argument("--remote-debugging-port=9222")
+    
+    # 如果需要指定 Chrome 的位置，可解除下面的注释
+    # chrome_options.binary_location = "/usr/bin/google-chrome"
+    
+    driver = webdriver.Chrome(options=chrome_options)
+    driver.get("https://www.google.com")
+    print("Page title:", driver.title)
+    driver.quit()
+    
+if __name__ == "__main__":
+    init_driver_with_enhanced_options()

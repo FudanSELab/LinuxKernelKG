@@ -5,15 +5,17 @@ from functools import wraps
 import logging
 
 class FusionCache:
-    def __init__(self, cache_file: str = "data/cache/fusion_cache.json"):
+    def __init__(self, cache_file: str = "data/cache/fusion_cache_131.json"):
         self.cache_file = cache_file
         self.cache_files = {
             'reference': self.cache_file,
             'fusion': self.cache_file.replace('.json', '_fusion.json'),
+            'candidates': self.cache_file.replace('.json', '_candidates.json'),
         }
         self.caches = {
             'reference': self._load_cache_file('reference'),
             'fusion': self._load_cache_file('fusion'),
+            'candidates': self._load_cache_file('candidates'),
         }
 
     def _load_cache_file(self, cache_type: str) -> dict:

@@ -93,7 +93,7 @@ class KnowledgeGraphBuilder:
             # 获取未链接的实体
             unlinked_entities = [
                 entity for entity, result in zip(entity_batch, linking_results)
-                if not result.get('linked_entity')
+                if not result.get('matches') or len(result.get('matches', [])) == 0
             ]
             
             # 对未链接实体进行融合
