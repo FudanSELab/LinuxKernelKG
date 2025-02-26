@@ -121,6 +121,10 @@ class PipelineConfig:
     # 添加 LLM 类型配置
     LLM_TYPE = LLMType.DEEPSEEK  # 修改为使用 DeepSeek
 
+    # Wikipedia 本地数据库配置
+    USE_LOCAL_WIKIPEDIA = True
+    WIKIPEDIA_DB_PATH = 'data/wikipedia.db'
+
     @classmethod
     def validate_neo4j_config(cls):
         """验证Neo4j配置"""

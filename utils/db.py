@@ -22,7 +22,7 @@ class DB:
     """
 
     QUERY_FEATURES_ALL_SQL = """
-    SELECT feature_id, text, version
+    SELECT feature_id,h1,h2,text, version
         FROM newbies_feature
         WHERE 1=1
         ORDER BY feature_id DESC;
@@ -69,7 +69,10 @@ class DB:
             raise
     
     def __del__(self):
-        self.connection.close()
+        try:
+            self.connection.close()
+        except Exception as e:
+            print(f"Error closing database connection: {e}")
 
     def get_features_info(self, feature_ids: list[int]):
         """获取一组特性的信息，包括文本，顺序与输入的 feature_ids 一致"""
@@ -106,7 +109,7 @@ class DB:
         cursor = self.connection.cursor()
         cursor.execute(self.QUERY_FEATURES_ALL_SQL)
         result = cursor.fetchall()
-        return [{"feature_id": feature_id, "feature_description": text, "version": version} for feature_id, text, version in result]
+        return [{"feature_id": feature_id, "h1": h1, "h2": h2, "feature_description": text, "version": version} for feature_id, h1, h2, text, version in result]
 
     def insert_commit_info(self, commit_id: str, commit_subject: str, commit_message: str):
         """插入一条提交的信息"""

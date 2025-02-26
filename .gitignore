@@ -3,3 +3,14 @@
 *.log
 wikipedia.db
 enwiki-latest-pages-articles.xml.bz2
+
+# 添加以下规则以避免大文件
+*.zip
+*.tar
+*.gz
+*.bz2
+*.db
+*.sqlite
+*.sqlite3
+# 限制大小超过 100MB 的文件
+# 注意：这需要配合 git lfs 使用

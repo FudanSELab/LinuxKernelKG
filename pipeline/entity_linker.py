@@ -15,6 +15,8 @@ from utils.link_cache import LinkCache
 from models.linking import LinkingCandidate
 from srctoolkit import Delimiter
 import time 
+import sqlite3
+import wikitextparser as wtp
 
 
 
@@ -23,17 +25,24 @@ class EntityLinker:
         self.logger = setup_logger('entity_linker', file_output=True)
         self.config = config
         self.llm = deepseek()
-        # 设置请求超时和重试次数
-        self.timeout = 3  # 3秒超时
-        self.max_retries = 2  # 最多重试2次
+        
+        # 修改本地数据库配置的获取方式
+        # 从配置类中直接访问属性，而不是使用 get 方法
+        self.use_local_db = getattr(self.config, 'USE_LOCAL_WIKIPEDIA', True)
+        self.db_path = getattr(self.config, 'WIKIPEDIA_DB_PATH', 'data/wikipedia.db')
+        
+        # 保持原有的Wikipedia API初始化
         self.wiki = wikipediaapi.Wikipedia(
             language='en',
             extract_format=wikipediaapi.ExtractFormat.HTML,
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
-            # proxies=self.config.WIKIPEDIA_PROXY_URL
         )
         self.link_cache = LinkCache()
      
+    def _get_db_connection(self):
+        """获取数据库连接"""
+        return sqlite3.connect(self.db_path)
+
     async def link_entity(self, entity, context, feature_id=None, commit_ids=None):
         """链接单个实体到知识库，返回所有可能的匹配结果"""
         start_time = time.time()
@@ -280,7 +289,7 @@ class EntityLinker:
         """查找匹配的章节并构建带锚点的URL
         
         Args:
-            page: 维基百科页面对象
+            page: 维基百科页面对象或字典
             term: 搜索词
             
         Returns:
@@ -331,7 +340,26 @@ class EntityLinker:
         return candidates
 
     async def _search_wikipedia(self, term: str, context: str = None, feature_id: str = None, commit_ids: list = None) -> List[LinkingCandidate]:
-        """使用wikipedia-api搜索维基百科，支持章节级别的搜索"""
+        """搜索维基百科，根据配置使用本地数据库或在线API"""
+        if self.use_local_db:
+            return await self._search_wikipedia_local(term, context, feature_id, commit_ids)
+        else:
+            return await self._search_wikipedia_online(term, context, feature_id, commit_ids)
+
+    async def _search_wikipedia_online(self, term: str, context: str = None, feature_id: str = None, commit_ids: list = None) -> List[LinkingCandidate]:
+        """使用在线Wikipedia API搜索（统一实现）
+        
+        尝试通过 Wikipedia API 获取页面，并根据是否为消歧义页面分别处理。
+        
+        Args:
+            term: 搜索词
+            context: 上下文信息
+            feature_id: 特征ID，用于缓存
+            commit_ids: 提交ID列表，用于缓存
+            
+        Returns:
+            List[LinkingCandidate]: 匹配候选项列表
+        """
         try:
             page = self.wiki.page(term)
             candidates = []
@@ -344,17 +372,127 @@ class EntityLinker:
                     term, feature_id, commit_ids, page=page, context=context
                 ))
             else:
-                # 使用装饰器处理的函数获取主搜索结果
                 page_candidates = await self._get_wikipedia_page_candidates(
-                    term, feature_id=feature_id, commit_ids=commit_ids, 
-                    page=page, context=context
+                    term, feature_id=feature_id, commit_ids=commit_ids, page=page, context=context
                 )
                 candidates.extend(page_candidates)
             
             return candidates
             
         except Exception as e:
-            self.logger.error(f"Wikipedia search failed for term {term}: {e}")
+            self.logger.error(f"Wikipedia online search failed for term {term}: {e}")
+            return []
+
+    async def _search_wikipedia_local(self, term: str, context: str = None, feature_id: str = None, commit_ids: list = None) -> List[LinkingCandidate]:
+        """使用本地数据库搜索维基百科页面"""
+        try:
+            conn = self._get_db_connection()
+            cursor = conn.cursor()
+            
+            # 首先尝试精确匹配标题
+            cursor.execute("""
+                SELECT title, content, summary, url, is_disambiguation 
+                FROM pages 
+                WHERE title = ?
+            """, (term,))
+            
+            row = cursor.fetchone()
+            if not row:
+                conn.close()
+                return []
+            
+            title, content, summary, url, is_disambiguation = row
+            
+            # 构造一个更完整的模拟页面对象
+            class FakePage:
+                def __init__(self):
+                    self.sections = []
+                    
+                def __getattr__(self, name):
+                    # 处理未定义的属性访问
+                    return None
+                    
+            page = FakePage()
+            page.title = title
+            page.content = content
+            page.summary = summary if summary else (content[:500] if content else "")
+            page.fullurl = url if url else f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
+            page.text = content
+            page.is_disambiguation = bool(is_disambiguation)
+            
+            # 解析页面内容中的章节
+            if content:
+                sections = self._parse_sections_from_content(content)
+                page.sections = sections
+            
+            candidates = []
+            if page.is_disambiguation:
+                # 如果是消歧义页面，处理所有可能的链接
+                candidates.extend(await self._handle_disambiguation_with_relevance(
+                    term, feature_id, commit_ids, page=page, context=context
+                ))
+            else:
+                # 如果不是消歧义页面，直接处理页面内容
+                page_candidates = await self._get_wikipedia_page_candidates(
+                    term, feature_id=feature_id, commit_ids=commit_ids, page=page, context=context
+                )
+                candidates.extend(page_candidates)
+            
+            conn.close()
+            return candidates
+            
+        except Exception as e:
+            self.logger.error(f"Local Wikipedia search failed for term {term}: {e}")
+            return []
+
+    def _parse_sections_from_content(self, content: str) -> list:
+        """从维基文本内容中解析章节结构
+        
+        Args:
+            content: 维基文本内容
+            
+        Returns:
+            list: 章节树结构
+        """
+        if not content:
+            return []
+        
+        try:
+            # 使用wikitextparser解析内容
+            parsed = wtp.parse(content)
+            sections = []
+            section_stack = []
+            
+            for section in parsed.sections:
+                # 获取章节级别（通过计算=号的数量）
+                level = section.level
+                
+                # 创建章节对象
+                current_section = {
+                    'title': section.title.strip() if section.title else '',
+                    'text': section.contents.strip(),
+                    'level': level,
+                    'sections': [],
+                    'parent': None
+                }
+                
+                # 根据层级关系构建章节树
+                while section_stack and section_stack[-1]['level'] >= level:
+                    section_stack.pop()
+                    
+                if section_stack:
+                    parent = section_stack[-1]
+                    current_section['parent'] = parent
+                    parent['sections'].append(current_section)
+                else:
+                    sections.append(current_section)
+                    
+                section_stack.append(current_section)
+            
+            return sections
+            
+        except Exception as e:
+            self.logger.error(f"Failed to parse sections from content: {e}")
             return []
 
     def _is_disambiguation_page(self, page) -> bool:
@@ -413,11 +551,17 @@ class EntityLinker:
         
         return filtered_candidates
 
-    def _handle_disambiguation_page(self,mention, disambig_page) -> List[LinkingCandidate]:
-        """处理消歧义页面，提取所有可能的具体页面"""
+    def _handle_disambiguation_page(self, mention, disambig_page) -> List[LinkingCandidate]:
+        """处理消歧义页面"""
+        if self.use_local_db:
+            return self._handle_disambiguation_page_local(mention, disambig_page)
+        else:
+            return self._handle_disambiguation_page_online(mention, disambig_page)
+
+    def _handle_disambiguation_page_online(self, mention, disambig_page) -> List[LinkingCandidate]:
+        """使用在线API处理消歧义页面（原有逻辑）"""
         candidates = []
         try:
-            # 获取页面链接
             links = disambig_page.links
             
             for title in list(links.keys()):
@@ -435,6 +579,63 @@ class EntityLinker:
                 )
                 candidates.append(candidate)
                 
+            return candidates
+            
+        except Exception as e:
+            self.logger.error(f"Failed to handle disambiguation page {disambig_page.title}: {e}")
+            return []
+
+    def _handle_disambiguation_page_local(self, mention, disambig_page) -> List[LinkingCandidate]:
+        """使用本地数据库处理消歧义页面
+        
+        Args:
+            mention: 原始提及词
+            disambig_page: 消歧义页面对象
+            
+        Returns:
+            List[LinkingCandidate]: 候选项列表
+        """
+        candidates = []
+        try:
+            conn = self._get_db_connection()
+            cursor = conn.cursor()
+            
+            # 使用wikitextparser解析页面内容中的维基链接
+            parsed = wtp.parse(disambig_page.content)
+            links = set()
+            
+            # 收集所有维基链接
+            for wikilink in parsed.wikilinks:
+                # 跳过分类链接和文件链接
+                if not wikilink.title.startswith(('Category:', 'File:', 'Image:')):
+                    # 处理带有显示文本的链接（例如：[[实际链接|显示文本]]）
+                    link_title = wikilink.title.split('|')[0].strip()
+                    links.add(link_title)
+            
+            # 查询所有链接指向的非消歧义页面
+            for link_title in links:
+                cursor.execute("""
+                    SELECT title, content, summary, url 
+                    FROM pages 
+                    WHERE title = ? AND NOT is_disambiguation
+                """, (link_title,))
+                
+                result = cursor.fetchone()
+                if result:
+                    title, content, summary, url = result
+                    
+                    # 创建候选项
+                    candidate = LinkingCandidate(
+                        mention=mention,
+                        title=title,
+                        url=url or f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}",
+                        summary=summary or (content[:200] if content else ''),
+                        confidence=0.0,
+                        is_disambiguation=False
+                    )
+                    candidates.append(candidate)
+            
+            conn.close()
             return candidates
             
         except Exception as e:

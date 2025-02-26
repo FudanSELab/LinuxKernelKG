@@ -237,7 +237,7 @@ async def test_entity_linking(input_file, eval_only=False, result_file=None):
 
 if __name__ == "__main__":
     # 直接设置参数，不再使用命令行参数
-    eval_only = True  # 是否只进行评估
+    eval_only = False  # 是否只进行评估
     # 如果eval_only为True，这里可以指定结果文件路径
     result_file = 'output/test/entity_linking_test_results_20250123_1638.json'    # 初始版本
     # result_file = 'output/test/entity_linking_test_results_20250104_1525.json'  # 使用srctoolkit

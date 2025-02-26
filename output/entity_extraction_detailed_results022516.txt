@@ -1,0 +1,1118 @@
+实体抽取详细结果
+================================================================================
+
+Feature ID: 9072.0
+Feature Description: CIFS: Introduce credit-based flow control
+Benchmark Mentions (2): flow control, cifs
+Extracted Entities (3): flow control, cifs, credit-based
+Correctly Extracted (TP=2): flow control, cifs
+Missed Entities (FN=0): 
+Extra Entities (FP=1): credit-based
+--------------------------------------------------------------------------------
+
+Feature ID: 11433.0
+Feature Description: ftdi_sio: Added custom PID for  products
+Benchmark Mentions (2): pid, ftdi
+Extracted Entities (2): ftdi_sio, pid
+Correctly Extracted (TP=1): pid
+Missed Entities (FN=1): ftdi
+Extra Entities (FP=1): ftdi_sio
+--------------------------------------------------------------------------------
+
+Feature ID: 569.0
+Feature Description: PCMCIA: core socket sysfs support,export card type
+Benchmark Mentions (4): socket, sysfs, card type, pcmcia
+Extracted Entities (3): socket, sysfs, pcmcia
+Correctly Extracted (TP=3): socket, sysfs, pcmcia
+Missed Entities (FN=1): card type
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 41132.0
+Feature Description: tree-checker: add type and sequence check for inline backrefs
+Benchmark Mentions (2): tree-checker, backrefs
+Extracted Entities (3): inline, tree-checker, backrefs
+Correctly Extracted (TP=2): tree-checker, backrefs
+Missed Entities (FN=0): 
+Extra Entities (FP=1): inline
+--------------------------------------------------------------------------------
+
+Feature ID: 2932.0
+Feature Description: bcm43xx: add PCI-E code
+Benchmark Mentions (2): bcm43xx, pci-e
+Extracted Entities (3): bcm43xx, code, pci-e
+Correctly Extracted (TP=2): bcm43xx, pci-e
+Missed Entities (FN=0): 
+Extra Entities (FP=1): code
+--------------------------------------------------------------------------------
+
+Feature ID: 40781.0
+Feature Description: btnxpuart: Improve inband Independent Reset handling
+Benchmark Mentions (2): reset, btnxpuart
+Extracted Entities (3): independent reset, inband, btnxpuart
+Correctly Extracted (TP=1): btnxpuart
+Missed Entities (FN=1): reset
+Extra Entities (FP=2): independent reset, inband
+--------------------------------------------------------------------------------
+
+Feature ID: 26119.0
+Feature Description: pxa2xx: Add support for Intel Comet Lake PCH-V
+Benchmark Mentions (3): pch, intel comet lake, pxa2xx
+Extracted Entities (4): comet lake, pch-v, pxa2xx, intel
+Correctly Extracted (TP=1): pxa2xx
+Missed Entities (FN=2): pch, intel comet lake
+Extra Entities (FP=3): intel, pch-v, comet lake
+--------------------------------------------------------------------------------
+
+Feature ID: 5271.0
+Feature Description: Create "idle=halt" bootparam
+Benchmark Mentions (2): bootparam, idle
+Extracted Entities (3): acpi, bootparam, idle
+Correctly Extracted (TP=2): bootparam, idle
+Missed Entities (FN=0): 
+Extra Entities (FP=1): acpi
+--------------------------------------------------------------------------------
+
+Feature ID: 21521.0
+Feature Description: Add audit support
+Benchmark Mentions (1): audit
+Extracted Entities (1): audit
+Correctly Extracted (TP=1): audit
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 29392.0
+Feature Description: packet protocol: make packet_fanout.arr size configurable up to 64K
+Benchmark Mentions (3): arr, packet_fanout, protocol
+Extracted Entities (4): packet_fanout.arr, 64k, packet, protocol
+Correctly Extracted (TP=1): protocol
+Missed Entities (FN=2): arr, packet_fanout
+Extra Entities (FP=3): 64k, packet, packet_fanout.arr
+--------------------------------------------------------------------------------
+
+Feature ID: 28041.0
+Feature Description: bcm63xx-usbh: Add BCM63xx USBH driver
+Benchmark Mentions (3): driver, bcm63xx, usbh
+Extracted Entities (2): bcm63xx, usbh
+Correctly Extracted (TP=2): bcm63xx, usbh
+Missed Entities (FN=1): driver
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 2667.0
+Feature Description: Memory management Allow the removal of ZONE_DMA32 for non x86_64 architectures and ZONE_HIGHMEM for arches not using highmem (like 64 bit architectures). While they're not used on those arches they eat some memory and they've no sense on those platforms anyway so make it possible to disable them at compile time
+Benchmark Mentions (7): compile time, 64 bit architectures, memory management, zone_highmem, highmem, zone_dma32, x86_64
+Extracted Entities (4): zone_dma32, zone_highmem, x86_64, highmem
+Correctly Extracted (TP=4): zone_dma32, zone_highmem, x86_64, highmem
+Missed Entities (FN=3): compile time, memory management, 64 bit architectures
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 44678.0
+Feature Description: Device Tree Sources Add Nothing Phone (1) support
+Benchmark Mentions (2): device tree, nothing phone (1)
+Extracted Entities (2): device tree, nothing phone (1)
+Correctly Extracted (TP=2): device tree, nothing phone (1)
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 34415.0
+Feature Description: si2157: add ATV support for si2158
+Benchmark Mentions (2): si2157, atv
+Extracted Entities (3): si2157, si2158, atv
+Correctly Extracted (TP=2): si2157, atv
+Missed Entities (FN=0): 
+Extra Entities (FP=1): si2158
+--------------------------------------------------------------------------------
+
+Feature ID: 36853.0
+Feature Description: fortify: Add run-time WARN for cross-field memcpy()
+Benchmark Mentions (3): fortify, run-time, memcpy
+Extracted Entities (3): fortify, memcpy, warn
+Correctly Extracted (TP=2): fortify, memcpy
+Missed Entities (FN=1): run-time
+Extra Entities (FP=1): warn
+--------------------------------------------------------------------------------
+
+Feature ID: 28486.0
+Feature Description: layerscape: Add EP mode support for ls1088a and ls2088a
+Benchmark Mentions (4): layerscape, ls2088a, ep mode, ls1088a
+Extracted Entities (4): layerscape, ls2088a, ep mode, ls1088a
+Correctly Extracted (TP=4): layerscape, ls2088a, ep mode, ls1088a
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 1895.0
+Feature Description: qdio V=V pass-through. QDIO and Hiper Sockets processing in z/VM V=V guest environments (as well as V=R with z/VM running in LPAR mode) requires shadowing of all QDIO architecture queue elements.  Especially the shadowing of SBALs and SLSBs structures in the hypervisor, and the need to issue SIGA SYNC operations to observe state changes, eventually causes significant CPU processing overhead in the hypervisor. The QDIO pass-through support for V=V guests avoids the shadowing of SBALs and SLSBs. This significantly reduces the hypervisor overhead for QDIO based I/O
+Benchmark Mentions (18): siga sync, architecture, hiper sockets, queue, hypervisor, i/o, guest environments, qdio, lpar, state, issue, structures, shadowing, sbals and slsbs, z/vm, elements, v=v v=r, cpu
+Extracted Entities (5): hiper sockets, hypervisor, sbals, slsbs, qdio
+Correctly Extracted (TP=3): qdio, hiper sockets, hypervisor
+Missed Entities (FN=15): architecture, siga sync, queue, i/o, guest environments, state, lpar, issue, structures, shadowing, sbals and slsbs, z/vm, elements, v=v v=r, cpu
+Extra Entities (FP=2): slsbs, sbals
+--------------------------------------------------------------------------------
+
+Feature ID: 37556.0
+Feature Description: F2FS Introduce max_ordered_discard sysfs node
+Benchmark Mentions (3): max_ordered_discard, sysfs, f2fs
+Extracted Entities (3): max_ordered_discard, sysfs, f2fs
+Correctly Extracted (TP=3): max_ordered_discard, sysfs, f2fs
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 24600.0
+Feature Description: qeth: add TX NAPI support for IQD devices
+Benchmark Mentions (5): devices, tx, qeth, iqd, napi
+Extracted Entities (4): napi, tx, qeth, iqd devices
+Correctly Extracted (TP=3): qeth, tx, napi
+Missed Entities (FN=2): devices, iqd
+Extra Entities (FP=1): iqd devices
+--------------------------------------------------------------------------------
+
+Feature ID: 17113.0
+Feature Description: POWERPC Implement STRICT_KERNEL_RWX on PPC32
+Benchmark Mentions (3): ppc32, powerpc, strict_kernel_rwx
+Extracted Entities (3): ppc32, powerpc, strict_kernel_rwx
+Correctly Extracted (TP=3): ppc32, powerpc, strict_kernel_rwx
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 34815.0
+Feature Description: uvcvideo: Add support for Apple T2-attached FaceTime HD Camera
+Benchmark Mentions (5): camera, uvcvideo, hd, facetime, apple t2
+Extracted Entities (4): t2, facetime hd camera, apple, uvcvideo
+Correctly Extracted (TP=1): uvcvideo
+Missed Entities (FN=4): facetime, hd, camera, apple t2
+Extra Entities (FP=3): t2, facetime hd camera, apple
+--------------------------------------------------------------------------------
+
+Feature ID: 39846.0
+Feature Description: New boards (32 bit) Endian 4i Edge 200 based on the armv5 Marvell Kirkwood chip
+Benchmark Mentions (5): boards, endian 4i edge 200, marvell kirkwood chip, armv5, 32 bit
+Extracted Entities (5): marvell kirkwood, endian, 4i, armv5, edge 200
+Correctly Extracted (TP=1): armv5
+Missed Entities (FN=4): endian 4i edge 200, 32 bit, marvell kirkwood chip, boards
+Extra Entities (FP=4): endian, edge 200, marvell kirkwood, 4i
+--------------------------------------------------------------------------------
+
+Feature ID: 44377.0
+Feature Description: imx: clk-audiomix: Improvement for audiomix
+Benchmark Mentions (3): audiomix, imx, clk-audiomix
+Extracted Entities (3): audiomix, imx, clk-audiomix
+Correctly Extracted (TP=3): audiomix, imx, clk-audiomix
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 8287.0
+Feature Description: Add support for Stantum multitouch panel
+Benchmark Mentions (2): stantum multitouch panel, touch panel
+Extracted Entities (3): stantum, panel, multitouch
+Correctly Extracted (TP=0): 
+Missed Entities (FN=2): stantum multitouch panel, touch panel
+Extra Entities (FP=3): stantum, panel, multitouch
+--------------------------------------------------------------------------------
+
+Feature ID: 33435.0
+Feature Description: Intel Use Transparent Hugepages when IOMMU is enabled
+Benchmark Mentions (3): iommu, transparent hugepages, intel
+Extracted Entities (3): iommu, transparent hugepages, intel
+Correctly Extracted (TP=3): iommu, transparent hugepages, intel
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 12008.0
+Feature Description: openvswitch Introduce a new flag  for operations which should be allowed inside a user namespace
+Benchmark Mentions (3): openvswitch, user namespace, flag
+Extracted Entities (3): openvswitch, user namespace, flag
+Correctly Extracted (TP=3): openvswitch, user namespace, flag
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 37508.0
+Feature Description: reset: add polarfire soc reset support
+Benchmark Mentions (2): soc, reset
+Extracted Entities (3): polarfire, soc, reset
+Correctly Extracted (TP=2): soc, reset
+Missed Entities (FN=0): 
+Extra Entities (FP=1): polarfire
+--------------------------------------------------------------------------------
+
+Feature ID: 36256.0
+Feature Description: Scheduler Improve NUMA imbalance behavior. On certain systems with spare capacity initial placement of tasks is non-deterministic and such an artificial placement imbalance can persist for a long time hurting performance. Note that some performance regressions were reported against this caused by workloads that are not memory bandwith limited which benefit from the artificial locality of the placement bug(s); the choice has been done that consistency is better than random workload benefits from non-deterministic bugs
+Benchmark Mentions (8): tasks, memory bandwidth, performance, scheduler, bug, random, performance regressions, numa
+Extracted Entities (4): numa, performance, workloads, scheduler
+Correctly Extracted (TP=3): performance, scheduler, numa
+Missed Entities (FN=5): tasks, memory bandwidth, bug, random, performance regressions
+Extra Entities (FP=1): workloads
+--------------------------------------------------------------------------------
+
+Feature ID: 3187.0
+Feature Description: Add support for ACPI controlled removable drive bays such as the IBM ultrabay or the Dell Module Bay
+Benchmark Mentions (5): acpi, dell module bay, driver, ibm ultrabay, drive bays
+Extracted Entities (4): acpi, dell module bay, ibm ultrabay, removable drive bays
+Correctly Extracted (TP=3): acpi, dell module bay, ibm ultrabay
+Missed Entities (FN=2): driver, drive bays
+Extra Entities (FP=1): removable drive bays
+--------------------------------------------------------------------------------
+
+Feature ID: 14123.0
+Feature Description: devfreq support rockchip dfi controller
+Benchmark Mentions (3): dfi controller, rockchip, devfreq
+Extracted Entities (3): dfi controller, rockchip, devfreq
+Correctly Extracted (TP=3): dfi controller, rockchip, devfreq
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 7896.0
+Feature Description: soc-camera: add a new driver for the RJ54N1CB0C camera sensor from Sharp  add mt9t112 camera driver
+Benchmark Mentions (6): driver, mt9t112, soc-camera, sharp, camera driver, rj54n1cb0c camera sensor
+Extracted Entities (4): rj54n1cb0c, sharp, mt9t112, soc-camera
+Correctly Extracted (TP=3): sharp, soc-camera, mt9t112
+Missed Entities (FN=3): camera driver, rj54n1cb0c camera sensor, driver
+Extra Entities (FP=1): rj54n1cb0c
+--------------------------------------------------------------------------------
+
+Feature ID: 20399.0
+Feature Description: lan743x: Add RSS support
+Benchmark Mentions (2): lan743x, rss
+Extracted Entities (2): lan743x, rss
+Correctly Extracted (TP=2): lan743x, rss
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 42360.0
+Feature Description: lib sort: Optimize the number of swaps and comparisons
+Benchmark Mentions (4): comparisons, lib, sort, swaps
+Extracted Entities (1): sort
+Correctly Extracted (TP=1): sort
+Missed Entities (FN=3): comparisons, lib, swaps
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 13400.0
+Feature Description: ath10k: add pdev param support to enable/disable btcoex
+Benchmark Mentions (3): ath10k, btcoex, pdev param
+Extracted Entities (3): ath10k, pdev, btcoex
+Correctly Extracted (TP=2): ath10k, btcoex
+Missed Entities (FN=1): pdev param
+Extra Entities (FP=1): pdev
+--------------------------------------------------------------------------------
+
+Feature ID: 5453.0
+Feature Description: PPC Make the 64-bit kernel as a position-independent executable
+Benchmark Mentions (2): 64-bit kernel, ppc
+Extracted Entities (3): 64-bit kernel, ppc, position-independent executable
+Correctly Extracted (TP=2): 64-bit kernel, ppc
+Missed Entities (FN=0): 
+Extra Entities (FP=1): position-independent executable
+--------------------------------------------------------------------------------
+
+Feature ID: 27935.0
+Feature Description: Support watchdog with longer timeout period
+Benchmark Mentions (2): watchdog, timeout period
+Extracted Entities (2): watchdog, timeout
+Correctly Extracted (TP=1): watchdog
+Missed Entities (FN=1): timeout period
+Extra Entities (FP=1): timeout
+--------------------------------------------------------------------------------
+
+Feature ID: 16696.0
+Feature Description: mediatek: add spi support for mt7622 IC  and for mt2712 IC
+Benchmark Mentions (5): mediatek, mt2712, mt7622, ic, spi
+Extracted Entities (4): mediatek, mt2712, mt7622, spi
+Correctly Extracted (TP=4): mediatek, mt7622, mt2712, spi
+Missed Entities (FN=1): ic
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 33364.0
+Feature Description: (FEATURED) Support Intel Advanced Matrix Extensions (AMX). These extensions will be shipping on servers soon. AMX consists of configurable TMM "TILE" registers plus new CPU instructions that operate on them. TMUL (Tile matrix MULtiply) is the first operator to take advantage of the new registers and we anticipate additional instructions in the future. Neither AMX state nor TMUL instructions depend on AVX
+Benchmark Mentions (8): amx, instruction, avx, tmul, cpu instructions, registers, tmm, intel advanced matrix extensions
+Extracted Entities (7): amx, tile, avx, tmul, cpu, advanced matrix extensions, intel
+Correctly Extracted (TP=3): avx, tmul, amx
+Missed Entities (FN=5): instruction, tmm, registers, cpu instructions, intel advanced matrix extensions
+Extra Entities (FP=4): tile, cpu, advanced matrix extensions, intel
+--------------------------------------------------------------------------------
+
+Feature ID: 12851.0
+Feature Description: ASoC tlv320aic32x4: Add 96k sample rate  add SPI support
+Benchmark Mentions (4): tlv320aic32x4, 96k sample rate, asoc, spi
+Extracted Entities (4): tlv320aic32x4, spi, asoc, 96k
+Correctly Extracted (TP=3): tlv320aic32x4, asoc, spi
+Missed Entities (FN=1): 96k sample rate
+Extra Entities (FP=1): 96k
+--------------------------------------------------------------------------------
+
+Feature ID: 8153.0
+Feature Description: SATA/PATA ata_piix: IDE Mode SATA patch for Intel Cougar Point DeviceIDs
+Benchmark Mentions (6): sata, ata_piix, intel cougar point, deviceids, ide mode, pata
+Extracted Entities (6): sata, intel cougar point deviceids, sata patch, ata_piix, pata, ide
+Correctly Extracted (TP=3): sata, ata_piix, pata
+Missed Entities (FN=3): intel cougar point, deviceids, ide mode
+Extra Entities (FP=3): intel cougar point deviceids, sata patch, ide
+--------------------------------------------------------------------------------
+
+Feature ID: 808.0
+Feature Description: CRYPTO: Add Tnepres cipher support
+Benchmark Mentions (3): cipher, tnepres, crypto
+Extracted Entities (3): cipher, tnepres, crypto
+Correctly Extracted (TP=3): cipher, crypto, tnepres
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 2776.0
+Feature Description: WE-21 support  and support for hostap  atmel  ipw2100  prism54  orinoco  airo  wl3501  zd1211rw  bcm43xx  ray_cs  ipw2200  zd1201
+Benchmark Mentions (13): zd1211rw, airo, zd1201, hostap, ray_cs, atmel, bcm43xx, ipw2200, orinoco, we-21, prism54, wl3501, ipw2100
+Extracted Entities (11): zd1211rw, airo, hostap, ray_cs, bcm43xx, ipw2200, orinoco, we-21, prism54, wl3501, ipw2100
+Correctly Extracted (TP=11): zd1211rw, airo, hostap, ray_cs, bcm43xx, ipw2200, orinoco, we-21, prism54, wl3501, ipw2100
+Missed Entities (FN=2): zd1201, atmel
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 44848.0
+Feature Description: Add support to PHYLINK for LAN743x/PCI11x1x chips
+Benchmark Mentions (3): lan743x, phylink, pci11x1x
+Extracted Entities (3): lan743x, phylink, pci11x1x
+Correctly Extracted (TP=3): lan743x, phylink, pci11x1x
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 10871.0
+Feature Description: UBI: Dynamically allocate minor numbers
+Benchmark Mentions (2): minor numbers, ubi
+Extracted Entities (2): minor numbers, ubi
+Correctly Extracted (TP=2): minor numbers, ubi
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 14520.0
+Feature Description: nvme Add NXP LPC18xx OTP driver
+Benchmark Mentions (5): otp, lpc18xx, driver, nvme, nxp
+Extracted Entities (4): otp, nxp, lpc18xx, nvme
+Correctly Extracted (TP=4): otp, nxp, lpc18xx, nvme
+Missed Entities (FN=1): driver
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 33258.0
+Feature Description: phy: supported interfaces bitmap
+Benchmark Mentions (3): supported interfaces, phy, bitmap
+Extracted Entities (3): phy, interfaces, bitmap
+Correctly Extracted (TP=2): phy, bitmap
+Missed Entities (FN=1): supported interfaces
+Extra Entities (FP=1): interfaces
+--------------------------------------------------------------------------------
+
+Feature ID: 38669.0
+Feature Description: RDMA/hns: Support cqe inline in user space
+Benchmark Mentions (4): cqe, user space, rdma, hns
+Extracted Entities (4): cqe, user space, rdma, hns
+Correctly Extracted (TP=4): cqe, rdma, user space, hns
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 33610.0
+Feature Description: r8169: Add device 10ec:8162 to driver r8169
+Benchmark Mentions (2): driver, r8169
+Extracted Entities (3): device, 10ec:8162, r8169
+Correctly Extracted (TP=1): r8169
+Missed Entities (FN=1): driver
+Extra Entities (FP=2): 10ec:8162, device
+--------------------------------------------------------------------------------
+
+Feature ID: 35685.0
+Feature Description: PM / devfreq: rk3399_dmc: Support new disable-freq properties
+Benchmark Mentions (2): pm, devfreq
+Extracted Entities (4): pm, rk3399_dmc, disable-freq properties, devfreq
+Correctly Extracted (TP=2): pm, devfreq
+Missed Entities (FN=0): 
+Extra Entities (FP=2): rk3399_dmc, disable-freq properties
+--------------------------------------------------------------------------------
+
+Feature ID: 23977.0
+Feature Description: mt7615 Add Smart Carrier Sense support
+Benchmark Mentions (1): mt7615
+Extracted Entities (3): smart carrier sense, networking, mt7615
+Correctly Extracted (TP=1): mt7615
+Missed Entities (FN=0): 
+Extra Entities (FP=2): smart carrier sense, networking
+--------------------------------------------------------------------------------
+
+Feature ID: 31637.0
+Feature Description: acpi_als: Add trigger support
+Benchmark Mentions (2): acpi, acpi_als
+Extracted Entities (3): support, trigger, acpi_als
+Correctly Extracted (TP=1): acpi_als
+Missed Entities (FN=1): acpi
+Extra Entities (FP=2): support, trigger
+--------------------------------------------------------------------------------
+
+Feature ID: 41.0
+Feature Description: Add module support for m68knommu
+Benchmark Mentions (1): m68knommu
+Extracted Entities (2): m68knommu, module support
+Correctly Extracted (TP=1): m68knommu
+Missed Entities (FN=0): 
+Extra Entities (FP=1): module support
+--------------------------------------------------------------------------------
+
+Feature ID: 315.0
+Feature Description: TCP: Add tcp_default_win_scale sysctl
+Benchmark Mentions (2): sysctl, tcp
+Extracted Entities (2): tcp_default_win_scale, tcp
+Correctly Extracted (TP=1): tcp
+Missed Entities (FN=1): sysctl
+Extra Entities (FP=1): tcp_default_win_scale
+--------------------------------------------------------------------------------
+
+Feature ID: 9779.0
+Feature Description: Add support to aio ring pages migration
+Benchmark Mentions (4): aio, pages migration, pages, aio ring
+Extracted Entities (3): aio, ring, pages
+Correctly Extracted (TP=2): aio, pages
+Missed Entities (FN=2): aio ring, pages migration
+Extra Entities (FP=1): ring
+--------------------------------------------------------------------------------
+
+Feature ID: 455.0
+Feature Description: cfq sysfs support
+Benchmark Mentions (2): cfq, sysfs
+Extracted Entities (2): cfq, sysfs
+Correctly Extracted (TP=2): cfq, sysfs
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 32715.0
+Feature Description: Support allocating gigantic hugepages using CMA
+Benchmark Mentions (2): hugepages, cma
+Extracted Entities (2): hugepages, cma
+Correctly Extracted (TP=2): hugepages, cma
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 44321.0
+Feature Description: adc: ad4695: new driver for AD4695 and similar ADCs
+Benchmark Mentions (3): adc, driver, ad4695
+Extracted Entities (3): adcs, adc, ad4695
+Correctly Extracted (TP=2): adc, ad4695
+Missed Entities (FN=1): driver
+Extra Entities (FP=1): adcs
+--------------------------------------------------------------------------------
+
+Feature ID: 34197.0
+Feature Description: hibernate: Allow ACPI hardware signature to be honoured
+Benchmark Mentions (3): acpi, hardware signature, hibernate
+Extracted Entities (3): acpi, hardware signature, hibernate
+Correctly Extracted (TP=3): acpi, hardware signature, hibernate
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 11147.0
+Feature Description: ARM64 Add support for Privileged Access Never (PAN; part of the ARMv8.1 Extensions) prevents the kernel or hypervisor from accessing user-space (EL0) memory directly
+Benchmark Mentions (7): kernel, el0, hypervisor, arm64, privileged access never, pan, user-space memory
+Extracted Entities (3): armv8.1 extensions, privileged access never, arm64
+Correctly Extracted (TP=2): privileged access never, arm64
+Missed Entities (FN=5): kernel, el0, hypervisor, pan, user-space memory
+Extra Entities (FP=1): armv8.1 extensions
+--------------------------------------------------------------------------------
+
+Feature ID: 33504.0
+Feature Description: can: peak_usb: CANFD: store 64-bits hw timestamps
+Benchmark Mentions (4): can, peak_usb, canfd, hw timestamps
+Extracted Entities (3): hw timestamps, peak_usb, canfd
+Correctly Extracted (TP=3): hw timestamps, peak_usb, canfd
+Missed Entities (FN=1): can
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 7742.0
+Feature Description: Microblaze Core oprofile configs and hooks
+Benchmark Mentions (3): oprofile, microblaze core, hooks
+Extracted Entities (5): microblaze, core, hooks, oprofile, configs
+Correctly Extracted (TP=2): oprofile, hooks
+Missed Entities (FN=1): microblaze core
+Extra Entities (FP=3): core, microblaze, configs
+--------------------------------------------------------------------------------
+
+Feature ID: 448.0
+Feature Description: Allow x86 to reenable interrupts on lock contention
+Benchmark Mentions (3): interrupts, x86, lock contention
+Extracted Entities (3): interrupts, x86, lock contention
+Correctly Extracted (TP=3): interrupts, x86, lock contention
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 9491.0
+Feature Description: team: add ethtool support
+Benchmark Mentions (2): team, ethtool
+Extracted Entities (2): team, ethtool
+Correctly Extracted (TP=2): team, ethtool
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 15137.0
+Feature Description: mlx5 Expose vlan offloads capabilities
+Benchmark Mentions (3): offloads, mlx5, vlan
+Extracted Entities (3): offloads, mlx5, vlan
+Correctly Extracted (TP=3): offloads, mlx5, vlan
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 41737.0
+Feature Description: evm: disable EVM on overlayfs
+Benchmark Mentions (2): overlayfs, evm
+Extracted Entities (2): overlayfs, evm
+Correctly Extracted (TP=2): overlayfs, evm
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 21440.0
+Feature Description: NC-SI (Network Controller Sideband Interface) Add NCSI Mellanox OEM command
+Benchmark Mentions (3): network controller sideband interface, mellanox, nc-si
+Extracted Entities (3): ncsi, mellanox, nc-si
+Correctly Extracted (TP=2): mellanox, nc-si
+Missed Entities (FN=1): network controller sideband interface
+Extra Entities (FP=1): ncsi
+--------------------------------------------------------------------------------
+
+Feature ID: 33011.0
+Feature Description: imx8ulp: Add pinctrl driver support
+Benchmark Mentions (3): pinctrl, imx8ulp, driver
+Extracted Entities (3): pinctrl, imx8ulp, driver
+Correctly Extracted (TP=3): pinctrl, imx8ulp, driver
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 24424.0
+Feature Description: Fix minutes or hours long stalls when setting nr_hugepages to too high values.
+Benchmark Mentions (1): nr_hugepages
+Extracted Entities (2): stalls, nr_hugepages
+Correctly Extracted (TP=1): nr_hugepages
+Missed Entities (FN=0): 
+Extra Entities (FP=1): stalls
+--------------------------------------------------------------------------------
+
+Feature ID: 27220.0
+Feature Description: Device Tree updates Add Allwinner A20 based Olimex A20-OLinuXino-LIME-eMMC SBC
+Benchmark Mentions (3): device tree, sbc, allwinner a20
+Extracted Entities (4): device tree, sbc, allwinner a20, olimex a20-olinuxino-lime-emmc
+Correctly Extracted (TP=3): device tree, sbc, allwinner a20
+Missed Entities (FN=0): 
+Extra Entities (FP=1): olimex a20-olinuxino-lime-emmc
+--------------------------------------------------------------------------------
+
+Feature ID: 14548.0
+Feature Description: slicoss: add slicoss gigabit Ethernet driver
+Benchmark Mentions (3): slicoss, gigabit ethernet, ethernet
+Extracted Entities (3): slicoss, driver, gigabit ethernet
+Correctly Extracted (TP=2): slicoss, gigabit ethernet
+Missed Entities (FN=1): ethernet
+Extra Entities (FP=1): driver
+--------------------------------------------------------------------------------
+
+Feature ID: 29953.0
+Feature Description: iommu/io-pgtable-arm: Add support to use system cache
+Benchmark Mentions (4): arm, iommu, io-pgtable, cache
+Extracted Entities (3): iommu, io-pgtable-arm, system cache
+Correctly Extracted (TP=1): iommu
+Missed Entities (FN=3): arm, cache, io-pgtable
+Extra Entities (FP=2): io-pgtable-arm, system cache
+--------------------------------------------------------------------------------
+
+Feature ID: 24536.0
+Feature Description: crypto aes-ce: provide a synchronous version of ctr(aes)
+Benchmark Mentions (3): aes, crypto, ctr
+Extracted Entities (3): aes-ce, crypto, ctr(aes)
+Correctly Extracted (TP=1): crypto
+Missed Entities (FN=2): aes, ctr
+Extra Entities (FP=2): aes-ce, ctr(aes)
+--------------------------------------------------------------------------------
+
+Feature ID: 39728.0
+Feature Description: EXT4 Multiblock allocator improvements
+Benchmark Mentions (2): multiblock allocator, ext4
+Extracted Entities (3): allocator, multiblock allocator, ext4
+Correctly Extracted (TP=2): multiblock allocator, ext4
+Missed Entities (FN=0): 
+Extra Entities (FP=1): allocator
+--------------------------------------------------------------------------------
+
+Feature ID: 27907.0
+Feature Description: HID lenovo: Add ThinkPad 10 Ultrabook Keyboard support
+Benchmark Mentions (3): keyboard , lenovo, hid
+Extracted Entities (4): ultrabook keyboard, thinkpad, lenovo, hid
+Correctly Extracted (TP=2): lenovo, hid
+Missed Entities (FN=1): keyboard 
+Extra Entities (FP=2): ultrabook keyboard, thinkpad
+--------------------------------------------------------------------------------
+
+Feature ID: 20952.0
+Feature Description: sun4i R40 HDMI support
+Benchmark Mentions (3): hdmi, sun4i, r40
+Extracted Entities (2): sun4i r40, hdmi
+Correctly Extracted (TP=1): hdmi
+Missed Entities (FN=2): sun4i, r40
+Extra Entities (FP=1): sun4i r40
+--------------------------------------------------------------------------------
+
+Feature ID: 5532.0
+Feature Description: Suspend support for AMD K7 GART driver
+Benchmark Mentions (5): amd, driver, suspend, gart, amd k7
+Extracted Entities (3): amd, k7, gart
+Correctly Extracted (TP=2): amd, gart
+Missed Entities (FN=3): amd k7, driver, suspend
+Extra Entities (FP=1): k7
+--------------------------------------------------------------------------------
+
+Feature ID: 41088.0
+Feature Description: firmware: Add support for Qualcomm UEFI Secure Application
+Benchmark Mentions (3): qualcomm, uefi, firmware
+Extracted Entities (3): qualcomm, secure application, uefi
+Correctly Extracted (TP=2): qualcomm, uefi
+Missed Entities (FN=1): firmware
+Extra Entities (FP=1): secure application
+--------------------------------------------------------------------------------
+
+Feature ID: 43723.0
+Feature Description: pcm: reinvent the stream synchronization ID API
+Benchmark Mentions (3): stream synchronization, api, pcm
+Extracted Entities (3): stream, pcm, synchronization id
+Correctly Extracted (TP=1): pcm
+Missed Entities (FN=2): stream synchronization, api
+Extra Entities (FP=2): stream, synchronization id
+--------------------------------------------------------------------------------
+
+Feature ID: 6696.0
+Feature Description: Speed up lmbench lat_mmap test
+Benchmark Mentions (2): lmbench, lat_mmap
+Extracted Entities (2): lmbench, lat_mmap
+Correctly Extracted (TP=2): lmbench, lat_mmap
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 35039.0
+Feature Description: remoteproc qcom: q6v5: Add interconnect path proxy vote
+Benchmark Mentions (5): qcom, interconnect, proxy vote, q6v5, remoteproc
+Extracted Entities (4): interconnect path proxy vote, q6v5, remoteproc, qcom
+Correctly Extracted (TP=3): remoteproc, q6v5, qcom
+Missed Entities (FN=2): interconnect, proxy vote
+Extra Entities (FP=1): interconnect path proxy vote
+--------------------------------------------------------------------------------
+
+Feature ID: 22403.0
+Feature Description: vimc: Add vimc-streamer for stream control
+Benchmark Mentions (2): vimc-streamer, vimc
+Extracted Entities (3): vimc, streamer, stream control
+Correctly Extracted (TP=1): vimc
+Missed Entities (FN=1): vimc-streamer
+Extra Entities (FP=2): streamer, stream control
+--------------------------------------------------------------------------------
+
+Feature ID: 24966.0
+Feature Description: dsa ocelot: DSA driver for Vitesse Felix switch
+Benchmark Mentions (4): dsa, ocelot, felix switch, vitesse
+Extracted Entities (4): felix, dsa, ocelot, vitesse
+Correctly Extracted (TP=3): dsa, ocelot, vitesse
+Missed Entities (FN=1): felix switch
+Extra Entities (FP=1): felix
+--------------------------------------------------------------------------------
+
+Feature ID: 44567.0
+Feature Description: zswap: implement a second chance algorithm for dynamic zswap shrinker. Some tuning to improve zswap's dynamic shrinker
+Benchmark Mentions (3): zswap, zswap shrinker, second chance algorithm
+Extracted Entities (3): zswap, dynamic shrinker, second chance algorithm
+Correctly Extracted (TP=2): zswap, second chance algorithm
+Missed Entities (FN=1): zswap shrinker
+Extra Entities (FP=1): dynamic shrinker
+--------------------------------------------------------------------------------
+
+Feature ID: 12492.0
+Feature Description: bcma: support chipsets with PMU and GCI cores (devices)
+Benchmark Mentions (3): pmu, bcma, chipset
+Extracted Entities (3): pmu, bcma, gci
+Correctly Extracted (TP=2): pmu, bcma
+Missed Entities (FN=1): chipset
+Extra Entities (FP=1): gci
+--------------------------------------------------------------------------------
+
+Feature ID: 13898.0
+Feature Description: device tree sources db820c: add basic board support
+Benchmark Mentions (3): device tree, device tree sources, db820c
+Extracted Entities (3): device tree, db820c, board support
+Correctly Extracted (TP=2): device tree, db820c
+Missed Entities (FN=1): device tree sources
+Extra Entities (FP=1): board support
+--------------------------------------------------------------------------------
+
+Feature ID: 39747.0
+Feature Description: Add the ability to handle page faults on parts of files which are already in the page cache without taking the mmap lock
+Benchmark Mentions (3): page cache, mmap lock, page faults
+Extracted Entities (3): page cache, mmap lock, page faults
+Correctly Extracted (TP=3): page cache, mmap lock, page faults
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 39845.0
+Feature Description: New boards (32 bit) Marantec Maveo board based on dhcor imx6ull module
+Benchmark Mentions (2): dhcor imx6ull, marantec maveo board
+Extracted Entities (4): maveo, dhcor, imx6ull, marantec
+Correctly Extracted (TP=0): 
+Missed Entities (FN=2): dhcor imx6ull, marantec maveo board
+Extra Entities (FP=4): marantec, dhcor, imx6ull, maveo
+--------------------------------------------------------------------------------
+
+Feature ID: 7075.0
+Feature Description: kconfig: add make localyesconfig option
+Benchmark Mentions (2): kconfig, make localyesconfig
+Extracted Entities (2): kconfig, localyesconfig
+Correctly Extracted (TP=1): kconfig
+Missed Entities (FN=1): make localyesconfig
+Extra Entities (FP=1): localyesconfig
+--------------------------------------------------------------------------------
+
+Feature ID: 7220.0
+Feature Description: x86 perf_counter bts: Add BTS support to perfcounters
+Benchmark Mentions (4): perf_counter, bts, x86, perfcounters
+Extracted Entities (3): perf_counter, bts, x86
+Correctly Extracted (TP=3): perf_counter, bts, x86
+Missed Entities (FN=1): perfcounters
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 24153.0
+Feature Description: Switch over some users of cpuidle notifiers to the new QoS-based frequency limits
+Benchmark Mentions (2): cpuidle, qos
+Extracted Entities (2): cpuidle, qos
+Correctly Extracted (TP=2): cpuidle, qos
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 36931.0
+Feature Description: perf inject: Add a command line option to specify build ids
+Benchmark Mentions (2): command line option, perf inject
+Extracted Entities (3): build ids, command line option, perf
+Correctly Extracted (TP=1): command line option
+Missed Entities (FN=1): perf inject
+Extra Entities (FP=2): build ids, perf
+--------------------------------------------------------------------------------
+
+Feature ID: 16925.0
+Feature Description: SQUASHFS Add zstd support (FEATURED)
+Benchmark Mentions (2): squashfs, zstd
+Extracted Entities (2): squashfs, zstd
+Correctly Extracted (TP=2): squashfs, zstd
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 15.0
+Feature Description: RAID 6 implementation
+Benchmark Mentions (1): raid 6
+Extracted Entities (2): 6, raid
+Correctly Extracted (TP=0): 
+Missed Entities (FN=1): raid 6
+Extra Entities (FP=2): raid, 6
+--------------------------------------------------------------------------------
+
+Feature ID: 13496.0
+Feature Description: HID hid-led: add support for reading from LED devices
+Benchmark Mentions (2): led, hid
+Extracted Entities (3): led, hid-led, hid
+Correctly Extracted (TP=2): led, hid
+Missed Entities (FN=0): 
+Extra Entities (FP=1): hid-led
+--------------------------------------------------------------------------------
+
+Feature ID: 23405.0
+Feature Description: isdn: remove isdn4linux
+Benchmark Mentions (2): isdn4linux, isdn
+Extracted Entities (2): isdn4linux, isdn
+Correctly Extracted (TP=2): isdn4linux, isdn
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 35863.0
+Feature Description: firmware Add the ability for userspace to initiate the firmware load when it needs to instead of being always initiated by the kernel
+Benchmark Mentions (2): userspace, firmware
+Extracted Entities (3): kernel, userspace, firmware
+Correctly Extracted (TP=2): userspace, firmware
+Missed Entities (FN=0): 
+Extra Entities (FP=1): kernel
+--------------------------------------------------------------------------------
+
+Feature ID: 25177.0
+Feature Description: regulator: qcom_spmi: Add PM8950 SPMI regulator
+Benchmark Mentions (4): regulator, spmi, qcom, pm8950
+Extracted Entities (3): qcom_spmi, regulator, pm8950
+Correctly Extracted (TP=2): regulator, pm8950
+Missed Entities (FN=2): spmi, qcom
+Extra Entities (FP=1): qcom_spmi
+--------------------------------------------------------------------------------
+
+Feature ID: 27076.0
+Feature Description: Device Mapper dm writecache: improve performance on DDR persistent memory (Optane)
+Benchmark Mentions (5): optane, ddr, writecache, dm, device mapper
+Extracted Entities (5): performance, dm writecache, ddr, persistent memory, device mapper
+Correctly Extracted (TP=2): ddr, device mapper
+Missed Entities (FN=3): dm, writecache, optane
+Extra Entities (FP=3): performance, dm writecache, persistent memory
+--------------------------------------------------------------------------------
+
+Feature ID: 41577.0
+Feature Description: Add new channels for adis16475
+Benchmark Mentions (2): adis16475, channels
+Extracted Entities (2): adis16475, channels
+Correctly Extracted (TP=2): adis16475, channels
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 24324.0
+Feature Description: memory: mtk-smi: Add gals support
+Benchmark Mentions (3): gals, mtk-smi, memory
+Extracted Entities (3): gals, mtk-smi, memory
+Correctly Extracted (TP=3): mtk-smi, gals, memory
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 41888.0
+Feature Description: POWERPC Topology and shared processor optimizations
+Benchmark Mentions (3): topology, powerpc, shared processor
+Extracted Entities (3): topology, processor optimizations, powerpc
+Correctly Extracted (TP=2): topology, powerpc
+Missed Entities (FN=1): shared processor
+Extra Entities (FP=1): processor optimizations
+--------------------------------------------------------------------------------
+
+Feature ID: 23505.0
+Feature Description: amdgpu Support hwmon temperature channel labels V2
+Benchmark Mentions (3): amdgpu, channel, hwmon
+Extracted Entities (3): amdgpu, temperature channel labels, hwmon
+Correctly Extracted (TP=2): amdgpu, hwmon
+Missed Entities (FN=1): channel
+Extra Entities (FP=1): temperature channel labels
+--------------------------------------------------------------------------------
+
+Feature ID: 21423.0
+Feature Description: devlink: Add 'fw_load_policy' generic parameter which gives the ability to control this option which allows the user to choose between different loading policies supported by the driver
+Benchmark Mentions (3): loading policies, devlink, fw_load_policy
+Extracted Entities (3): devlink, driver, fw_load_policy
+Correctly Extracted (TP=2): devlink, fw_load_policy
+Missed Entities (FN=1): loading policies
+Extra Entities (FP=1): driver
+--------------------------------------------------------------------------------
+
+Feature ID: 14370.0
+Feature Description: B.A.T.M.A.N.: Simple (re)broadcast avoidance
+Benchmark Mentions (1): b.a.t.m.a.n
+Extracted Entities (3): broadcast, avoidance, b.a.t.m.a.n.
+Correctly Extracted (TP=0): 
+Missed Entities (FN=1): b.a.t.m.a.n
+Extra Entities (FP=3): broadcast, avoidance, b.a.t.m.a.n.
+--------------------------------------------------------------------------------
+
+Feature ID: 172.0
+Feature Description: reiserfs: AIO support
+Benchmark Mentions (2): reiserfs, aio
+Extracted Entities (2): reiserfs, aio
+Correctly Extracted (TP=2): reiserfs, aio
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+Feature ID: 4612.0
+Feature Description: wireless nl80211: export hardware bitrate/channel capabilities  nl80211: Add monitor interface configuration flags
+Benchmark Mentions (2): bitrate, nl80211
+Extracted Entities (3): channel capabilities, hardware bitrate, nl80211
+Correctly Extracted (TP=1): nl80211
+Missed Entities (FN=1): bitrate
+Extra Entities (FP=2): channel capabilities, hardware bitrate
+--------------------------------------------------------------------------------
+
+Feature ID: 40168.0
+Feature Description: ASoC tas2781: Add tas2781 driver
+Benchmark Mentions (2): asoc, tas2781
+Extracted Entities (3): driver, asoc, tas2781
+Correctly Extracted (TP=2): asoc, tas2781
+Missed Entities (FN=0): 
+Extra Entities (FP=1): driver
+--------------------------------------------------------------------------------
+
+Feature ID: 36406.0
+Feature Description: fpga: m10bmc-sec: create max10 bmc secure update
+Benchmark Mentions (2): fpga, m10bmc
+Extracted Entities (3): fpga, bmc, max10
+Correctly Extracted (TP=1): fpga
+Missed Entities (FN=1): m10bmc
+Extra Entities (FP=2): bmc, max10
+--------------------------------------------------------------------------------
+
+Feature ID: 8489.0
+Feature Description: bonding: allow user-controlled output slave selection
+Benchmark Mentions (1): bonding
+Extracted Entities (3): user-controlled, bonding, slave selection
+Correctly Extracted (TP=1): bonding
+Missed Entities (FN=0): 
+Extra Entities (FP=2): user-controlled, slave selection
+--------------------------------------------------------------------------------
+
+Feature ID: 40027.0
+Feature Description: media: atomisp: Add enum_framesizes function for sensors with selection / crop support
+Benchmark Mentions (2): enum_framesizes, atomisp
+Extracted Entities (3): enum_framesizes, atomisp, sensors
+Correctly Extracted (TP=2): enum_framesizes, atomisp
+Missed Entities (FN=0): 
+Extra Entities (FP=1): sensors
+--------------------------------------------------------------------------------
+
+Feature ID: 17466.0
+Feature Description: mailbox: bcm-flexrm-mailbox: Add debugfs support
+Benchmark Mentions (2): debugfs, mailbox
+Extracted Entities (3): debugfs, bcm-flexrm-mailbox, mailbox
+Correctly Extracted (TP=2): mailbox, debugfs
+Missed Entities (FN=0): 
+Extra Entities (FP=1): bcm-flexrm-mailbox
+--------------------------------------------------------------------------------
+
+Feature ID: 19005.0
+Feature Description: ARM Expose Arm v8.4 features
+Benchmark Mentions (1): arm
+Extracted Entities (2): arm, v8.4
+Correctly Extracted (TP=1): arm
+Missed Entities (FN=0): 
+Extra Entities (FP=1): v8.4
+--------------------------------------------------------------------------------
+
+Feature ID: 5551.0
+Feature Description: ath9k: Add LED support  add RF kill support  allow AP mode to be enabled
+Benchmark Mentions (3): rf, ap mode, ath9k
+Extracted Entities (4): rf kill, led, ap mode, ath9k
+Correctly Extracted (TP=2): ap mode, ath9k
+Missed Entities (FN=1): rf
+Extra Entities (FP=2): rf kill, led
+--------------------------------------------------------------------------------
+
+Feature ID: 31098.0
+Feature Description: New boards imx8mm-nitrogen-r2: add ecspi2 support
+Benchmark Mentions (1): ecspi2
+Extracted Entities (2): ecspi2, imx8mm-nitrogen-r2
+Correctly Extracted (TP=1): ecspi2
+Missed Entities (FN=0): 
+Extra Entities (FP=1): imx8mm-nitrogen-r2
+--------------------------------------------------------------------------------
+
+Feature ID: 22075.0
+Feature Description: New device tree sources X96 Max a generic TV box based on Amlogic G12a (S905X2)
+Benchmark Mentions (3): device tree, device tree sources, amlogic
+Extracted Entities (4): x96 max, s905x2, g12a, amlogic
+Correctly Extracted (TP=1): amlogic
+Missed Entities (FN=2): device tree, device tree sources
+Extra Entities (FP=3): x96 max, s905x2, g12a
+--------------------------------------------------------------------------------
+
+Feature ID: 33067.0
+Feature Description: visconti: Add Toshiba Visconti PCIe host controller driver
+Benchmark Mentions (3): visconti, toshiba , pcie
+Extracted Entities (3): visconti, toshiba, pcie
+Correctly Extracted (TP=2): visconti, pcie
+Missed Entities (FN=1): toshiba 
+Extra Entities (FP=1): toshiba
+--------------------------------------------------------------------------------
+
+Feature ID: 39942.0
+Feature Description: Make ELFv2 ABI the default for 64-bit big-endian kernel builds
+Benchmark Mentions (4): abi, elfv2, elf, big-endian
+Extracted Entities (4): abi, elfv2, 64-bit, big-endian
+Correctly Extracted (TP=3): abi, elfv2, big-endian
+Missed Entities (FN=1): elf
+Extra Entities (FP=1): 64-bit
+--------------------------------------------------------------------------------
+
+Feature ID: 29060.0
+Feature Description: rtw88 Add dump fw crash log
+Benchmark Mentions (1): rtw88
+Extracted Entities (3): fw, rtw88, crash log
+Correctly Extracted (TP=1): rtw88
+Missed Entities (FN=0): 
+Extra Entities (FP=2): fw, crash log
+--------------------------------------------------------------------------------
+
+Feature ID: 37334.0
+Feature Description: Drop V4L2_CAP_ASYNCIO
+Benchmark Mentions (1): v4l2_cap_asyncio
+Extracted Entities (3): asyncio, v4l2, cap
+Correctly Extracted (TP=0): 
+Missed Entities (FN=1): v4l2_cap_asyncio
+Extra Entities (FP=3): asyncio, v4l2, cap
+--------------------------------------------------------------------------------
+
+Feature ID: 41014.0
+Feature Description: pca995x: Add support for PCA995X chips
+Benchmark Mentions (1): pca995x
+Extracted Entities (2): chips, pca995x
+Correctly Extracted (TP=1): pca995x
+Missed Entities (FN=0): 
+Extra Entities (FP=1): chips
+--------------------------------------------------------------------------------
+
+Feature ID: 17182.0
+Feature Description: atmel-hlcdc Add 8-bit color support
+Benchmark Mentions (1): atmel-hlcdc
+Extracted Entities (3): color support, atmel-hlcdc, 8-bit
+Correctly Extracted (TP=1): atmel-hlcdc
+Missed Entities (FN=0): 
+Extra Entities (FP=2): color support, 8-bit
+--------------------------------------------------------------------------------
+
+Feature ID: 39645.0
+Feature Description: atomisp: Remove depth-mode and continuous mode support
+Benchmark Mentions (1): atomisp
+Extracted Entities (3): depth-mode, continuous mode, atomisp
+Correctly Extracted (TP=1): atomisp
+Missed Entities (FN=0): 
+Extra Entities (FP=2): depth-mode, continuous mode
+--------------------------------------------------------------------------------
+
+Feature ID: 35548.0
+Feature Description: nfp VF rate limit support
+Benchmark Mentions (3): rate limit, nfp, vf
+Extracted Entities (3): rate limit, nfp, vf
+Correctly Extracted (TP=3): nfp, rate limit, vf
+Missed Entities (FN=0): 
+Extra Entities (FP=0): 
+--------------------------------------------------------------------------------
+
+总体结果
+================================================================================
+Total True Positives (TP): 253
+Total False Positives (FP): 132
+Total False Negatives (FN): 127
+Overall Precision: 0.6571
+Overall Recall: 0.6658
+Overall F1 Score: 0.6614

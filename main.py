@@ -4,6 +4,9 @@ import asyncio
 import datetime
 import json
 import pymysql
+import random
+import csv
+import pandas as pd
 
 # 在37.1的lkg环境运行
 # 添加项目根目录到 Python 路径
@@ -67,8 +70,28 @@ async def run_pipeline():
             collector = DataCollector(pipeline_config)
             features = collector.collect_features()
             
+            # 随机抽取300个feature并保存
+            # 确保抽样数量不超过总数
+            sample_size = min(300, len(features))
+            sampled_features = random.sample(features, sample_size)
+            
+            # 准备保存抽样数据的文件
+            sample_file = output_dir / f"sampled_features_{timestamp}.csv"
+            
+            # 将抽样数据保存为CSV
+            df = pd.DataFrame([{
+                'feature_id': feature.get('feature_id', ''),
+                'h1': feature.get('h1', ''),
+                'h2': feature.get('h2', ''),
+                'feature_description': feature.get('feature_description', ''),
+                'version': feature.get('version', '')
+            } for feature in sampled_features])
+            
+            df.to_csv(sample_file, index=False, encoding='utf-8')
+            logger.info(f"Saved {sample_size} randomly sampled features to {sample_file}")
+            
             # 设置起始位置
-            start_index = 400  # 从第70个feature开始
+            start_index = 400
             logger.info(f"Starting processing from feature index {start_index}")
             
             # 处理每个feature

@@ -6,6 +6,7 @@ import os
 from tqdm import tqdm
 import mwparserfromhell
 import wikitextparser as wtp
+import re
 
 class WikiDatabaseBuilder:
     def __init__(self, db_path: str):
@@ -71,58 +72,100 @@ class WikiDatabaseBuilder:
     
     def process_dump(self, dump_path: str):
         """处理维基百科转储文件并导入数据库"""
+        if not os.path.exists(dump_path):
+            raise FileNotFoundError(f"Dump file not found at {dump_path}")
+        
         print(f"Processing Wikipedia dump file: {dump_path}")
         
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         
-        # 使用bz2打开压缩文件
-        with bz2.open(dump_path, 'rt', encoding='utf-8') as f:
-            buffer = []
-            current_page = {}
-            in_page = False
-            
-            for line in tqdm(f):
-                if '<page>' in line:
-                    in_page = True
-                    current_page = {'categories': set()}
-                elif '</page>' in line and in_page:
-                    in_page = False
-                    buffer.append(current_page)
-                    
-                    if len(buffer) >= self.chunk_size:
-                        self._process_buffer(c, buffer)
-                        buffer = []
-                        conn.commit()
+        try:
+            with bz2.open(dump_path, 'rt', encoding='utf-8') as f:
+                buffer = []
+                current_page = {}
+                in_page = False
+                in_text = False  # Track text collection state
+                content_buffer = []  # Buffer for text content
                 
-                elif in_page:
-                    if '<title>' in line:
-                        current_page['title'] = line.strip().replace('<title>', '').replace('</title>', '')
-                    elif '<text' in line:
-                        content = line.split('>', 1)[1].rsplit('</', 1)[0]
-                        current_page['content'] = content
-                        
-                        # 解析维基文本
-                        parsed = wtp.parse(content)
-                        
-                        # 提取分类
-                        for category in parsed.wikilinks:
-                            if category.title.startswith('Category:'):
-                                current_page['categories'].add(category.title[9:])
-                        
-                        # 检查是否为消歧义页面
-                        current_page['is_disambiguation'] = (
-                            '{{disambiguation}}' in content.lower() or
-                            '{{disambig}}' in content.lower()
-                        )
+                for line in tqdm(f):
+                    line = line.strip()
+                    if '<page>' in line:
+                        in_page = True
+                        current_page = {'categories': set()}
+                    elif '</page>' in line and in_page:
+                        if in_text:  # Handle any remaining text content
+                            current_page['content'] = ''.join(content_buffer)
+                            content_buffer = []
+                            self._parse_content(current_page)
+                            in_text = False
+                        in_page = False
+                        if current_page.get('title'):  # Only add pages with valid titles
+                            buffer.append(current_page)
+                        if len(buffer) >= self.chunk_size:
+                            self._process_buffer(c, buffer)
+                            buffer = []
+                            conn.commit()
+                    elif in_page:
+                        if '<title>' in line:
+                            current_page['title'] = line.replace('<title>', '').replace('</title>', '')
+                        elif '<text' in line:
+                            in_text = True
+                            content = line[line.find('>')+1:]
+                            if '</text' in content:
+                                content_part = content.split('</text', 1)[0]
+                                content_buffer.append(content_part)
+                                current_page['content'] = ''.join(content_buffer)
+                                content_buffer = []
+                                self._parse_content(current_page)
+                                in_text = False
+                            else:
+                                content_buffer.append(content)
+                        elif in_text:
+                            if '</text' in line:
+                                content_part = line.split('</text', 1)[0]
+                                content_buffer.append(content_part)
+                                current_page['content'] = ''.join(content_buffer)
+                                content_buffer = []
+                                self._parse_content(current_page)
+                                in_text = False
+                            else:
+                                content_buffer.append(line)
+                
+                # Process remaining buffer
+                if buffer:
+                    self._process_buffer(c, buffer)
+                    conn.commit()
+        except Exception as e:
+            print(f"Error processing dump file: {e}")
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    
+    def _parse_content(self, current_page):
+        """解析页面内容"""
+        try:
+            content = current_page.get('content', '')
+            # Enhanced disambiguation detection
+            current_page['is_disambiguation'] = bool(
+                re.search(r'\{\{\s*(disambiguation|disambig|hndis|geodis|schooldis)', 
+                         content, 
+                         re.IGNORECASE)
+            )
             
-            # 处理剩余的页面
-            if buffer:
-                self._process_buffer(c, buffer)
-                conn.commit()
-        
-        conn.close()
-        print("Database creation completed")
+            # Use mwparserfromhell for more robust parsing
+            parsed = mwparserfromhell.parse(content)
+            # Extract categories with better handling
+            current_page['categories'] = set(
+                str(t.title).split(':', 1)[-1].split('|', 1)[0].strip()
+                for t in parsed.filter_wikilinks()
+                if str(t.title).startswith('Category:')
+            )
+        except Exception as e:
+            print(f"Error parsing content for page {current_page.get('title', 'Unknown')}: {e}")
+            current_page['categories'] = set()
+            current_page['is_disambiguation'] = False
     
     def _process_buffer(self, cursor, buffer):
         """处理一批页面数据"""

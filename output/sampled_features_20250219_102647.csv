@@ -1,0 +1,301 @@
+feature_id,feature_description
+37708,adc: add max11410 adc driver
+18206,lightnvm Remove rrpc
+24766,ionic: add the ionic driver supporting the Pensando ethernet device
+14340,Add support for per-UID routing. It allows the administrator to configure rules such as: . This functionality has been in use by all Android devices since 5.0. It is primarily used to impose per-app routing policies (on Android every app has its own UID) without having to resort to rerouting packets in iptables which breaks  and MTU/MSS calculation and generally disrupts end-to-end connectivity
+18484,ath10k Add memory dump support for QCA6174/QCA9377
+25360,
+23262,Btrfs Detect fast implementation of crc32c on all architectures
+30033,Btrfs Improve Preemptive background flushing: separate the logic from ticket reservations improve the accounting and decisions when to flush in low space conditions
+8667,Notify for dropped Deauth/Disassoc
+26202,pmbus/ucd9000: Add support for UCD90320 Power Sequencer
+8818,cgroups Make 'procs' file writable
+43098,tracing: allow user space to memory map the ring buffer (). It will get all the write sub-buffers as well as reader sub-buffer (that is not written to). It can send an ioctl to change which sub-buffer is the new reader sub-buffer
+28056,smccc: Add ARCH_SOC_ID support
+6073,Au1000 On-Chip Counter0-as-RTC driver.
+10954,netfilter Add netfilter ingress hook this allows to classify packets from ingress using the Netfilter infrastructure
+178,ppc64: iSeries virtual tape driver
+12766,(FEATURED) Android's sync_file fencing mechanism considered stable
+14247,extcon: Introduce EXTCON_PROP_USB_SS property for  mode
+29992,soc: qcom: rpmpd: Add MSM8939 power-domains
+34571,interconnect: qcom: Add EPSS L3 support on SC7280
+7653,RDS: Add GET_MR_FOR_DEST sockopt
+28008,Add the Xilinx DisplayPort DMA engine driver
+6149,Memory management Add /proc controls for pdflush threads
+3762,53c7xx: kill driver. Support is added below
+31628,parsers: ofpart: support Linksys Northstar partitions
+41716,perf tools: Add --debug-file option to redirect debug output
+6280,ARM Add gpiolib support to AT91
+32823,bnxt_en count packets discarded because of netpoll
+2755,In-kernel sockets API for in-kernel users like sunrpc cifs & ocfs2 etc and any future users
+39194,BPF veristat: add better support of freplace programs
+25458,perf report: Support  for  or not showing entries under that percent
+31774,"seccomp: Add ""atomic addfd + send reply"" mode to SECCOMP_USER_NOTIF to better handle EINTR races visible to seccomp monitors"
+38265,power: supply: bq25890: Add support for setting user charge current and voltage limit
+34548,socionext: Introduce some features for UniPhier
+10570,ethtool: Support for configurable RSS hash function
+33202,BPF libbpf: support custom .rodata.*/.data.* sections
+2805,
+25040,r8169: add support for RTL8117
+3751,DDB5477: remove driver bits of support
+537,3ware 9000 SATA-RAID driver 
+3022,New toplevel target: headers_check_all
+10455,top Handle 'z' key for toggle zeroing samples in TUI
+8770,Cache xattr security drop check for write: benchmarking on btrfs showed that a major scaling bottleneck on large systems on btrfs is currently the xattr lookup on every write which causes an additional tree walk hitting some per file system locks and quite bad scalability. This is also a problem in ext4 where it hits the global mbcache lock. Caching this check solves the problem
+20292,amdkfd Add Raven support
+6938,sc6000: add support for SC-6600 and SC-7000
+7823,i2400m: minimal ethtool support
+1707,Add generic memory add/remove and supporting functions for memory hotplug
+40832,mlx5e: Add recovery flow for tx devlink health reporter for unhealthy PTP SQ
+33614,rtw88: support adaptivity for ETSI/JP DFS region
+6804,SH remove old TMU driver
+12976,xgene: Enable ACPI support for X-Gene GFC GPIO driver
+19255,ASoC Intel: add nau8824 sound card
+13911,X86 perf: Add Knights Mill CPUID
+25111,HID ite: Add USB id match for Acer SW5-012 keyboard dock
+36043,Two wireless routers based on Broadcom bcm4708
+41299,iommu/amd: SVA Support (Part 1) - cleanup/refactoring               (part 2) - deprecate iommu_v2 module
+31684,idxd Add support for readonly config mode
+38974,Remove s3c24xx driver
+4257,hifn_795x: HIFN 795x crypto accelerator driver
+6611,CIFS Add mention of new mount parm (forceuid) to cifs readme
+21827,accel: kxcjk1013: Add KIOX0009 ACPI Hardware-ID
+34662,page_pool: Add stats counters
+8567,Add support for heartbeat=global mount option
+1136,r8169: netconsole support
+34985,qcom: Add display clock controller driver for SM6125
+13095,Introduce iomap infrastructure for multipage buffered writes
+22810,KVM: Book3S HV: add XIVE native exploitation mode
+26371,vmstat: add stat for hugepage fallback. The existing  indicates when thp attempts to allocate a hugepage but fails or if the hugepage cannot be charged to the mem cgroup hierarchy. This release extends this to shmem as well and adds a new  to complement  that gets incremented when a hugepage is attempted to be allocated but fails or if it cannot be charged to the mem cgroup hierarchy
+43518,Add X-Powers AXP717 PMIC support
+8415,KVM Support for tracing emulated instructions
+20511,v4l: enables the video standards to be controlled directly on the subdev device node
+39803,xen: speed up grant-table reclaim
+661,Add DEVPATH env variable to hotplug helper call
+16965,perf  perf buildid-cache: Cache debuginfo
+25722,(FEATURED) WireGuard secure network tunnel
+1509,AGP support for powermac G5
+36537,Add a panel API to set orientation properly
+19137,Bluetooth hci_bcm: Add ACPI HIDs found in Windows .inf files and DSTDs
+18510,iwlwifi:  remove TCP wakeup support
+27380,panel nt39016: Add support for 50 Hz refresh rate
+20010,MC13783: Add uid and die temperature sensor inputs
+43077,blk-throttle: support enable and disable during runtime
+44403,phy: phy-rockchip-samsung-hdptx: Add clock provider support
+37148,RDMA srp: Support more than 255 rdma ports
+15435,
+3141,SCSI qla2xxx: Add MSI-X support.
+20848,ARM64 Support for the new ARMv8.5 PSTATE.SSBS bit which can be used to mitigate Spectre-v4 dynamically without trapping to EL3 firmware
+33391,KVM Add AMD SEV and SEV-ES intra host migration support
+42638,Add support for ETML1010G3DRA LVDS display on phyBOARD-Pollux
+28956,bnxt_en Add a software counter for RX ring reset
+11780,qat: Support for Intel C3xxx with Intel Quick Assist Technology for accelerating crypto and compression workloads
+21178,bcm: add Northstar driver
+42337,
+28769,Allow multiple bits in  parameter
+32522,dma-buf: Add support for mapping hugepages
+8702,PM: Add support for device power domains
+18165,PCI/AER: Add uevents in AER and EEH error/resume
+42021,mvmdio: Support setting the MDC frequency on XSMI controllers
+19941,dwc3: Add Qualcomm DWC3 glue driver
+43702,migrate: support poison recover from migrate folio
+14451,Platforms thinkpad_acpi: Add support for X1 Yoga (2016) Tablet Mode  adding new hotkey ID for Lenovo Thinkpad
+39629,imx93: Add nic and A55 clk
+36596,tools/power turbostat Add support for ALDERLAKE_N
+3216,tifm_core: add suspend/resume infrastructure for tifm devices
+21349,Give a interface to adjust io timeout by device
+23775,sun6i: Support A83T variant
+8908,
+28618,BPF Add d_path helper function that returns full path for given 'struct path' object which needs to be the kernel BTF 'path' object
+5241,mpc83xx_wdt: add support for MPC86xx CPUs
+43814,renesas: rzg2l Add support to configure slew-rate
+13843,TIPC Add the ability to get UDP options via netlink
+26231,io_uring Support for statx(2)
+35832,remoteproc: qcom: pas: Add MSM8226 ADSP support
+3757,snd-ca0106: Add support for X-Fi Extreme Audio.
+26800,Add driver to control USB fast charge for iOS devices
+15679,X86 RAS: Add a Corrected Errors Collector
+39054,
+3289,ARM Add ability to dump exception stacks to kernel backtraces
+14459,PPC xmon: Add 'dt' command to dump trace buffers
+36528,Add LoongArch-related irqchip drivers
+39875,Robustify boot sequence and add support for WXN
+43482,xpad: add support for ASUS ROG RAIKIRI PRO
+30436,ice Introduce function for reading from flash modules
+27754,qcom: gcc-msm8939: Add MSM8939 Generic Clock Controller
+37365,power supply: mt6370: Add MediaTek MT6370 charger driver
+16196,
+18169,XFS Show realtime device stats on statfs calls if realtime flags set
+2168,debugfs: Add debugfs_create_blob() helper for exporting binary data
+9425,SCTP: Make HMAC algorithm selection for cookie generation dynamic
+38045,can: remove obsolete PCH CAN driver
+23154,lm3532: Introduce the lm3532 LED driver
+43835,imu: inv_icm42600: add support of accel low power
+26286,Generic page table walk and kernel page table dump (ptdump) via debugfs
+12132,i915 bxt: update list of PCIIDs
+27527,mvneta: Add 2500BaseX support for SoCs without comphy
+13495,HID hid-led: add support for devices with multiple independent LEDs
+39288,intel: Add Granite Rapids
+17016,netfilter netfilter: nf_tables: support for recursive chain deletion
+26336,Btrfs Add full support for cloning inline extents
+18682,sdhci-pci: Add CQHCI support for Intel GLK
+1336,reiserfs: make resize option auto-get new device size
+23379,Netfilter Support to match IPv4 options in nf_tables
+43568,fsl-sdma: Some improvement for fsl-sdma
+8759,Make selinux cache VFS RCU walks safe
+12526,NFS Support for the NFS v4.2 COPY operation.  Linux 4.5  the  system call and it also added support in NFS for the CLONE operation present in the NFS  which allows to clone ranges of a file into another. This release adds support for the  which allows to make copies of entire files
+1818,"High resolution timers (LWN article explaining the API). In contrast to the low-resolution timeout API implemented in kernel/timer.c, hrtimers provide finer resolution and accuracy depending on system configuration and capabilities. These timers are currently used for: itimers, POSIX timers, nanosleep and precise in-kernel timing. For more details read thedocumentation"
+37741,it87: Add param to ignore ACPI resource conflicts
+28017,qcom: Add ipq8064 rev2 variant
+13501,New hw revision 1.4 of NetUP Universal DVB card added
+1660,FUSE : Allows to implement a fully functional filesystem in a userspace program 
+14710,lm87: Use hwmon to create the sysfs groups
+2495,base support for the Freescale MPC8349E-mITX eval board
+37801,habanalabs Add page fault info uapi
+22755,NXP TQ TQMa7S (i.MX7Solo)
+18537,mvneta Add flow control support
+31041,Netfilter flowtable: add vlan match offload support
+2618,Cx88 driver: added support for KWorld MCE 200 Deluxe
+35660,hcd: Add support for deferring roothub registration
+32428,nvmem: Add support for FRAM
+42109,HID logitech-hidpp: add support for Logitech G Pro X Superlight 2
+39435,phy: add driver for Microchip LAN867x 10BASE-T1S PHY
+44743,LOONGARCH Implement getrandom() in vDSO
+44145,msm adreno: Add support for X185 GPU
+13245,Device Tree sources sun8i: Add dts file for inet86dz board
+21296,reset: qcom: PDC Global (Power Domain Controller) reset controller
+13,Support centrino 1GHz
+24324,memory: mtk-smi: Add gals support
+13286,Microoptimizations to the syscall entry code
+9343,bonding: support for IPv6 transmit hashing (and TCP or UDP over IPv6) bringing IPv6 up to par with IPv4 support in the bonding driver
+43554,Add RIIC support for Renesas RZ/V2H SoC
+2405,nsc-ircc: Enable PnP support for the nsc-ircc chipset
+31390,mlx5 Introduce TC sample offload
+37733,amd-mp2: use msix/msi if the hardware supports
+983,ide: pdc202xx_old: kill /proc/ide/pdc202xx
+40967,Add support for limited alarm timer offsets
+42276,qcom-qmp-combo: Add x1e80100 USB/DP combo phys
+4568,Core consoles: polling support kgdboc
+2838,Generic BUG implementation
+33479,Remove Netlogic XLP network driver
+9621,llcp: Service Name Lookup SDRES aggregation
+17829,Bluetooth btbcm: Add entry for BCM4356A2 UART bluetooth  add support for MINIX Z83-4 based devices
+44466,fhandle: expose u64 mount id to name_to_handle_at(2)
+8612,Allow userspace to read policy back out of the kernel
+5700,serial sh-sci: Add support SCIF of SH7723
+32211,hda oxfw: add explicit device entry for Loud Technologies Mackie Onyx Sattelite
+36779,mAdd support for PolarFire SoC's musb controller
+24198,adc: ad7606: Add support for AD7606B ADC
+1639,USB: add Option Card driver
+25219,imu: st_lsm6dsx: add support to LSM6DS0
+6519,Add platform driver for EFI
+27628,dwc3: meson: add OTG support for GXL/GXM
+31036,Multi-path TCP Add  support
+9131,
+20065,
+4217,Power Management Suspend: Testing facility
+28114,virt: vbox: Add support for the new  ioctl
+32885,mlx5 E-switch Allow setting share/max tx rate limits of rate groups
+15542,Allow configuring default qdisc in kernel configuration
+26733,stmmac 100GB Enterprise MAC support
+38118,octeontx2-af Add support to filter packet based on IP fragment
+35294,Remove architecture no longer maintained
+4036,ps3fb: add virtual screen and panning support
+19855,nfp flower tc block support
+20763,BPF bpftool support for sockmap use cases
+27428,ath10k Enable rx duration report default for wmi tlv
+31948,perf Support perf-mem/perf-c2c for
+16345,Device Tree Sources sun8i: v3s: add support for Lichee Pi Zero w/ dock board
+957,I2C: lm87 driver ported to Linux 2.6
+1206,r8169: Large Send enablement
+16267,device mapper Add the ability to use select or poll /dev/mapper/control to wait for events from multiple DM devices
+12196,iio: Remove periodic RTC trigger driver
+13365,panel simple: Add support for LG LP097QX1-SPA1 panel
+28802,zcrypt: Support for CCA APKA master keys
+10275,Add support to configure SR-IOV VF minimum and maximum transmission rate through ip tool
+13663,tools/gpio: add the gpio-event-mon tool
+10792,tipc: add ip/udp media type
+20820,veth XDP stats improvement
+35497,cpsw: ale: add broadcast/multicast rate limit support
+2533,execve argument logging
+16612,qede Allow WoL to activate by default
+26963,interconnect: qcom: Consolidate interconnect RPMh support
+10839,BTRFS Let btree defrag work in SSD mode
+24383,CIFS Add  mount option to allow shares accessed by only client to be more aggressively cached
+7543,ioat3 split ioat3 support to its own file add memset
+31793,BTRFS Make read time repair to be only submitted for each corrupted sector
+2433,Add driver support for general purpose I/O feature of the Synclink GT adapters
+29251,gyro: Add driver support for ADXRS290
+13847,veth: sctp: add  to device features
+395,Make SCSI timeout modifiable
+31503,ASoC tegra20: i2s: Add reset control
+3961,PPC 4xx: Add RGMII support for Sequoia 440EPx  add AMCC Kilauea eval board support   . Also enable NEW EMAC support for Sequoia 440EPx  on the PPC 440GP Ebony board  on the PPC405 Walnut board  on Bamboo board
+3180,Adds video output routing
+16233,F2FS Support plain user/group quotas
+22736,netdevsim Change debugfs tree topology
+6548,The serial driver for the Cris platform has been modified to use the new general RS485 Linux data structure (introduced by Alan Cox)
+17371,intel: Add Intel Cannon Lake PCH-H pin controller support  add Intel Denverton pin controller support  add Intel Lewisburg GPIO support
+36498,platform intel/pmc: Add Alder Lake N support to PMC core driver
+39575,Add PMI632 PMIC and RGB LED on sdm632-fairphone-fp3
+41404,rtw89 Add TX/RX descriptor v2 and mac port registers for  7 chips
+40959,regulator qcom-rpmh: Add regulators support for PMX75
+13338,nouveau Initial support for GP100/GP104 GPUs
+12660,ARM socfpga: Enable Arria10 L2 cache ECC on startup
+38749,mt76: enable page_pool stats
+24501,Infiniband/RDMA Support netlink commands in non init_net net namespaces
+23926,firmware: ti_sci: Add resource management APIs for ringacc psi-l and udma
+5473,SH Add Renesas EDOSK7760 board support.
+9744,MPLS: Add limited GSO support
+38569,Intel Add probe blocking support to i915.force_probe parameter
+3365,Use ktime as clocksource which provides nanosecond timestamping support  introduce SIOCGSTAMPNS ioctl to get timestamps with nanosec resolution  add SO_TIMESTAMPNS / SCM_TIMESTAMPNS socket option  export real timer resolution in /proc/net/psched
+17800,panel simple: add Toshiba LT089AC19000
+4227,OCFS2 Support commit= mount option.
+23682,igc: Add flow control support
+281,b44: Support newer revisions of broadcoms
+28706,TIPC: Add more encryption features
+19194,mlx5e Add ethtool priv-flag for Striding RQ
+24019,stmmac Implement Safety Features in XGMAC core
+24337,soc: qcom: Add socinfo driver
+31809,CIFS Support share failover when remounting
+36995,Device Tree Sources: New machines qcom: Add new board revision and LTE SKUs for sc7280-villager family
+12399,adc mcp3422: Add support for MCP3425
+18060,gyro: st_gyro: add SPI-3wire support to st_gyro framework
+13281,KVM Add sthyi instruction emulation
+34675,Show crypto capabilities in sysfs
+1854,"Export cpu topology in sysfs, /sys/devices/system/cpu/cpuX/topology/*, for more details see the commit"
+6691,blktrace Support per-partition tracing
+34482,Remove unused Netlogic/Sigma Designs XLR driver
+8803,Add online discard support
+25824,intel_idle Introduce  module parameter
+23259,XFS Introduce new BULKSTAT and INUMBERS ioctls. They report features in the v5 file system format such as inode birth time and the ability to do per-AG BULKSTAT and INUMBERS. The new structures fix the alignment and padding issues that plague the old ioctls.  In xfsprogs some wrapper functions will be introduced that allow new utilities to run on old kernels by emulating the new functionality
+18036,gpio: mcp23s08: add support for mcp23018
+26904,uniphier-xdmac: Add UniPhier external DMA controller driver
+33632,ASoC Add Audio Graph Card2 support
+13844,TIPC Add  netlink command to allow UDP remoteip dump
+13825,rxrpc Implement slow-start
+17758,amdgpu Per VM BO support
+43364,bnxt_en: Updates for net-next
+33,ACPI: add _PDC support
+7649,IPv6 sit: 6rd (IPv6 Rapid Deployment) Support.
+26498,irqchip/gic-v4: GICv4.1 architecture support
+18382,S390 diag: add diag26c support for VNIC info
+493,CIFS: Add missing mount option for optionally cifs perm checks when uids on server and client do not match and for optionally overriding server setting default uid/gid of new cifs files and directories. 
+35769,rockchip-dwc: Add legacy interrupt support
+19568,dm: add writecache target. The writecache target caches writes on persistent memory or SSD. It is intended for databases or other programs that need extremely low commit latency
+3124,Remove the broken SKMC driver
+34141,Intel Improved eviction performance with async TTM moves
+1557,PCI: create PCI_DEBUG config option to make it easier for users to enable pci debugging
+8641,Allow creation of hierarchical cgroups in the blk cgroup controller
+41928,panel panel-edp: Add SDC ATNA45AF01
+9297,ext4 Re-enable -o discard functionality in no-journal mode
+26089,HID google: add moonball USB id
+39315,Introduce 64b relocatable kernel
+19207,dsa mv88e6xxx: Get mv88e6352 SERDES statistics
+17335,octeon-wdt: Add support for cn68XX SOCs
+34857,8250_bcm2835aux: Add ACPI support
+21625,ath10k Add memory dump support for QCA4019
+37476,rockchip: add support for the rk356x variant to rockchip-inno-csidphy
+10298,Bluetooth: Perform directed advertising support through connect() when we're in peripheral mode
+40862,octeontx2-af: misc MAC block changes
+19625,routing: Add address attribute (to control metric of prefix route. For use cases such as VRR (Virtual Router Redundancy) interface managers want efficient control over the order of prefix routes when multiple interfaces have addresses with overlapping/duplicate subnets
+37413,microchip: pci1xxxx: Add driver for I2C host controller in multifunction endpoint of pci1xxxx switch

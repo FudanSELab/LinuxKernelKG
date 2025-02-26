@@ -7,7 +7,7 @@ from functools import wraps
 import logging
 
 class LinkCache:
-    def __init__(self, cache_file: str = "data/cache/link_cache_deepseek_130.json"):
+    def __init__(self, cache_file: str = "data/cache/link_cache_deepseek_local_205.json"):
         self.cache_file = cache_file
         self.cache_files = {
             'main': self.cache_file,

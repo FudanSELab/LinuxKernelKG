@@ -88,41 +88,45 @@ class EntityRelationExtractor:
                 response_entity = self.llm.get_response(prompt_entity)
                 object_entity = json.loads(strip_json(response_entity))
                 
+                # TODO: 关系抽取需要取消注释
                 # 关系抽取
-                prompt_triple = extractTriplePrompt(
-                    feature_description=feature_description, 
-                    commits=commits_group
-                ).format()
-                response_triple = self.llm.get_response(prompt_triple)
-                object_triple = json.loads(strip_json(response_triple))
+                # prompt_triple = extractTriplePrompt(
+                #     feature_description=feature_description, 
+                #     commits=commits_group
+                # ).format()
+                # response_triple = self.llm.get_response(prompt_triple)
+                # object_triple = json.loads(strip_json(response_triple))
                 
-                # 开放关系抽取
-                prompt_tripleOpen = extractTripleOpenPrompt(
-                    feature_description=feature_description, 
-                    commits=commits_group
-                ).format()
-                response_tripleOpen = self.llm.get_response(prompt_tripleOpen)
-                object_tripleOpen = json.loads(strip_json(response_tripleOpen))
+                # # 开放关系抽取
+                # prompt_tripleOpen = extractTripleOpenPrompt(
+                #     feature_description=feature_description, 
+                #     commits=commits_group
+                # ).format()
+                # response_tripleOpen = self.llm.get_response(prompt_tripleOpen)
+                # object_tripleOpen = json.loads(strip_json(response_tripleOpen))
                 
-                # 合并三元组
-                all_triples = object_triple['triples'] + object_tripleOpen['triples']
+                # # 合并三元组
+                # all_triples = object_triple['triples'] + object_tripleOpen['triples']
                 
-                # 验证
-                prompt_verify = verifyPrompt(
-                    feature_description=feature_description,
-                    commits=commits_group,
-                    entities=object_entity['entities'],
-                    triples=all_triples
-                ).format()
-                try:
-                    response_verify = self.llm.get_response(prompt_verify)
-                    json_str = strip_json(response_verify)
-                    object_verify = json.loads(json_str)
-                except json.JSONDecodeError as e:
-                    self.logger.error(f"Failed to parse JSON response: {e}")
-                    self.logger.debug(f"Raw response: {response_verify}")
-                    object_verify = {"entities": [], "triples": []}
-            
+                # # 验证
+                # prompt_verify = verifyPrompt(
+                #     feature_description=feature_description,
+                #     commits=commits_group,
+                #     entities=object_entity['entities'],
+                #     triples=all_triples
+                # ).format()
+                # try:
+                #     response_verify = self.llm.get_response(prompt_verify)
+                #     json_str = strip_json(response_verify)
+                #     object_verify = json.loads(json_str)
+                # except json.JSONDecodeError as e:
+                #     self.logger.error(f"Failed to parse JSON response: {e}")
+                #     self.logger.debug(f"Raw response: {response_verify}")
+                #     object_verify = {"entities": [], "triples": []}
+
+                # TODO: 验证需要取消注释
+                object_verify = {"entities": [], "triples": []}
+                
                 commits_group_extracted = {
                     "feature_id": feature_id,
                     "feature_description": feature_description,

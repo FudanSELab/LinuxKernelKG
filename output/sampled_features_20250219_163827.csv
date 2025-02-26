@@ -1,0 +1,301 @@
+feature_id,h1,h2,feature_description,version
+41272,Architectures,ARM,amlogic: Add support for T7 power domains controller,6.7
+36992,Architectures,ARM,Device Tree Sources: New machines meson: add support for JetHome JetHub D1p (j110),6.1
+23356,Networking,,User API and initial implementation for nexthop objects designed to improve the scalability of routes,5.3
+22856,Drivers,Graphics,amdgpu NV12 planes support,5.2
+1201,Drivers & architectures,,EDD: add edd=off and edd=skipmbr options,2.6.11
+10992,File systems,,EXT4 Implement cgroup writeback support,4.3
+10711,Core (various),,rcu: Add option to expedite grace periods during boot,4.1
+35661,Drivers,Universal Serial Bus,serial: option: add Quectel BG95 modem,5.19
+34113,Architectures,MIPS,BCM47XX: Add support for Netgear R6300 v1,5.17
+18076,Drivers,Hardware monitoring  (hwmon),pmbus: Add driver for Maxim MAX31785 Intelligent Fan Controller,4.15
+8232,Drivers,Sound,ASoC add support for the sh7722 Migo-R board,2.6.34
+28597,Memory management,,Remove assumptions of THP size,5.10
+12032,Architectures,,Device tree sources Add minimal Support for Logic PD DM3730 SOM-LV,4.6
+43946,Networking,,Introduce IPPROTO_SMC,6.11
+38713,Drivers,Networking,microchip: Add support for two classes of VCAP rules,6.3
+43145,Networking,,ipv4: Remove RTO_ONLINK,6.10
+36994,Architectures,ARM,Device Tree Sources: New machines qcom: sc7280: Add device tree for herobrine evoker,6.1
+30385,Drivers,Networking,Bluetooth hci_bcm: Add support for ISO packets,5.12
+28315,Drivers,Power Management,thermal mediatek: Add tsensor support for V2 thermal system,5.9
+1258,Drivers & architectures,,USB: another usbnet ax8817x device (goodway docking station),2.6.11
+30468,Drivers,Networking,mscc: ocelot: Configuring congestion watermarks on ocelot switch using devlink-sb,5.12
+43857,Drivers,Hardware monitoring  (hwmon),max6639: Add additional hwmon attributes for fan and pwm,6.11
+30796,Drivers,Clock,remove zte zx driver,5.12
+27008,Core (various),,PM: allow to disable snapshot device,5.8
+18568,Drivers,Networking,sfp Add support for 1000Base-PX and 1000Base-BX10,4.16
+19715,Architectures,,RISCV perf: preliminary support,4.18
+24134,Drivers,Watchdog,f71808e_wdt: Add F81803 support,5.4
+33053,Drivers,LEDs,idxd: create dmaengine driver for wq 'device',5.15
+23050,Drivers,Universal Serial Bus,mtu3: add debugfs interface files,5.2
+27166,Networking,,802.11 Initial definitions for S1G (802.11ah),5.8
+6515,Drivers,I2C,i2c-algo-pca: Add PCA9665 support,2.6.30
+23495,Drivers,Graphics,amdgpu Color space ycbcr709 support,5.3
+3426,Drivers,SATA/IDE/SCSI,IDE cmd64x: fix multiword and remove single-word DMA support,2.6.22
+34446,Drivers,Real Time Clock (RTC),rv8803: Add support for the Epson RX8804 RTC,5.17
+21615,Drivers,Drivers in the Staging area,iio:ad2s90: Move out of staging,5.0
+34750,Drivers,Audio,HDA Add keep-alive support for ADL-P and DG2,5.18
+631,,,NET: Allow get/set of dev->weight via netlink.,2.6.9
+5554,Drivers,Network,sfc: Enable TSO for 802.1q VLAN devices  export boot configuration in EEPROM through ethtool,2.6.28
+4014,Subsystems,Architecture-specific changes,AVR32 checkstack support,2.6.24
+12524,File systems,,F2FS Speedup fallocate,4.7
+314,,,Speed up readahead for seeky loads,2.6.7
+10035,File systems,,Add ioctl to export size of global metadata reservation for better btrfs df reporting,3.14
+1363,Drivers & architectures,,ARM: Sharp SCOOP - Add mutliple device support,2.6.12
+18360,Architectures,,KVM Emulate RDPID,4.16
+10574,Networking,,Wireless Allow scanning with random MAC addresses,3.19
+11332,Drivers,Networking,mlx5e: Support smaller RX/TX ring sizes,4.3
+19833,Drivers,Networking,hns3 Add support for IFF_ALLMULTI (receive all multicast packets) flag,4.18
+25830,Architectures,S390,Add new reset vcpu API,5.6
+35623,Drivers,"Tablets, touch screens, keyboards, mouses",Add support for Azoteq IQS7222A/B/C,5.19
+6779,Architecture-specific changes,,MIPS Add register definitions for PCI.,2.6.31
+42153,Drivers,Watchdog,s3c2410_wdt: Add support for Google gs101 SoC,6.8
+22713,Networking,,ipvs: allow tunneling with gue encapsulation,5.2
+2078,Various core changes,,kbuild: Improved modversioning support for external modules,2.6.17
+2110,Architecture-specific,ARM,"proc-v6: page table walks with outer-cacheable attribute, and enable no-execute in page tables",2.6.17
+17617,Networking,,BPF Enable generic transfer of metadata from XDP into skb meaning the packet has a flexible and programmable room for meta data which can later be used by BPF to set various skb members when passing up the stack,4.15
+5026,Architecture-specific changes,,POWERPC POWER7 support,2.6.27
+5489,Architecture-specific changes,,sparc64: Use generic CMOS driver.,2.6.28
+18741,Drivers,Clock,qcom: Add spmi_pmic clock divider support,4.16
+32288,Drivers,Serial,fsl_lpuart: add loopback support,5.14
+34303,Drivers,Networking,iwlwifi mvm: synchronize with FW after multicast commands,5.17
+25863,Drivers,Graphics,amdgpu gfxoff on navi10 and raven1 refresh,5.6
+2895,Networking,,IPSEC Add encapsulation family.  * Add support for AES-XCBC-MAC,2.6.20
+23711,Drivers,Networking,phy T1 support,5.3
+21497,Architectures,X86,crypto Optimized XChaCha and NHPoly1305 (for Adiantum),5.0
+15828,Drivers,Networking,dpaa_eth Enable Rx checksum offload,4.12
+21392,"Tracing, perf and BPF",,perf trace: Allow suppressing the syscall argument names,5.0
+13019,Drivers,Various,HSI: omap-ssi: add clk change support,4.7
+9099,Virtualization,,KVM Allow host IRQ sharing for assigned PCI 2.3 devices,3.4
+27557,Drivers,Networking,stmmac Add support for VLAN promiscuous mode,5.8
+26333,Core (various),,Percpu-rwsem rewrite that uses its own waitqueue and atomic_t instead of an embedded rwsem. This addresses a couple of weaknesses but the primary motivation was complications on the real-time kernel,5.7
+15777,Drivers,Drivers in the Staging area,android ion Remove import interface,4.12
+7960,Drivers,Various,I2C i2c-stub: Implement I2C block support,2.6.33
+30724,Drivers,General Purpose I/O (gpio),mvebu: add pwm support for Armada 8K/7K,5.12
+41592,Drivers,REMOTE PROCESSOR (REMOTEPROC),Add support for MT8195 SCP 2nd core,6.7
+26829,Drivers,Serial,fsl_lpuart: add LS1028A earlycon support,5.7
+25995,Drivers,Networking,igc Add PHY power management control,5.6
+5460,Architecture-specific changes,,PPC Add support for mpc8247 based board MGCOGE from keymile.,2.6.28
+4455,Drivers,V4L/DVB,V4L: Add support for Syntek DC1125 webcams.,2.6.25
+15150,Drivers,Networking,ath9k: Introduce airtime fairness scheduling between stations,4.11
+5112,Networking,,netdev: Add support for rx flow hash configuration using ethtool.,2.6.27
+33889,Core (various),,irq: [PCI]MSI refactoring which aims to provide the ability of expanding MSI-X vectors after enabling MSI-X,5.17
+2461,Drivers and other subsystems,Various drivers,Bluetooth: add automatic sniff mode support  add suspend/resume support to the HCI USB driver,2.6.18
+44676,Architectures,,Device Tree Sources qcom: msm8916-samsung-j3ltetw: Add initial device tree,6.12
+37610,"Tracing, perf and BPF",,BPF Support storing struct cgroup * objects as kptrs,6.2
+25072,Drivers,Audio,Sound Open Firmware Intel: initial support to JasperLake,5.5
+25581,Architectures,ARM,ARM64 crypto: gcm-ce: implement 4 way interleave,5.5
+43828,Drivers,Industrial I/O (iio),adc: ti-ads1119: Add driver,6.11
+38174,Drivers,Audio,ASoC adau1372: add support for S24_LE mode,6.2
+28344,Drivers,Networking,atlantic Adds more features to A2: half duplex rates EEE flow control link partner capabilities reporting phy loopback,5.9
+40325,Drivers,Clock,samsung: Re-add support for Exynos4212 CPU clock,6.5
+9548,Prominent features (the cool stuff),mutex locking scalability improvements,,3.10
+39857,Architectures,ARM,Support for Armv8.8 memcpy instructions in userspace,6.5
+4589,Subsystems,Filesystems,EXT4 Enable extent format for symlinks.,2.6.26
+12399,Drivers,Industrial I/O (iio),adc mcp3422: Add support for MCP3425,4.6
+34688,"Tracing, perf and BPF",,perf ftrace latency: Add / option,5.18
+8011,Networking,,tun: socket filter support,2.6.34
+17436,Drivers,Cryptography hardware acceleration,atmel-ecc - introduce Microchip / Atmel ECC driver,4.14
+34388,Drivers,Audio,SOF sun8i-codec: Add AIF ADC and DAC volume controls,5.17
+39015,Drivers,"PHY (""physical layer"" framework)",ti: j721e-wiz: Add support to enable LN23 Type-C swap,6.3
+28112,"Tracing, perf and BPF",,perf perf tests: Add metrics tests,5.9
+38579,Drivers,Graphics,Remove the obsolete driver-via,6.3
+18699,Drivers,Industrial I/O (iio),magnetometer: ak8975: Add another ACPI ID,4.16
+6065,Drivers,HWMON,applesmc: Add support for Macbook Air 2,2.6.29
+39205,"Tracing, perf and BPF",,perf perf record: Implement BPF sample filter (userspace part),6.4
+16139,Drivers,PCI,rockchip: Advertise 128-byte Read Completion Boundary support,4.12
+37859,Architectures,ARM,Device Tree Sources ti: Add k3-j721e-beagleboneai64,6.2
+29956,Drivers,Various,iommu/sva: Add PASID helpers,5.11
+13027,Drivers,Various,irqchip/gic-v3: Add support for partitioned PPIs,4.7
+41633,Core (various),,: accept multiple keys at once,6.8
+28115,Security,,capabilities: Introduce  a new security capability that facilitates using checkpoint/restore by non-root users,5.9
+11955,Virtualization,,Xen netback: implement dynamic multicast control,4.6
+7603,Virtualization,,KVM SVM: Support Pause Filter in AMD processors,2.6.33
+17755,Drivers,Graphics,intel perf: add support for Coffeelake GT2,4.15
+20458,Drivers,Networking,qtnfmac: implement cfg80211 power management callback,4.19
+36071,Architectures,ARM,ARM64 perf vendors events arm64: Multiple Arm CPUs,5.19
+4564,Subsystems,Various,Core sysrq: add show-backtrace-on-all-cpus function,2.6.26
+10408,File systems,,F2FS Support atomic writes,3.18
+25163,Drivers,Serial,lpuart: Add RS485 support for 32-bit uart flavour,5.5
+4729,Architecture-specific changes,,SH Add support for Solution Engine SH7721 board,2.6.26
+24211,Drivers,Multi Function Devices (MFD),Add support for Merrifield Basin Cove PMIC,5.4
+9164,Block,,raid10: add reshape support,3.5
+12131,Drivers,Graphics,i915 Enable  Compression by default on Haswell and Broadwell,4.6
+24569,Architectures,x86,platform touchscreen_dmi: Add info for the Chuwi Surbook Mini tablet,5.4
+6495,Drivers,Bluetooth,Pause RFCOMM TX when encryption drops,2.6.30
+24719,Drivers,Drivers in the Staging area,hantro: Support RK3399 VP8 decoding,5.4
+17597,Networking,,TCP Configure TFO without cookie per socket and/or per route. Linux already allows to enable TFO without a cookie by using the fastopen-sysctl and setting it to  (or ). This release exposes a socket-option and a per-route attribute to enable such fine-grained configurations,4.15
+16517,Drivers,Drivers in the Staging area,rtl8188eu: add RNX-N150NUB support  add TL-WN722N v2 support,4.13
+33250,Networking,,MCTP Add SOL_MPTCP getsockopt support,5.16
+553,Drivers & architectures,,PCMCIA: Add Cirrus PD6729 PCMCIA bridge support.,2.6.8
+27256,Architectures,MIPS,Loongson-3: Add some unaligned instructions emulation,5.8
+16719,Drivers,"ACPI, EFI, cpufreq, thermal, Power Management",tools/power x86_energy_perf_policy: support HWP.EPP,4.13
+3384,Various subsystems,Crypto,Add cryptd a software async crypto daemon,2.6.22
+12645,Architectures,,device tree sources Introduce MPS2 AN399/AN400,4.7
+35310,Drivers,Graphics,Intel DG2-G12 subplatform added,5.18
+41754,Networking,,ncsi: Add NC-SI 1.2 Get MC MAC Address command,6.8
+373,Drivers & architectures,,USB: add support for Zire 31 devices.,2.6.7
+40571,Drivers,Power Management,ACPI: thermal: Drop nocrt parameter,6.6
+1498,Drivers & architectures,,cciss: support for more than 8 controllers,2.6.12
+2187,Networking,DCCP,Initial feature negotiation implementation,2.6.17
+8538,Core,,fs Add FITRIM ioctl,2.6.37
+2952,Drivers,MMC,Add support for mmc v4 wide-bus modes,2.6.20
+16400,Architectures,,S390 Introduce a ELF phdr flag for qemu to avoid the global vm.alloc_pgste which forces all processes to large page tables,4.13
+16170,Drivers,Various,drivers/misc: Add Aspeed LPC control driver,4.12
+855,,,early uart console support,2.6.10
+20604,Drivers,Pulse-Width Modulation (PWM),mediatek: Add MT7628 support,4.19
+17701,Architectures,,X86 Make CONFIG_UNWINDER_ORC=y the default in kconfig for 64-bit,4.15
+5197,Drivers,V4L/DVB,spca508: Add Clone Digital Webcam 11043,2.6.27
+30202,Architectures,ARM,Qualcomm Snapdragon MTP reference board (SM8350),5.12
+13410,Drivers,Networking,bnxt_en: Add support for updating flash more securely,4.8
+29033,Drivers,Networking,mlxsw Add CQE compression support for multi-strides packets,5.10
+31857,"Tracing, perf and BPF",,perf perf header: Support HYBRID_TOPOLOGY and HYBRID_CPU_PMU_CAPS,5.14
+33411,Architectures,MIPS,A new eBPF JIT implementation for MIPS,5.16
+25181,Drivers,Pin Controllers (pinctrl),Add pinmux & GPIO controller driver for Intel Lightning Mountain SoC,5.5
+27427,Drivers,Networking,ath10k Improve throughout of TX of sdio,5.8
+12392,Drivers,Multi Media Card,sdhi: Add r8a7795 support,4.6
+11971,Networking,,Add BATMAN V protocol support (featured),4.6
+31885,Networking,,icmp: add support for extended RFC 8335 PROBE (ping),5.14
+18707,Drivers,Hardware monitoring  (hwmon),pmbus: Export pmbus device debugfs directory entry,4.16
+25007,Drivers,Networking,iwlwifi scan: enable adaptive dwell in p2p,5.5
+33793,Drivers,Clock,imx: Add the pcc reset controller support on imx8ulp,5.16
+44702,Architectures,,S390 wti: Introduce infrastructure for warning track interrupt,6.12
+25241,Drivers,Hardware monitoring  (hwmon),pmbus: add driver for BEL PFE1100 and PFE3000,5.5
+21246,Drivers,Clock,at91: add at91sam9rl PMC driver,4.20
+11628,Drivers,Various,twl4030_charger: allow max_current to be managed via sysfs.,4.3
+27600,Drivers,"Tablets, touch screens, keyboards, mouses",elan_i2c: add more hardware ID for Lenovo laptops,5.8
+37265,Drivers,Networking,wifi rtw89: add to support two 'iw' commands,6.1
+18787,Drivers,Various,soundwire: Add Slave status handling helpers,4.16
+10346,File systems,,XFS Add a sysfs /sys/fs/xfs/ directory with various files providing information about XFS filesystems,3.17
+22461,Drivers,Memory Technology Devices (MTD),spi-nor: Add support for en25qh64,5.1
+30254,Architectures,ARM,ARM64 coresight: etm4x: Support for system instructions,5.12
+33331,Architectures,ARM,Amlogic Add support for JetHub D1,5.16
+18238,Security,,seccomp: add  flag to allow retrieving seccomp metadata,4.16
+28076,Drivers,Various,nvmem: enables blowing of fuses on Qualcomm SoCs,5.9
+42941,Drivers,Various,interconnect: qcom: Add SM7150 driver support,6.9
+4291,Subsystems,Architecture-specific changes,POWERPC Use embedded libfdt in the bootwrapper.,2.6.25
+3864,Subsystems,Various,readahead: support of interleaved reads,2.6.24
+2283,Drivers,Network devices,"switch to the new ipw2200-fw-3.0 image format. You will also need to upgrade your firmware image to the 3.0 version, available fromhttp://ipw2200.sf.net/firmware.php",2.6.17
+6891,Drivers,Network,be2net: Add MCC queue mechanism for BE cmds,2.6.31
+34060,Architectures,ARM,perf hisi: Add driver for HiSilicon PCIe PMU,5.17
+23149,Drivers,Hardware monitoring  (hwmon),lochnagar: Add Lochnagar 2 hardware monitoring driver,5.2
+9331,Networking,,Netfilter Add protocol-independent NAT core,3.7
+441,Drivers & architectures,,prism54: Add avs header support,2.6.7
+32344,Drivers,Multi Function Devices (MFD),pm8008: Add driver for QCOM PM8008 PMIC,5.14
+41149,File systems,XFS,Allow read IO and FICLONE to run concurrently,6.7
+26189,Drivers,Inter-Integrated Circuit (I2C + I3C),I2C i801: Add support for Intel Comet Lake PCH-V,5.6
+41761,Networking,,packet scheduler Introduce tc block ports tracking and use,6.8
+2614,Drivers and other subsystems,Network drivers,add ich8lan core functions,2.6.18
+1856,Kernel Core changes,Various changes,ATI,2.6.16
+9463,Various core changes,,userns: Allow unprivileged reboot,3.9
+23779,Drivers,Universal Serial Bus (USB),Add usbfs ioctl  to retrieve the connection parameters,5.3
+5300,Prominent features (the cool stuff),The GEM Memory Manager for GPU memory,,2.6.28
+15762,Drivers,Storage,hisi_sas: add softreset function for SATA disk,4.12
+9114,Crypto,,camellia: add assembler implementation for x86_64,3.4
+41875,Architectures,,X86 TDX host kernel support,6.8
+5285,Drivers,Various,leds Add pca9532 led driver,2.6.27
+44679,Architectures,,Device Tree Sources Add support for Cool Pi,6.12
+44565,Memory management,,swap: convert swapon() to use a folio,6.12
+12255,Drivers,Audio,ASoC Add max98926 codec driver,4.6
+2953,Drivers,MMC,SDHCI high speed support,2.6.20
+30661,Drivers,Pin Controllers (pinctrl),qcom: Add sc8180x TLMM driver,5.12
+30520,Drivers,Audio,hda ca0132: Add Sound BlasterX AE-5 Plus support,5.12
+8317,Drivers,Various,leds: Add Dell Business Class Netbook LED driver,2.6.34
+16411,Architectures,,X86 EFI: capsule: Add support for Quark security header,4.13
+24478,Networking,,Netfilter Add offload support the vlan and tunnel device offload through indr-block architecture,5.4
+12756,Drivers,Graphics,exynos Pipeline clock support,4.7
+35904,File systems,,FAT Report creation time in statx,5.19
+21874,Drivers,Clock,qcom: Add graphics clock controller driver for SDM845,5.0
+25880,Drivers,Graphics,panel ingenic: Add support for the JZ4770,5.6
+19671,Architectures,,Device Tree Sources Renesas: Ebisu  board,4.18
+23458,Architectures,x86,Platforms hp_accel: Add support for HP ProBook 450 G0,5.3
+21728,Drivers,Audio,ASoC rsnd: add TDM Split mode support,5.0
+35829,Drivers,Various,ptp ocp: add Celestica timecard PCI ids,5.19
+34377,Drivers,Audio,SOF Add PM support for i.MX8/i.MX8X/i.MX8M,5.17
+39952,Architectures,PARISC,Add cacheflush() syscall,6.5
+25312,Drivers,Various,interconnect: qcom: add msm8974 driver,5.5
+25946,Drivers,Drivers in the Staging area,android: Delete the 'vsoc' driver,5.6
+44371,Drivers,PCI,xilinx-nwl: Add phy support,6.12
+38126,Drivers,Networking,rtw88 8821c: enable BT device recovery mechanism,6.2
+10674,Networking,,Wireless Add new GCMP GCMP-256 CCMP-256 BIP-GMAC-128 BIP-GMAC-256 and BIP-CMAC-256 cipher suites. These new cipher suites were defined in IEEE Std 802.11ac-2013,4.0
+15274,Drivers,"TV tuners, webcams, video capturers",lgdt3306a: support i2c mux for use by em28xx,4.11
+5572,Drivers,Input,Add driver for USB VoIP phones with CM109 chipset,2.6.28
+6009,Drivers,Sound,ELD proc interface for HDMI sinks,2.6.29
+41642,File systems,,BCACHEFS BCH_IOCTL_FSCK_ONLINE,6.8
+37744,Drivers,Hardware monitoring  (hwmon),pmbus: Add power good support,6.2
+21965,File systems,,F2FS Add quick mode of  for QA,5.1
+4421,Drivers,Network,Add support for the RDC R6040 Fast Ethernet controller,2.6.25
+29629,Drivers,Networking,hns3 Add support for tc mqprio offload hw tc offload of tc flower and adpation for max rss size,5.11
+17177,Drivers,Graphics,omapdrm OMAP5 DSI support,4.14
+697,Drivers & architectures,,uml: remove useless ioctls,2.6.9
+24329,Drivers,Various,perf/imx_ddr: Add support for AXI ID filtering,5.4
+23651,Drivers,Networking,Distributed Switch Architecture microchip: Support optional 125MHz SYNCLKO output,5.3
+19102,Drivers,Storage,SCSI lpfc: Add WQ Full Logic for NVME Target,4.17
+4292,Subsystems,Architecture-specific changes,POWERPC Add SPRN for Embedded registers specified in PowerISA 2.04.,2.6.25
+37513,Drivers,Various,watchdog: Add tracing events for the most usual watchdog events,6.1
+29637,Drivers,Networking,ionic: add lif quiesce,5.11
+34570,Drivers,Various,Add QCM2290 interconnect support,5.17
+25669,Drivers,Various,irqchip/meson-gpio: Add support for meson a1,5.6
+24121,Drivers,Universal Serial Bus,serial option: add Telit FN980 compositions,5.4
+399,Drivers & architectures,,Add class support to drivers/usb/misc/tiglusb.c,2.6.7
+33358,Architectures,ARM,ARM64 perf vendor events arm64: Categorise the Neoverse V1 counters,5.16
+37692,Drivers,Multi Media Card (MMC),f-sdh30: Add reset control support,6.2
+12459,Drivers,PCI,xilinx-nwl: Add support for Xilinx NWL PCIe Host Controller,4.6
+26174,Drivers,Industrial I/O (iio),imu: inv_mpu6050: add fifo temperature data support,5.6
+12912,Drivers,"Voltage, current regulators, power capping, power supply",regulator fan53555: Add support for FAN53555BUC18X type  add support for FAN53555UC13X type,4.7
+37773,Drivers,Clock,clocksource: hyper-v: Add TSC page support for root partition,6.2
+8395,Networking,,Netfilter xtables: merge xt_CONNMARK into xt_connmark  merge xt_MARK into xt_mark  inclusion of xt_TEE,2.6.35
+681,Drivers & architectures,,ppc: Add Freescale MPC52xx I2C Support using i2c-mpc.c,2.6.9
+31184,Architectures,S390,Add support for syscall stack randomization,5.13
+21130,Drivers,Universal Serial Bus,dwc3: exynos: Add support for Exynos5433 variant with all clocks,4.20
+29202,Drivers,Serial,8250_pci: Add WCH384_8S 8 port serial device,5.10
+25105,Drivers,"Tablets, touch screens, keyboards, mouses",HID lg-g15: Add support for the G510 keyboards' gaming keys,5.5
+19287,Drivers,"Tablets, touch screens, keyboards, mouses",synaptics: add Lenovo 80 series ids to SMBus,4.17
+32697,Architectures,ARC,Retire MMUv1 and MMUv2 support,5.15
+34357,Drivers,Networking,wwan Make debugfs optional,5.17
+40381,Prominent features,Shadow stacks to prevent exploits,,6.6
+3045,Architecture-specific changes,,ARM Add support for SMDK2443,2.6.21
+24495,Networking,,packet scheduler fq_codel: Two small fq_codel optimizations,5.4
+40912,Drivers,Audio,ASoC Add acpi mahine id's for vangogh platform and,6.6
+24067,Drivers,Audio,ASoC fsl_sai: Add support for imx7ulp/imx8mq,5.4
+8797,File systems,,Add support for mounting Windows 2008 DFS shares,3.0
+1783,Drivers,,IDE support on the Sibyte Swarm evaluation boards and it's relatives for the BCM1250 family of system on a chip,2.6.15
+29244,Drivers,Memory Technology Devices (MTD),spi-nor: winbond: Add support for w25q64jwm,5.10
+38928,Drivers,Industrial I/O (iio),adc: ti-ads7924: add Texas Instruments ADS7924 driver,6.3
+30004,Prominent features,Non-blocking path lookup while opening a file,,5.12
+5094,Security,,Selinux: Support deferred mapping of contexts,2.6.27
+11769,Memory management,,vmstats: replace  with tree events:  and,4.5
+37790,Drivers,"PHY (""physical layer"" framework)",ti: phy-j721e-wiz: add j784s4-wiz-10g module support,6.2
+24066,Drivers,Audio,ASoC fsl_sai: Add support for SAI new version,5.4
+28918,Drivers,Storage,SCSI smartpqi: Support device deletion via sysfs,5.10
+42439,Block layer,,iomap: map multiple blocks per ->map_blocks in iomap writeback. It significantly reduces CPU usage for buffered write workloads,6.9
+17007,Networking,,Infiniband New ioctl API for the RDMA ABI,4.14
+27323,Architectures,S390,qeth: add debugfs file for local IP addresses,5.8
+13191,Networking,,MPLS Allow routes on ipip and sit devices,4.8
+29264,Prominent features,Unprivileged Overlayfs mounts,,5.11
+35379,Drivers,Drivers in the Staging area,media: hantro: Add support for i.MX8MM Hantro-G1,5.18
+140,Drivers & Architecture,,ppc64: Add stack overflow debugging ,2.6.4
+15974,Drivers,"TV tuners, webcams, video capturers",ti-vpe: vpdma: add support for user specified stride,4.12
+12639,Architectures,,device tree sources exynos: Add exynos3250-artik5 dtsi file for ARTIK5 module,4.7
+35175,Architectures,ARM,Marvell MVEBU/Armada: Ctera C200 V1 NAS (kirkwood),5.18
+20956,Drivers,Graphics,bridge tc358764: Add DSI to LVDS bridge driver,4.20
+752,Drivers & architectures,,CPUFREQ: Initial Dothan speedstep support.,2.6.9
+8914,File systems,,ext4 Optimize ext4_ext_convert_to_initialized(). Programs performing appending writes into files pre-allocated via fallocate (FALLOC_FL_KEEP_SIZE) via direct I/O and when using a suboptimal implementation of memmove() will see a considerable reduction of kernel CPU consumption,3.2
+41399,Drivers,Networking drivers,dsa: microchip: add drive strength support,6.7
+20253,Architectures,,MIPS Introduce NT_MIPS_DSP & NT_MIPS_FP_MODE ELF notes & corresponding regsets to expose DSP ASE & floating point mode state respectively both for live debugging & core dumps,4.19
+5493,Architecture-specific changes,,AVR32 Added mem kernel command line option support,2.6.28
+15834,Drivers,Networking,ftgmac100 Add ndo_set_rx_mode() and support for multicast & promisc,4.12
+38142,Drivers,Networking,txgbe Add support for WangXun 10 gigabit NIC to initialize hardware set mac address and register netdev,6.2
+25107,Drivers,"Tablets, touch screens, keyboards, mouses",HID lg-g15: Add support for controlling the G510's RGB backlight,5.5
+168,,,CRYPTO: Add Michael MIC algorithm,2.6.5
+23920,Drivers,EDAC (Error Detection And Correction),i10nm: Add Intel additional Ice-Lake support,5.3
+19367,Drivers,Serial,remove m32r_sio driver,4.17
+929,Drivers & architectures,,"Support for capture of 16,32,64 channels on emu10k1 device 2",2.6.10
+40701,Architectures,RISC-V,Probe DT extension support using riscvisa-extensions & riscvisa-base,6.6
+27144,Security,,SELinux Add a new SELinux policy version which allows for a more space efficient way of storing the filename transitions in the binary policy. Given the default Fedora SELinux policy with the unconfined module enabled this change drops the policy size from ~7.6MB to ~3.3MB. The kernel policy load time dropped as well,5.8
+4460,Drivers,V4L/DVB,Adds support for Genius TVGo A11MCE,2.6.25
+41535,Drivers,Media devices (V4L/DVB),qcom: camss: Add parameter passing to remove several outstanding bugs,6.7
+43967,Architectures,,"Amlogic machines, all set top boxes or reference designs for them Add initial support for Dreambox One/Two",6.11
+19009,Architectures,,"X86 Add ""Jailhouse"" hypervisor ()",4.17
+30547,Drivers,"Tablets, touch screens, keyboards, mouses",HID i2c-hid: Introduce goodix-i2c-hid using i2c-hid core,5.12
+34378,Drivers,Audio,SOF amd: acp-config: Enable SOF audio for Google chrome boards,5.17
