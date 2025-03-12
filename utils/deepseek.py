@@ -5,7 +5,7 @@ class deepseek(BaseLLM):
     """保持原有的 deepseek 类名以保证向后兼容"""
     def __init__(self):
         # 使用工厂创建 OpenAI LLM 实例
-        self._llm = LLMFactory.create_llm(LLMType.OPENAI)
+        self._llm = LLMFactory.create_llm(LLMType.DEEPSEEK)
         self.logger = self._llm.logger
 
     def get_response(self, prompt):

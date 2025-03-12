@@ -12,7 +12,10 @@ enwiki-latest-pages-articles.xml.bz2
 *.db
 *.sqlite
 *.sqlite3
+*.output
 # 限制大小超过 100MB 的文件
 # 注意：这需要配合 git lfs 使用
 output/
 data/
+bootlin/
+elastic/
