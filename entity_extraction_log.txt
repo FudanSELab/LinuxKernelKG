@@ -1,0 +1,1010 @@
+nohup: ignoring input
+2025-03-14 16:53:24,220 - pipeline - INFO - Loaded 123 features with mentions from benchmark
+2025-03-14 16:53:24,221 - pipeline - INFO - 
+Processing feature ID: 9072.0
+2025-03-14 16:53:24,221 - pipeline - INFO - Feature Description: CIFS: Introduce credit-based flow control
+2025-03-14 16:53:46,060 - pipeline - INFO - 
+【实体对比】9072.0
+2025-03-14 16:53:46,060 - pipeline - INFO - ✅ 正确识别 (3): credit-based flow control, cifs, flow control
+2025-03-14 16:53:46,061 - pipeline - INFO - ❗ 误报实体 (1): credit
+2025-03-14 16:53:46,061 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:53:46,061 - pipeline - INFO - 
+Processing feature ID: 11433.0
+2025-03-14 16:53:46,061 - pipeline - INFO - Feature Description: ftdi_sio: Added custom PID for  products
+2025-03-14 16:53:57,016 - pipeline - INFO - 
+【实体对比】11433.0
+2025-03-14 16:53:57,016 - pipeline - INFO - ✅ 正确识别 (4): ftdi_sio, products, custom pid, pid
+2025-03-14 16:53:57,017 - pipeline - INFO - ❗ 误报实体 (1): custom
+2025-03-14 16:53:57,017 - pipeline - INFO - ❌ 漏报实体 (1): ftdi
+2025-03-14 16:53:57,017 - pipeline - INFO - 
+Processing feature ID: 569.0
+2025-03-14 16:53:57,017 - pipeline - INFO - Feature Description: PCMCIA: core socket sysfs support,export card type
+2025-03-14 16:54:07,717 - pipeline - INFO - 
+【实体对比】569.0
+2025-03-14 16:54:07,718 - pipeline - INFO - ✅ 正确识别 (5): card, pcmcia, socket, sysfs, card type
+2025-03-14 16:54:07,718 - pipeline - INFO - ❗ 误报实体 (4): type, core, sysfs support, core socket
+2025-03-14 16:54:07,718 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:54:07,718 - pipeline - INFO - 
+Processing feature ID: 41132.0
+2025-03-14 16:54:07,718 - pipeline - INFO - Feature Description: tree-checker: add type and sequence check for inline backrefs
+2025-03-14 16:54:21,537 - pipeline - INFO - 
+【实体对比】41132.0
+2025-03-14 16:54:21,538 - pipeline - INFO - ✅ 正确识别 (3): inline backrefs, backrefs, tree-checker
+2025-03-14 16:54:21,538 - pipeline - INFO - ❗ 误报实体 (5): checker, type, sequence, inline, tree
+2025-03-14 16:54:21,538 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:54:21,538 - pipeline - INFO - 
+Processing feature ID: 2932.0
+2025-03-14 16:54:21,538 - pipeline - INFO - Feature Description: bcm43xx: add PCI-E code
+2025-03-14 16:54:36,361 - pipeline - INFO - 
+【实体对比】2932.0
+2025-03-14 16:54:36,361 - pipeline - INFO - ✅ 正确识别 (4): bcm43xx, pci-e code, code, pci-e
+2025-03-14 16:54:36,361 - pipeline - INFO - ❗ 误报实体 (0): 
+2025-03-14 16:54:36,361 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:54:36,361 - pipeline - INFO - 
+Processing feature ID: 40781.0
+2025-03-14 16:54:36,362 - pipeline - INFO - Feature Description: btnxpuart: Improve inband Independent Reset handling
+2025-03-14 16:54:51,239 - pipeline - INFO - 
+【实体对比】40781.0
+2025-03-14 16:54:51,239 - pipeline - INFO - ✅ 正确识别 (2): btnxpuart, reset
+2025-03-14 16:54:51,239 - pipeline - INFO - ❗ 误报实体 (2): inband, independent reset
+2025-03-14 16:54:51,239 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:54:51,239 - pipeline - INFO - 
+Processing feature ID: 26119.0
+2025-03-14 16:54:51,240 - pipeline - INFO - Feature Description: pxa2xx: Add support for Intel Comet Lake PCH-V
+2025-03-14 16:55:07,518 - pipeline - INFO - 
+【实体对比】26119.0
+2025-03-14 16:55:07,518 - pipeline - INFO - ✅ 正确识别 (4): pxa2xx, intel, intel comet lake, pch-v
+2025-03-14 16:55:07,518 - pipeline - INFO - ❗ 误报实体 (2): comet lake, intel comet lake pch-v
+2025-03-14 16:55:07,518 - pipeline - INFO - ❌ 漏报实体 (1): pch
+2025-03-14 16:55:07,518 - pipeline - INFO - 
+Processing feature ID: 5271.0
+2025-03-14 16:55:07,518 - pipeline - INFO - Feature Description: Create "idle=halt" bootparam
+2025-03-14 16:55:17,771 - pipeline - INFO - 
+【实体对比】5271.0
+2025-03-14 16:55:17,771 - pipeline - INFO - ✅ 正确识别 (2): idle=halt, bootparam
+2025-03-14 16:55:17,771 - pipeline - INFO - ❗ 误报实体 (2): boot param, halt
+2025-03-14 16:55:17,771 - pipeline - INFO - ❌ 漏报实体 (1): idle
+2025-03-14 16:55:17,772 - pipeline - INFO - 
+Processing feature ID: 21521.0
+2025-03-14 16:55:17,772 - pipeline - INFO - Feature Description: Add audit support
+2025-03-14 16:55:26,981 - pipeline - INFO - 
+【实体对比】21521.0
+2025-03-14 16:55:26,981 - pipeline - INFO - ✅ 正确识别 (1): audit
+2025-03-14 16:55:26,981 - pipeline - INFO - ❗ 误报实体 (1): audit support
+2025-03-14 16:55:26,981 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:55:26,981 - pipeline - INFO - 
+Processing feature ID: 29392.0
+2025-03-14 16:55:26,981 - pipeline - INFO - Feature Description: packet protocol: make packet_fanout.arr size configurable up to 64K
+2025-03-14 16:55:42,380 - pipeline - INFO - 
+【实体对比】29392.0
+2025-03-14 16:55:42,381 - pipeline - INFO - ✅ 正确识别 (4): protocol, packet protocol, packet_fanout, arr
+2025-03-14 16:55:42,381 - pipeline - INFO - ❗ 误报实体 (5): packet_fanout.arr, fanout, size, 64k, packet
+2025-03-14 16:55:42,381 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:55:42,381 - pipeline - INFO - 
+Processing feature ID: 28041.0
+2025-03-14 16:55:42,381 - pipeline - INFO - Feature Description: bcm63xx-usbh: Add BCM63xx USBH driver
+2025-03-14 16:55:53,010 - pipeline - INFO - 
+【实体对比】28041.0
+2025-03-14 16:55:53,010 - pipeline - INFO - ✅ 正确识别 (3): bcm63xx, driver, usbh
+2025-03-14 16:55:53,010 - pipeline - INFO - ❗ 误报实体 (1): bcm63xx-usbh
+2025-03-14 16:55:53,011 - pipeline - INFO - ❌ 漏报实体 (1): bcm63xx-usbh driver
+2025-03-14 16:55:53,011 - pipeline - INFO - 
+Processing feature ID: 2667.0
+2025-03-14 16:55:53,011 - pipeline - INFO - Feature Description: Memory management Allow the removal of ZONE_DMA32 for non x86_64 architectures and ZONE_HIGHMEM for arches not using highmem (like 64 bit architectures). While they're not used on those arches they eat some memory and they've no sense on those platforms anyway so make it possible to disable them at compile time
+2025-03-14 16:56:18,755 - pipeline - INFO - 
+【实体对比】2667.0
+2025-03-14 16:56:18,755 - pipeline - INFO - ✅ 正确识别 (8): memory management, x86_64, architectures, 64 bit architectures, highmem, compile time, zone_highmem, zone_dma32
+2025-03-14 16:56:18,755 - pipeline - INFO - ❗ 误报实体 (12): compile, memory, time, non x86_64 architectures, non x86_64, management, bit, platforms, zone, arches, dma32, 64 bit
+2025-03-14 16:56:18,755 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:56:18,756 - pipeline - INFO - 
+Processing feature ID: 44678.0
+2025-03-14 16:56:18,756 - pipeline - INFO - Feature Description: Device Tree Sources Add Nothing Phone (1) support
+2025-03-14 16:56:39,455 - pipeline - INFO - 
+【实体对比】44678.0
+2025-03-14 16:56:39,455 - pipeline - INFO - ✅ 正确识别 (2): device tree, nothing phone (1)
+2025-03-14 16:56:39,456 - pipeline - INFO - ❗ 误报实体 (8): phone (1), nothing phone, nothing, sources, device tree sources, 1, phone, (1)
+2025-03-14 16:56:39,456 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:56:39,456 - pipeline - INFO - 
+Processing feature ID: 34415.0
+2025-03-14 16:56:39,456 - pipeline - INFO - Feature Description: si2157: add ATV support for si2158
+2025-03-14 16:56:51,091 - pipeline - INFO - 
+【实体对比】34415.0
+2025-03-14 16:56:51,092 - pipeline - INFO - ✅ 正确识别 (3): atv, si2158, si2157
+2025-03-14 16:56:51,092 - pipeline - INFO - ❗ 误报实体 (1): atv support
+2025-03-14 16:56:51,092 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:56:51,092 - pipeline - INFO - 
+Processing feature ID: 36853.0
+2025-03-14 16:56:51,092 - pipeline - INFO - Feature Description: fortify: Add run-time WARN for cross-field memcpy()
+2025-03-14 16:57:02,474 - pipeline - INFO - 
+【实体对比】36853.0
+2025-03-14 16:57:02,474 - pipeline - INFO - ✅ 正确识别 (3): memcpy, fortify, run-time
+2025-03-14 16:57:02,474 - pipeline - INFO - ❗ 误报实体 (2): cross-field, warn
+2025-03-14 16:57:02,474 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:57:02,474 - pipeline - INFO - 
+Processing feature ID: 28486.0
+2025-03-14 16:57:02,474 - pipeline - INFO - Feature Description: layerscape: Add EP mode support for ls1088a and ls2088a
+2025-03-14 16:57:13,402 - pipeline - INFO - 
+【实体对比】28486.0
+2025-03-14 16:57:13,402 - pipeline - INFO - ✅ 正确识别 (4): ls1088a, ep mode, ls2088a, layerscape
+2025-03-14 16:57:13,402 - pipeline - INFO - ❗ 误报实体 (3): ls1088a and ls2088a, ep, mode
+2025-03-14 16:57:13,402 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:57:13,403 - pipeline - INFO - 
+Processing feature ID: 1895.0
+2025-03-14 16:57:13,403 - pipeline - INFO - Feature Description: qdio V=V pass-through. QDIO and Hiper Sockets processing in z/VM V=V guest environments (as well as V=R with z/VM running in LPAR mode) requires shadowing of all QDIO architecture queue elements.  Especially the shadowing of SBALs and SLSBs structures in the hypervisor, and the need to issue SIGA SYNC operations to observe state changes, eventually causes significant CPU processing overhead in the hypervisor. The QDIO pass-through support for V=V guests avoids the shadowing of SBALs and SLSBs. This significantly reduces the hypervisor overhead for QDIO based I/O
+2025-03-14 16:57:39,510 - pipeline - INFO - 
+【实体对比】1895.0
+2025-03-14 16:57:39,510 - pipeline - INFO - ✅ 正确识别 (21): hypervisor overhead, queue, z/vm, siga sync, elements, structures, slsbs, sbals, v=v, state, hypervisor, architecture, lpar, i/o, v=r, guest environments, shadowing, cpu processing overhead, cpu, qdio, hiper sockets
+2025-03-14 16:57:39,510 - pipeline - INFO - ❗ 误报实体 (25): siga sync operations, overhead, changes, mode, v=v guests, guest, hiper, guests, qdio architecture queue elements, pass-through, processing overhead, shadowing of sbals and slsbs, v=v guest environments, processing, lpar mode, siga, qdio v=v pass-through, sockets, qdio pass-through support, qdio based i/o, operations, queue elements, environments, sync, state changes
+2025-03-14 16:57:39,510 - pipeline - INFO - ❌ 漏报实体 (1): issue
+2025-03-14 16:57:39,510 - pipeline - INFO - 
+Processing feature ID: 37556.0
+2025-03-14 16:57:39,510 - pipeline - INFO - Feature Description: F2FS Introduce max_ordered_discard sysfs node
+2025-03-14 16:57:52,189 - pipeline - INFO - 
+【实体对比】37556.0
+2025-03-14 16:57:52,189 - pipeline - INFO - ✅ 正确识别 (4): sysfs, sysfs node, f2fs, max_ordered_discard
+2025-03-14 16:57:52,189 - pipeline - INFO - ❗ 误报实体 (4): node, discard, max, ordered
+2025-03-14 16:57:52,189 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:57:52,190 - pipeline - INFO - 
+Processing feature ID: 24600.0
+2025-03-14 16:57:52,190 - pipeline - INFO - Feature Description: qeth: add TX NAPI support for IQD devices
+2025-03-14 16:58:07,365 - pipeline - INFO - 
+【实体对比】24600.0
+2025-03-14 16:58:07,365 - pipeline - INFO - ✅ 正确识别 (7): iqd devices, tx napi, iqd, tx, qeth, devices, napi
+2025-03-14 16:58:07,365 - pipeline - INFO - ❗ 误报实体 (0): 
+2025-03-14 16:58:07,365 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:58:07,365 - pipeline - INFO - 
+Processing feature ID: 17113.0
+2025-03-14 16:58:07,365 - pipeline - INFO - Feature Description: POWERPC Implement STRICT_KERNEL_RWX on PPC32
+2025-03-14 16:58:20,439 - pipeline - INFO - 
+【实体对比】17113.0
+2025-03-14 16:58:20,440 - pipeline - INFO - ✅ 正确识别 (3): powerpc, ppc32, strict_kernel_rwx
+2025-03-14 16:58:20,440 - pipeline - INFO - ❗ 误报实体 (0): 
+2025-03-14 16:58:20,440 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:58:20,440 - pipeline - INFO - 
+Processing feature ID: 34815.0
+2025-03-14 16:58:20,440 - pipeline - INFO - Feature Description: uvcvideo: Add support for Apple T2-attached FaceTime HD Camera
+2025-03-14 16:58:40,665 - pipeline - INFO - 
+【实体对比】34815.0
+2025-03-14 16:58:40,665 - pipeline - INFO - ✅ 正确识别 (6): camera, hd, apple t2, facetime, facetime hd camera, uvcvideo
+2025-03-14 16:58:40,665 - pipeline - INFO - ❗ 误报实体 (2): t2, apple
+2025-03-14 16:58:40,665 - pipeline - INFO - ❌ 漏报实体 (2): apple t2-attached facetime hd camera, hd camera
+2025-03-14 16:58:40,665 - pipeline - INFO - 
+Processing feature ID: 39846.0
+2025-03-14 16:58:40,665 - pipeline - INFO - Feature Description: New boards (32 bit) Endian 4i Edge 200 based on the armv5 Marvell Kirkwood chip
+2025-03-14 16:58:54,540 - pipeline - INFO - 
+【实体对比】39846.0
+2025-03-14 16:58:54,540 - pipeline - INFO - ✅ 正确识别 (6): 32 bit, endian 4i edge 200, boards, armv5, chip, marvell kirkwood
+2025-03-14 16:58:54,540 - pipeline - INFO - ❗ 误报实体 (9): marvell, armv5 marvell kirkwood chip, 32, kirkwood, bit, 200, 4i edge 200, edge, 4i
+2025-03-14 16:58:54,541 - pipeline - INFO - ❌ 漏报实体 (1): marvell kirkwood chip
+2025-03-14 16:58:54,541 - pipeline - INFO - 
+Processing feature ID: 44377.0
+2025-03-14 16:58:54,541 - pipeline - INFO - Feature Description: imx: clk-audiomix: Improvement for audiomix
+2025-03-14 16:59:04,389 - pipeline - INFO - 
+【实体对比】44377.0
+2025-03-14 16:59:04,389 - pipeline - INFO - ✅ 正确识别 (3): imx, audiomix, clk-audiomix
+2025-03-14 16:59:04,389 - pipeline - INFO - ❗ 误报实体 (2): clk, improvement
+2025-03-14 16:59:04,389 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:59:04,389 - pipeline - INFO - 
+Processing feature ID: 8287.0
+2025-03-14 16:59:04,389 - pipeline - INFO - Feature Description: Add support for Stantum multitouch panel
+2025-03-14 16:59:18,476 - pipeline - INFO - 
+【实体对比】8287.0
+2025-03-14 16:59:18,477 - pipeline - INFO - ✅ 正确识别 (2): multitouch panel, stantum multitouch panel
+2025-03-14 16:59:18,477 - pipeline - INFO - ❗ 误报实体 (2): stantum, panel
+2025-03-14 16:59:18,477 - pipeline - INFO - ❌ 漏报实体 (1): touch panel
+2025-03-14 16:59:18,477 - pipeline - INFO - 
+Processing feature ID: 33435.0
+2025-03-14 16:59:18,477 - pipeline - INFO - Feature Description: Intel Use Transparent Hugepages when IOMMU is enabled
+2025-03-14 16:59:30,687 - pipeline - INFO - 
+【实体对比】33435.0
+2025-03-14 16:59:30,687 - pipeline - INFO - ✅ 正确识别 (3): transparent hugepages, intel, iommu
+2025-03-14 16:59:30,687 - pipeline - INFO - ❗ 误报实体 (1): hugepages
+2025-03-14 16:59:30,687 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:59:30,687 - pipeline - INFO - 
+Processing feature ID: 12008.0
+2025-03-14 16:59:30,687 - pipeline - INFO - Feature Description: openvswitch Introduce a new flag  for operations which should be allowed inside a user namespace
+2025-03-14 16:59:46,855 - pipeline - INFO - 
+【实体对比】12008.0
+2025-03-14 16:59:46,855 - pipeline - INFO - ✅ 正确识别 (4): flag, openvswitch, user namespace, namespace
+2025-03-14 16:59:46,855 - pipeline - INFO - ❗ 误报实体 (1): operations
+2025-03-14 16:59:46,855 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 16:59:46,855 - pipeline - INFO - 
+Processing feature ID: 37508.0
+2025-03-14 16:59:46,855 - pipeline - INFO - Feature Description: reset: add polarfire soc reset support
+2025-03-14 17:00:00,817 - pipeline - INFO - 
+【实体对比】37508.0
+2025-03-14 17:00:00,817 - pipeline - INFO - ✅ 正确识别 (3): soc, reset, polarfire soc
+2025-03-14 17:00:00,817 - pipeline - INFO - ❗ 误报实体 (3): polarfire, reset support, polarfire soc reset
+2025-03-14 17:00:00,817 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:00:00,817 - pipeline - INFO - 
+Processing feature ID: 36256.0
+2025-03-14 17:00:00,817 - pipeline - INFO - Feature Description: Scheduler Improve NUMA imbalance behavior. On certain systems with spare capacity initial placement of tasks is non-deterministic and such an artificial placement imbalance can persist for a long time hurting performance. Note that some performance regressions were reported against this caused by workloads that are not memory bandwith limited which benefit from the artificial locality of the placement bug(s); the choice has been done that consistency is better than random workload benefits from non-deterministic bugs
+2025-03-14 17:00:19,998 - pipeline - INFO - 
+【实体对比】36256.0
+2025-03-14 17:00:19,998 - pipeline - INFO - ✅ 正确识别 (7): performance regressions, tasks, memory bandwidth, scheduler, performance, numa, random
+2025-03-14 17:00:19,998 - pipeline - INFO - ❗ 误报实体 (26): artificial locality, initial placement, random workload, non-deterministic bugs, artificial placement imbalance, spare, consistency, placement bug(s), locality, bandwidth, spare capacity, systems, numa imbalance behavior, placement bug, workloads, imbalance, capacity, regressions, workload benefits, behavior, placement, random workload benefits, placement imbalance, bug(s), bugs, memory
+2025-03-14 17:00:19,998 - pipeline - INFO - ❌ 漏报实体 (1): bug
+2025-03-14 17:00:19,998 - pipeline - INFO - 
+Processing feature ID: 3187.0
+2025-03-14 17:00:19,998 - pipeline - INFO - Feature Description: Add support for ACPI controlled removable drive bays such as the IBM ultrabay or the Dell Module Bay
+2025-03-14 17:00:32,002 - pipeline - INFO - 
+【实体对比】3187.0
+2025-03-14 17:00:32,002 - pipeline - INFO - ✅ 正确识别 (5): ibm ultrabay, removable drive bays, acpi, dell module bay, drive bays
+2025-03-14 17:00:32,002 - pipeline - INFO - ❗ 误报实体 (5): ultrabay, module bay, ibm, dell, acpi controlled removable drive bays
+2025-03-14 17:00:32,002 - pipeline - INFO - ❌ 漏报实体 (1): driver
+2025-03-14 17:00:32,002 - pipeline - INFO - 
+Processing feature ID: 14123.0
+2025-03-14 17:00:32,002 - pipeline - INFO - Feature Description: devfreq support rockchip dfi controller
+2025-03-14 17:00:51,245 - pipeline - INFO - 
+【实体对比】14123.0
+2025-03-14 17:00:51,245 - pipeline - INFO - ✅ 正确识别 (5): rockchip, devfreq, controller, dfi controller, rockchip dfi
+2025-03-14 17:00:51,245 - pipeline - INFO - ❗ 误报实体 (2): dfi, rockchip dfi controller
+2025-03-14 17:00:51,245 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:00:51,245 - pipeline - INFO - 
+Processing feature ID: 7896.0
+2025-03-14 17:00:51,245 - pipeline - INFO - Feature Description: soc-camera: add a new driver for the RJ54N1CB0C camera sensor from Sharp  add mt9t112 camera driver
+2025-03-14 17:01:07,972 - pipeline - INFO - 
+【实体对比】7896.0
+2025-03-14 17:01:07,972 - pipeline - INFO - ✅ 正确识别 (7): rj54n1cb0c, soc-camera, camera driver, driver, mt9t112, camera sensor, sharp
+2025-03-14 17:01:07,972 - pipeline - INFO - ❗ 误报实体 (3): sensor, soc, camera
+2025-03-14 17:01:07,972 - pipeline - INFO - ❌ 漏报实体 (1): rj54n1cb0c camera sensor
+2025-03-14 17:01:07,973 - pipeline - INFO - 
+Processing feature ID: 20399.0
+2025-03-14 17:01:07,973 - pipeline - INFO - Feature Description: lan743x: Add RSS support
+2025-03-14 17:01:21,809 - pipeline - INFO - 
+【实体对比】20399.0
+2025-03-14 17:01:21,809 - pipeline - INFO - ✅ 正确识别 (2): rss, lan743x
+2025-03-14 17:01:21,809 - pipeline - INFO - ❗ 误报实体 (1): rss support
+2025-03-14 17:01:21,809 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:01:21,809 - pipeline - INFO - 
+Processing feature ID: 42360.0
+2025-03-14 17:01:21,809 - pipeline - INFO - Feature Description: lib sort: Optimize the number of swaps and comparisons
+2025-03-14 17:01:35,130 - pipeline - INFO - 
+【实体对比】42360.0
+2025-03-14 17:01:35,130 - pipeline - INFO - ✅ 正确识别 (4): swaps, sort, comparisons, lib
+2025-03-14 17:01:35,130 - pipeline - INFO - ❗ 误报实体 (3): number of comparisons, number of swaps, lib sort
+2025-03-14 17:01:35,130 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:01:35,131 - pipeline - INFO - 
+Processing feature ID: 13400.0
+2025-03-14 17:01:35,131 - pipeline - INFO - Feature Description: ath10k: add pdev param support to enable/disable btcoex
+2025-03-14 17:01:47,323 - pipeline - INFO - 
+【实体对比】13400.0
+2025-03-14 17:01:47,324 - pipeline - INFO - ✅ 正确识别 (3): pdev param, ath10k, btcoex
+2025-03-14 17:01:47,324 - pipeline - INFO - ❗ 误报实体 (4): pdev, enable/disable btcoex, btcoex support, param
+2025-03-14 17:01:47,324 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:01:47,324 - pipeline - INFO - 
+Processing feature ID: 5453.0
+2025-03-14 17:01:47,324 - pipeline - INFO - Feature Description: PPC Make the 64-bit kernel as a position-independent executable
+2025-03-14 17:02:29,287 - pipeline - INFO - 
+【实体对比】5453.0
+2025-03-14 17:02:29,287 - pipeline - INFO - ✅ 正确识别 (3): 64-bit kernel, ppc, position-independent executable
+2025-03-14 17:02:29,288 - pipeline - INFO - ❗ 误报实体 (3): position-independent, kernel, 64-bit
+2025-03-14 17:02:29,288 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:02:29,288 - pipeline - INFO - 
+Processing feature ID: 27935.0
+2025-03-14 17:02:29,288 - pipeline - INFO - Feature Description: Support watchdog with longer timeout period
+2025-03-14 17:02:43,477 - pipeline - INFO - 
+【实体对比】27935.0
+2025-03-14 17:02:43,477 - pipeline - INFO - ✅ 正确识别 (3): timeout, watchdog, timeout period
+2025-03-14 17:02:43,478 - pipeline - INFO - ❗ 误报实体 (2): period, longer timeout period
+2025-03-14 17:02:43,478 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:02:43,478 - pipeline - INFO - 
+Processing feature ID: 16696.0
+2025-03-14 17:02:43,478 - pipeline - INFO - Feature Description: mediatek: add spi support for mt7622 IC  and for mt2712 IC
+2025-03-14 17:03:00,192 - pipeline - INFO - 
+【实体对比】16696.0
+2025-03-14 17:03:00,192 - pipeline - INFO - ✅ 正确识别 (5): mt7622, spi, ic, mt2712, mediatek
+2025-03-14 17:03:00,192 - pipeline - INFO - ❗ 误报实体 (3): spi support, mt7622 ic, mt2712 ic
+2025-03-14 17:03:00,192 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:03:00,192 - pipeline - INFO - 
+Processing feature ID: 33364.0
+2025-03-14 17:03:00,192 - pipeline - INFO - Feature Description: (FEATURED) Support Intel Advanced Matrix Extensions (AMX). These extensions will be shipping on servers soon. AMX consists of configurable TMM "TILE" registers plus new CPU instructions that operate on them. TMUL (Tile matrix MULtiply) is the first operator to take advantage of the new registers and we anticipate additional instructions in the future. Neither AMX state nor TMUL instructions depend on AVX
+2025-03-14 17:03:15,051 - pipeline - INFO - 
+【实体对比】33364.0
+2025-03-14 17:03:15,051 - pipeline - INFO - ✅ 正确识别 (10): tmm, tile matrix multiply, amx state, tile, intel advanced matrix extensions, avx, registers, tmul, cpu instructions, amx
+2025-03-14 17:03:15,051 - pipeline - INFO - ❗ 误报实体 (12): operator, instructions, intel, multiply, advanced matrix extensions, servers, tmul instructions, cpu, configurable tmm, matrix, extensions, tile matrix
+2025-03-14 17:03:15,051 - pipeline - INFO - ❌ 漏报实体 (1): instruction
+2025-03-14 17:03:15,051 - pipeline - INFO - 
+Processing feature ID: 12851.0
+2025-03-14 17:03:15,051 - pipeline - INFO - Feature Description: ASoC tlv320aic32x4: Add 96k sample rate  add SPI support
+2025-03-14 17:03:24,309 - pipeline - INFO - 
+【实体对比】12851.0
+2025-03-14 17:03:24,309 - pipeline - INFO - ✅ 正确识别 (4): asoc, tlv320aic32x4, 96k sample rate, spi
+2025-03-14 17:03:24,309 - pipeline - INFO - ❗ 误报实体 (3): spi support, sample rate, 96k
+2025-03-14 17:03:24,310 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:03:24,310 - pipeline - INFO - 
+Processing feature ID: 8153.0
+2025-03-14 17:03:24,310 - pipeline - INFO - Feature Description: SATA/PATA ata_piix: IDE Mode SATA patch for Intel Cougar Point DeviceIDs
+2025-03-14 17:03:48,021 - pipeline - INFO - 
+【实体对比】8153.0
+2025-03-14 17:03:48,021 - pipeline - INFO - ✅ 正确识别 (8): intel, ata_piix, ide mode, sata, pata, deviceids, intel cougar point, cougar point
+2025-03-14 17:03:48,021 - pipeline - INFO - ❗ 误报实体 (10): ide, cougar point deviceids, device, ata, mode, patch, sata/pata, sata patch, piix, ids
+2025-03-14 17:03:48,021 - pipeline - INFO - ❌ 漏报实体 (1): intel cougar point deviceids
+2025-03-14 17:03:48,022 - pipeline - INFO - 
+Processing feature ID: 808.0
+2025-03-14 17:03:48,022 - pipeline - INFO - Feature Description: CRYPTO: Add Tnepres cipher support
+2025-03-14 17:04:00,121 - pipeline - INFO - 
+【实体对比】808.0
+2025-03-14 17:04:00,121 - pipeline - INFO - ✅ 正确识别 (3): cipher, tnepres, crypto
+2025-03-14 17:04:00,121 - pipeline - INFO - ❗ 误报实体 (1): tnepres cipher
+2025-03-14 17:04:00,121 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:04:00,121 - pipeline - INFO - 
+Processing feature ID: 2776.0
+2025-03-14 17:04:00,121 - pipeline - INFO - Feature Description: WE-21 support  and support for hostap  atmel  ipw2100  prism54  orinoco  airo  wl3501  zd1211rw  bcm43xx  ray_cs  ipw2200  zd1201
+2025-03-14 17:04:13,222 - pipeline - INFO - 
+【实体对比】2776.0
+2025-03-14 17:04:13,222 - pipeline - INFO - ✅ 正确识别 (12): ipw2100, hostap, orinoco, zd1211rw, airo, ipw2200, ray_cs, bcm43xx, atmel, prism54, zd1201, wl3501
+2025-03-14 17:04:13,222 - pipeline - INFO - ❗ 误报实体 (0): 
+2025-03-14 17:04:13,222 - pipeline - INFO - ❌ 漏报实体 (1): we-21
+2025-03-14 17:04:13,222 - pipeline - INFO - 
+Processing feature ID: 44848.0
+2025-03-14 17:04:13,222 - pipeline - INFO - Feature Description: Add support to PHYLINK for LAN743x/PCI11x1x chips
+2025-03-14 17:04:24,141 - pipeline - INFO - 
+【实体对比】44848.0
+2025-03-14 17:04:24,141 - pipeline - INFO - ✅ 正确识别 (4): lan743x, pci11x1x, phylink, chips
+2025-03-14 17:04:24,141 - pipeline - INFO - ❗ 误报实体 (1): lan743x/pci11x1x
+2025-03-14 17:04:24,141 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:04:24,141 - pipeline - INFO - 
+Processing feature ID: 10871.0
+2025-03-14 17:04:24,141 - pipeline - INFO - Feature Description: UBI: Dynamically allocate minor numbers
+2025-03-14 17:04:33,498 - pipeline - INFO - 
+【实体对比】10871.0
+2025-03-14 17:04:33,498 - pipeline - INFO - ✅ 正确识别 (2): minor numbers, ubi
+2025-03-14 17:04:33,498 - pipeline - INFO - ❗ 误报实体 (4): allocation, dynamically allocate, numbers, minor
+2025-03-14 17:04:33,498 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:04:33,499 - pipeline - INFO - 
+Processing feature ID: 14520.0
+2025-03-14 17:04:33,499 - pipeline - INFO - Feature Description: nvme Add NXP LPC18xx OTP driver
+2025-03-14 17:04:48,816 - pipeline - INFO - 
+【实体对比】14520.0
+2025-03-14 17:04:48,817 - pipeline - INFO - ✅ 正确识别 (7): lpc18xx, nvme, nxp lpc18xx, otp, nxp, driver, otp driver
+2025-03-14 17:04:48,817 - pipeline - INFO - ❗ 误报实体 (2): nxp lpc18xx otp, lpc18xx otp
+2025-03-14 17:04:48,817 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:04:48,817 - pipeline - INFO - 
+Processing feature ID: 33258.0
+2025-03-14 17:04:48,817 - pipeline - INFO - Feature Description: phy: supported interfaces bitmap
+2025-03-14 17:05:01,815 - pipeline - INFO - 
+【实体对比】33258.0
+2025-03-14 17:05:01,816 - pipeline - INFO - ✅ 正确识别 (3): bitmap, phy, supported interfaces
+2025-03-14 17:05:01,816 - pipeline - INFO - ❗ 误报实体 (1): interfaces
+2025-03-14 17:05:01,816 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:05:01,816 - pipeline - INFO - 
+Processing feature ID: 38669.0
+2025-03-14 17:05:01,816 - pipeline - INFO - Feature Description: RDMA/hns: Support cqe inline in user space
+2025-03-14 17:05:13,923 - pipeline - INFO - 
+【实体对比】38669.0
+2025-03-14 17:05:13,923 - pipeline - INFO - ✅ 正确识别 (4): user space, rdma, hns, cqe
+2025-03-14 17:05:13,923 - pipeline - INFO - ❗ 误报实体 (3): inline, space, user
+2025-03-14 17:05:13,923 - pipeline - INFO - ❌ 漏报实体 (1): cqe inline
+2025-03-14 17:05:13,924 - pipeline - INFO - 
+Processing feature ID: 33610.0
+2025-03-14 17:05:13,924 - pipeline - INFO - Feature Description: r8169: Add device 10ec:8162 to driver r8169
+2025-03-14 17:05:24,231 - pipeline - INFO - 
+【实体对比】33610.0
+2025-03-14 17:05:24,231 - pipeline - INFO - ✅ 正确识别 (2): r8169, driver
+2025-03-14 17:05:24,231 - pipeline - INFO - ❗ 误报实体 (2): device, 10ec:8162
+2025-03-14 17:05:24,231 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:05:24,231 - pipeline - INFO - 
+Processing feature ID: 35685.0
+2025-03-14 17:05:24,231 - pipeline - INFO - Feature Description: PM / devfreq: rk3399_dmc: Support new disable-freq properties
+2025-03-14 17:05:40,794 - pipeline - INFO - 
+【实体对比】35685.0
+2025-03-14 17:05:40,794 - pipeline - INFO - ✅ 正确识别 (2): devfreq, pm
+2025-03-14 17:05:40,794 - pipeline - INFO - ❗ 误报实体 (4): properties, rk3399_dmc, disable-freq properties, disable-freq
+2025-03-14 17:05:40,794 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:05:40,794 - pipeline - INFO - 
+Processing feature ID: 23977.0
+2025-03-14 17:05:40,794 - pipeline - INFO - Feature Description: mt7615 Add Smart Carrier Sense support
+2025-03-14 17:05:55,522 - pipeline - INFO - 
+【实体对比】23977.0
+2025-03-14 17:05:55,522 - pipeline - INFO - ✅ 正确识别 (1): mt7615
+2025-03-14 17:05:55,522 - pipeline - INFO - ❗ 误报实体 (5): smart carrier sense, carrier, sense, smart, carrier sense
+2025-03-14 17:05:55,522 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:05:55,522 - pipeline - INFO - 
+Processing feature ID: 31637.0
+2025-03-14 17:05:55,522 - pipeline - INFO - Feature Description: acpi_als: Add trigger support
+2025-03-14 17:06:05,946 - pipeline - INFO - 
+【实体对比】31637.0
+2025-03-14 17:06:05,946 - pipeline - INFO - ✅ 正确识别 (1): acpi_als
+2025-03-14 17:06:05,946 - pipeline - INFO - ❗ 误报实体 (2): trigger, trigger support
+2025-03-14 17:06:05,946 - pipeline - INFO - ❌ 漏报实体 (1): acpi
+2025-03-14 17:06:05,946 - pipeline - INFO - 
+Processing feature ID: 41.0
+2025-03-14 17:06:05,946 - pipeline - INFO - Feature Description: Add module support for m68knommu
+2025-03-14 17:06:17,162 - pipeline - INFO - 
+【实体对比】41.0
+2025-03-14 17:06:17,162 - pipeline - INFO - ✅ 正确识别 (1): m68knommu
+2025-03-14 17:06:17,162 - pipeline - INFO - ❗ 误报实体 (2): module support, module
+2025-03-14 17:06:17,162 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:06:17,162 - pipeline - INFO - 
+Processing feature ID: 315.0
+2025-03-14 17:06:17,162 - pipeline - INFO - Feature Description: TCP: Add tcp_default_win_scale sysctl
+2025-03-14 17:06:28,642 - pipeline - INFO - 
+【实体对比】315.0
+2025-03-14 17:06:28,643 - pipeline - INFO - ✅ 正确识别 (2): sysctl, tcp
+2025-03-14 17:06:28,643 - pipeline - INFO - ❗ 误报实体 (4): win, default, scale, tcp_default_win_scale
+2025-03-14 17:06:28,643 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:06:28,643 - pipeline - INFO - 
+Processing feature ID: 9779.0
+2025-03-14 17:06:28,643 - pipeline - INFO - Feature Description: Add support to aio ring pages migration
+2025-03-14 17:06:45,163 - pipeline - INFO - 
+【实体对比】9779.0
+2025-03-14 17:06:45,163 - pipeline - INFO - ✅ 正确识别 (4): aio ring, pages migration, aio, pages
+2025-03-14 17:06:45,164 - pipeline - INFO - ❗ 误报实体 (5): aio ring pages, ring, migration, ring pages, aio ring pages migration
+2025-03-14 17:06:45,164 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:06:45,164 - pipeline - INFO - 
+Processing feature ID: 455.0
+2025-03-14 17:06:45,164 - pipeline - INFO - Feature Description: cfq sysfs support
+2025-03-14 17:06:58,312 - pipeline - INFO - 
+【实体对比】455.0
+2025-03-14 17:06:58,313 - pipeline - INFO - ✅ 正确识别 (2): sysfs, cfq
+2025-03-14 17:06:58,313 - pipeline - INFO - ❗ 误报实体 (2): cfq sysfs, cfq sysfs support
+2025-03-14 17:06:58,313 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:06:58,313 - pipeline - INFO - 
+Processing feature ID: 32715.0
+2025-03-14 17:06:58,313 - pipeline - INFO - Feature Description: Support allocating gigantic hugepages using CMA
+2025-03-14 17:07:08,314 - pipeline - INFO - 
+【实体对比】32715.0
+2025-03-14 17:07:08,314 - pipeline - INFO - ✅ 正确识别 (2): cma, hugepages
+2025-03-14 17:07:08,314 - pipeline - INFO - ❗ 误报实体 (2): allocating, gigantic hugepages
+2025-03-14 17:07:08,314 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:07:08,315 - pipeline - INFO - 
+Processing feature ID: 44321.0
+2025-03-14 17:07:08,315 - pipeline - INFO - Feature Description: adc: ad4695: new driver for AD4695 and similar ADCs
+2025-03-14 17:07:18,853 - pipeline - INFO - 
+【实体对比】44321.0
+2025-03-14 17:07:18,853 - pipeline - INFO - ✅ 正确识别 (3): driver, adc, ad4695
+2025-03-14 17:07:18,853 - pipeline - INFO - ❗ 误报实体 (3): adcs, similar adcs, ad4695 driver
+2025-03-14 17:07:18,853 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:07:18,853 - pipeline - INFO - 
+Processing feature ID: 34197.0
+2025-03-14 17:07:18,853 - pipeline - INFO - Feature Description: hibernate: Allow ACPI hardware signature to be honoured
+2025-03-14 17:07:29,989 - pipeline - INFO - 
+【实体对比】34197.0
+2025-03-14 17:07:29,989 - pipeline - INFO - ✅ 正确识别 (3): hibernate, acpi, hardware signature
+2025-03-14 17:07:29,989 - pipeline - INFO - ❗ 误报实体 (3): acpi hardware signature, signature, hardware
+2025-03-14 17:07:29,989 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:07:29,990 - pipeline - INFO - 
+Processing feature ID: 11147.0
+2025-03-14 17:07:29,990 - pipeline - INFO - Feature Description: ARM64 Add support for Privileged Access Never (PAN; part of the ARMv8.1 Extensions) prevents the kernel or hypervisor from accessing user-space (EL0) memory directly
+2025-03-14 17:07:44,613 - pipeline - INFO - 
+【实体对比】11147.0
+2025-03-14 17:07:44,613 - pipeline - INFO - ✅ 正确识别 (6): el0, pan, privileged access never, kernel, hypervisor, arm64
+2025-03-14 17:07:44,613 - pipeline - INFO - ❗ 误报实体 (5): user-space, armv8.1, armv8.1 extensions, extensions, memory
+2025-03-14 17:07:44,613 - pipeline - INFO - ❌ 漏报实体 (1): user-space memory
+2025-03-14 17:07:44,613 - pipeline - INFO - 
+Processing feature ID: 33504.0
+2025-03-14 17:07:44,613 - pipeline - INFO - Feature Description: can: peak_usb: CANFD: store 64-bits hw timestamps
+2025-03-14 17:08:08,246 - pipeline - INFO - 
+【实体对比】33504.0
+2025-03-14 17:08:08,246 - pipeline - INFO - ✅ 正确识别 (4): peak_usb, hw timestamps, canfd, can
+2025-03-14 17:08:08,246 - pipeline - INFO - ❗ 误报实体 (7): timestamps, usb, bits, 64, peak, 64-bits, hw
+2025-03-14 17:08:08,246 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:08:08,247 - pipeline - INFO - 
+Processing feature ID: 7742.0
+2025-03-14 17:08:08,247 - pipeline - INFO - Feature Description: Microblaze Core oprofile configs and hooks
+2025-03-14 17:08:17,970 - pipeline - INFO - 
+【实体对比】7742.0
+2025-03-14 17:08:17,971 - pipeline - INFO - ✅ 正确识别 (3): microblaze core, hooks, oprofile
+2025-03-14 17:08:17,971 - pipeline - INFO - ❗ 误报实体 (3): core, configs, microblaze
+2025-03-14 17:08:17,971 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:08:17,971 - pipeline - INFO - 
+Processing feature ID: 448.0
+2025-03-14 17:08:17,971 - pipeline - INFO - Feature Description: Allow x86 to reenable interrupts on lock contention
+2025-03-14 17:08:28,520 - pipeline - INFO - 
+【实体对比】448.0
+2025-03-14 17:08:28,520 - pipeline - INFO - ✅ 正确识别 (3): interrupts, x86, lock contention
+2025-03-14 17:08:28,520 - pipeline - INFO - ❗ 误报实体 (2): lock, contention
+2025-03-14 17:08:28,520 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:08:28,520 - pipeline - INFO - 
+Processing feature ID: 9491.0
+2025-03-14 17:08:28,520 - pipeline - INFO - Feature Description: team: add ethtool support
+2025-03-14 17:08:38,645 - pipeline - INFO - 
+【实体对比】9491.0
+2025-03-14 17:08:38,645 - pipeline - INFO - ✅ 正确识别 (2): ethtool, team
+2025-03-14 17:08:38,645 - pipeline - INFO - ❗ 误报实体 (1): ethtool support
+2025-03-14 17:08:38,646 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:08:38,646 - pipeline - INFO - 
+Processing feature ID: 15137.0
+2025-03-14 17:08:38,646 - pipeline - INFO - Feature Description: mlx5 Expose vlan offloads capabilities
+2025-03-14 17:08:50,490 - pipeline - INFO - 
+【实体对比】15137.0
+2025-03-14 17:08:50,490 - pipeline - INFO - ✅ 正确识别 (3): offloads, vlan, mlx5
+2025-03-14 17:08:50,490 - pipeline - INFO - ❗ 误报实体 (2): capabilities, vlan offloads
+2025-03-14 17:08:50,490 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:08:50,490 - pipeline - INFO - 
+Processing feature ID: 41737.0
+2025-03-14 17:08:50,490 - pipeline - INFO - Feature Description: evm: disable EVM on overlayfs
+2025-03-14 17:09:00,751 - pipeline - INFO - 
+【实体对比】41737.0
+2025-03-14 17:09:00,752 - pipeline - INFO - ✅ 正确识别 (2): evm, overlayfs
+2025-03-14 17:09:00,752 - pipeline - INFO - ❗ 误报实体 (0): 
+2025-03-14 17:09:00,752 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:09:00,752 - pipeline - INFO - 
+Processing feature ID: 21440.0
+2025-03-14 17:09:00,752 - pipeline - INFO - Feature Description: NC-SI (Network Controller Sideband Interface) Add NCSI Mellanox OEM command
+2025-03-14 17:09:11,117 - pipeline - INFO - 
+【实体对比】21440.0
+2025-03-14 17:09:11,117 - pipeline - INFO - ✅ 正确识别 (3): mellanox, network controller sideband interface, nc-si
+2025-03-14 17:09:11,117 - pipeline - INFO - ❗ 误报实体 (6): mellanox oem command, command, oem, network controller, ncsi, sideband interface
+2025-03-14 17:09:11,117 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:09:11,117 - pipeline - INFO - 
+Processing feature ID: 33011.0
+2025-03-14 17:09:11,117 - pipeline - INFO - Feature Description: imx8ulp: Add pinctrl driver support
+2025-03-14 17:09:20,905 - pipeline - INFO - 
+【实体对比】33011.0
+2025-03-14 17:09:20,906 - pipeline - INFO - ✅ 正确识别 (3): driver, pinctrl, imx8ulp
+2025-03-14 17:09:20,906 - pipeline - INFO - ❗ 误报实体 (1): pinctrl driver
+2025-03-14 17:09:20,906 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:09:20,906 - pipeline - INFO - 
+Processing feature ID: 24424.0
+2025-03-14 17:09:20,906 - pipeline - INFO - Feature Description: Fix minutes or hours long stalls when setting nr_hugepages to too high values.
+2025-03-14 17:09:33,801 - pipeline - INFO - 
+【实体对比】24424.0
+2025-03-14 17:09:33,801 - pipeline - INFO - ✅ 正确识别 (1): nr_hugepages
+2025-03-14 17:09:33,801 - pipeline - INFO - ❗ 误报实体 (6): hours, values, stalls, high values, hugepages, minutes
+2025-03-14 17:09:33,801 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:09:33,801 - pipeline - INFO - 
+Processing feature ID: 27220.0
+2025-03-14 17:09:33,801 - pipeline - INFO - Feature Description: Device Tree updates Add Allwinner A20 based Olimex A20-OLinuXino-LIME-eMMC SBC
+2025-03-14 17:09:49,044 - pipeline - INFO - 
+【实体对比】27220.0
+2025-03-14 17:09:49,045 - pipeline - INFO - ✅ 正确识别 (3): device tree, sbc, allwinner a20
+2025-03-14 17:09:49,045 - pipeline - INFO - ❗ 误报实体 (6): device, a20, olimex a20-olinuxino-lime-emmc, olimex, allwinner, tree
+2025-03-14 17:09:49,045 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:09:49,045 - pipeline - INFO - 
+Processing feature ID: 14548.0
+2025-03-14 17:09:49,045 - pipeline - INFO - Feature Description: slicoss: add slicoss gigabit Ethernet driver
+2025-03-14 17:10:01,080 - pipeline - INFO - 
+【实体对比】14548.0
+2025-03-14 17:10:01,080 - pipeline - INFO - ✅ 正确识别 (3): slicoss, gigabit ethernet, ethernet
+2025-03-14 17:10:01,080 - pipeline - INFO - ❗ 误报实体 (3): gigabit, driver, slicoss gigabit ethernet driver
+2025-03-14 17:10:01,080 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:10:01,081 - pipeline - INFO - 
+Processing feature ID: 29953.0
+2025-03-14 17:10:01,081 - pipeline - INFO - Feature Description: iommu/io-pgtable-arm: Add support to use system cache
+2025-03-14 17:10:19,118 - pipeline - INFO - 
+【实体对比】29953.0
+2025-03-14 17:10:19,118 - pipeline - INFO - ✅ 正确识别 (2): cache, iommu
+2025-03-14 17:10:19,118 - pipeline - INFO - ❗ 误报实体 (3): system, io-pgtable-arm, system cache
+2025-03-14 17:10:19,118 - pipeline - INFO - ❌ 漏报实体 (2): io-pgtable, arm
+2025-03-14 17:10:19,118 - pipeline - INFO - 
+Processing feature ID: 24536.0
+2025-03-14 17:10:19,118 - pipeline - INFO - Feature Description: crypto aes-ce: provide a synchronous version of ctr(aes)
+2025-03-14 17:10:28,733 - pipeline - INFO - 
+【实体对比】24536.0
+2025-03-14 17:10:28,733 - pipeline - INFO - ✅ 正确识别 (3): crypto, aes, ctr
+2025-03-14 17:10:28,733 - pipeline - INFO - ❗ 误报实体 (5): ctr(aes), aes-ce, synchronous version, version, ce
+2025-03-14 17:10:28,733 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:10:28,733 - pipeline - INFO - 
+Processing feature ID: 39728.0
+2025-03-14 17:10:28,733 - pipeline - INFO - Feature Description: EXT4 Multiblock allocator improvements
+2025-03-14 17:10:38,933 - pipeline - INFO - 
+【实体对比】39728.0
+2025-03-14 17:10:38,933 - pipeline - INFO - ✅ 正确识别 (2): multiblock allocator, ext4
+2025-03-14 17:10:38,933 - pipeline - INFO - ❗ 误报实体 (4): multiblock, ext4 multiblock allocator, allocator, improvements
+2025-03-14 17:10:38,933 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:10:38,933 - pipeline - INFO - 
+Processing feature ID: 27907.0
+2025-03-14 17:10:38,933 - pipeline - INFO - Feature Description: HID lenovo: Add ThinkPad 10 Ultrabook Keyboard support
+2025-03-14 17:10:49,471 - pipeline - INFO - 
+【实体对比】27907.0
+2025-03-14 17:10:49,472 - pipeline - INFO - ✅ 正确识别 (2): hid, lenovo
+2025-03-14 17:10:49,472 - pipeline - INFO - ❗ 误报实体 (6): keyboard, thinkpad 10, ultrabook, ultrabook keyboard, thinkpad 10 ultrabook keyboard, thinkpad
+2025-03-14 17:10:49,472 - pipeline - INFO - ❌ 漏报实体 (1): keyboard 
+2025-03-14 17:10:49,472 - pipeline - INFO - 
+Processing feature ID: 20952.0
+2025-03-14 17:10:49,472 - pipeline - INFO - Feature Description: sun4i R40 HDMI support
+2025-03-14 17:10:59,170 - pipeline - INFO - 
+【实体对比】20952.0
+2025-03-14 17:10:59,170 - pipeline - INFO - ✅ 正确识别 (3): sun4i, r40, hdmi
+2025-03-14 17:10:59,170 - pipeline - INFO - ❗ 误报实体 (3): sun4i r40 hdmi, sun4i r40, hdmi support
+2025-03-14 17:10:59,170 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:10:59,170 - pipeline - INFO - 
+Processing feature ID: 5532.0
+2025-03-14 17:10:59,170 - pipeline - INFO - Feature Description: Suspend support for AMD K7 GART driver
+2025-03-14 17:11:16,651 - pipeline - INFO - 
+【实体对比】5532.0
+2025-03-14 17:11:16,651 - pipeline - INFO - ✅ 正确识别 (5): gart, amd k7, amd, suspend, driver
+2025-03-14 17:11:16,651 - pipeline - INFO - ❗ 误报实体 (3): suspend support, k7, amd k7 gart
+2025-03-14 17:11:16,651 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:11:16,651 - pipeline - INFO - 
+Processing feature ID: 41088.0
+2025-03-14 17:11:16,651 - pipeline - INFO - Feature Description: firmware: Add support for Qualcomm UEFI Secure Application
+2025-03-14 17:11:27,909 - pipeline - INFO - 
+【实体对比】41088.0
+2025-03-14 17:11:27,909 - pipeline - INFO - ✅ 正确识别 (3): uefi, firmware, qualcomm
+2025-03-14 17:11:27,909 - pipeline - INFO - ❗ 误报实体 (2): qualcomm uefi secure application, secure application
+2025-03-14 17:11:27,909 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:11:27,909 - pipeline - INFO - 
+Processing feature ID: 43723.0
+2025-03-14 17:11:27,909 - pipeline - INFO - Feature Description: pcm: reinvent the stream synchronization ID API
+2025-03-14 17:11:48,427 - pipeline - INFO - 
+【实体对比】43723.0
+2025-03-14 17:11:48,428 - pipeline - INFO - ✅ 正确识别 (3): pcm, stream synchronization, api
+2025-03-14 17:11:48,428 - pipeline - INFO - ❗ 误报实体 (5): id, stream, stream synchronization id api, stream synchronization id, synchronization
+2025-03-14 17:11:48,428 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:11:48,428 - pipeline - INFO - 
+Processing feature ID: 6696.0
+2025-03-14 17:11:48,428 - pipeline - INFO - Feature Description: Speed up lmbench lat_mmap test
+2025-03-14 17:12:09,657 - pipeline - INFO - 
+【实体对比】6696.0
+2025-03-14 17:12:09,658 - pipeline - INFO - ✅ 正确识别 (2): lat_mmap, lmbench
+2025-03-14 17:12:09,658 - pipeline - INFO - ❗ 误报实体 (1): test
+2025-03-14 17:12:09,658 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:12:09,658 - pipeline - INFO - 
+Processing feature ID: 35039.0
+2025-03-14 17:12:09,658 - pipeline - INFO - Feature Description: remoteproc qcom: q6v5: Add interconnect path proxy vote
+2025-03-14 17:12:20,714 - pipeline - INFO - 
+【实体对比】35039.0
+2025-03-14 17:12:20,714 - pipeline - INFO - ✅ 正确识别 (5): interconnect, qcom, proxy vote, remoteproc, q6v5
+2025-03-14 17:12:20,714 - pipeline - INFO - ❗ 误报实体 (4): path, interconnect path, proxy, vote
+2025-03-14 17:12:20,714 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:12:20,715 - pipeline - INFO - 
+Processing feature ID: 22403.0
+2025-03-14 17:12:20,715 - pipeline - INFO - Feature Description: vimc: Add vimc-streamer for stream control
+2025-03-14 17:12:29,750 - pipeline - INFO - 
+【实体对比】22403.0
+2025-03-14 17:12:29,750 - pipeline - INFO - ✅ 正确识别 (2): vimc, vimc-streamer
+2025-03-14 17:12:29,750 - pipeline - INFO - ❗ 误报实体 (3): control, stream, stream control
+2025-03-14 17:12:29,750 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:12:29,751 - pipeline - INFO - 
+Processing feature ID: 24966.0
+2025-03-14 17:12:29,751 - pipeline - INFO - Feature Description: dsa ocelot: DSA driver for Vitesse Felix switch
+2025-03-14 17:12:49,401 - pipeline - INFO - 
+【实体对比】24966.0
+2025-03-14 17:12:49,401 - pipeline - INFO - ✅ 正确识别 (3): vitesse, ocelot, dsa
+2025-03-14 17:12:49,401 - pipeline - INFO - ❗ 误报实体 (7): dsa driver, driver, felix, vitesse felix, dsa ocelot, switch, vitesse felix switch
+2025-03-14 17:12:49,401 - pipeline - INFO - ❌ 漏报实体 (1): felix switch
+2025-03-14 17:12:49,401 - pipeline - INFO - 
+Processing feature ID: 44567.0
+2025-03-14 17:12:49,401 - pipeline - INFO - Feature Description: zswap: implement a second chance algorithm for dynamic zswap shrinker. Some tuning to improve zswap's dynamic shrinker
+2025-03-14 17:13:05,636 - pipeline - INFO - 
+【实体对比】44567.0
+2025-03-14 17:13:05,637 - pipeline - INFO - ✅ 正确识别 (3): zswap shrinker, zswap, second chance algorithm
+2025-03-14 17:13:05,637 - pipeline - INFO - ❗ 误报实体 (7): second chance, zswap's dynamic shrinker, shrinker, dynamic shrinker, dynamic zswap shrinker, tuning, algorithm
+2025-03-14 17:13:05,637 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:13:05,637 - pipeline - INFO - 
+Processing feature ID: 12492.0
+2025-03-14 17:13:05,637 - pipeline - INFO - Feature Description: bcma: support chipsets with PMU and GCI cores (devices)
+2025-03-14 17:13:17,639 - pipeline - INFO - 
+【实体对比】12492.0
+2025-03-14 17:13:17,639 - pipeline - INFO - ✅ 正确识别 (2): pmu, bcma
+2025-03-14 17:13:17,639 - pipeline - INFO - ❗ 误报实体 (9): chipsets, devices, chipsets with pmu and gci cores, gci cores, gci, chipsets with pmu, pmu cores, cores, support chipsets
+2025-03-14 17:13:17,639 - pipeline - INFO - ❌ 漏报实体 (1): chipset
+2025-03-14 17:13:17,640 - pipeline - INFO - 
+Processing feature ID: 13898.0
+2025-03-14 17:13:17,640 - pipeline - INFO - Feature Description: device tree sources db820c: add basic board support
+2025-03-14 17:13:33,179 - pipeline - INFO - 
+【实体对比】13898.0
+2025-03-14 17:13:33,180 - pipeline - INFO - ✅ 正确识别 (3): device tree, device tree sources, db820c
+2025-03-14 17:13:33,180 - pipeline - INFO - ❗ 误报实体 (4): sources, tree, board support, board
+2025-03-14 17:13:33,180 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:13:33,180 - pipeline - INFO - 
+Processing feature ID: 39747.0
+2025-03-14 17:13:33,180 - pipeline - INFO - Feature Description: Add the ability to handle page faults on parts of files which are already in the page cache without taking the mmap lock
+2025-03-14 17:13:49,159 - pipeline - INFO - 
+【实体对比】39747.0
+2025-03-14 17:13:49,159 - pipeline - INFO - ✅ 正确识别 (3): page cache, page faults, mmap lock
+2025-03-14 17:13:49,159 - pipeline - INFO - ❗ 误报实体 (8): mmap, page, cache, ability, faults, parts of files, lock, files
+2025-03-14 17:13:49,159 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:13:49,159 - pipeline - INFO - 
+Processing feature ID: 39845.0
+2025-03-14 17:13:49,159 - pipeline - INFO - Feature Description: New boards (32 bit) Marantec Maveo board based on dhcor imx6ull module
+2025-03-14 17:14:01,424 - pipeline - INFO - 
+【实体对比】39845.0
+2025-03-14 17:14:01,424 - pipeline - INFO - ✅ 正确识别 (1): marantec maveo board
+2025-03-14 17:14:01,424 - pipeline - INFO - ❗ 误报实体 (9): 32 bit, imx6ull, dhcor imx6ull module, marantec, module, board, boards, dhcor, maveo
+2025-03-14 17:14:01,424 - pipeline - INFO - ❌ 漏报实体 (1): dhcor imx6ull
+2025-03-14 17:14:01,424 - pipeline - INFO - 
+Processing feature ID: 7075.0
+2025-03-14 17:14:01,424 - pipeline - INFO - Feature Description: kconfig: add make localyesconfig option
+2025-03-14 17:14:10,297 - pipeline - INFO - 
+【实体对比】7075.0
+2025-03-14 17:14:10,297 - pipeline - INFO - ✅ 正确识别 (2): kconfig, make localyesconfig
+2025-03-14 17:14:10,297 - pipeline - INFO - ❗ 误报实体 (2): option, localyesconfig
+2025-03-14 17:14:10,297 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:14:10,297 - pipeline - INFO - 
+Processing feature ID: 7220.0
+2025-03-14 17:14:10,297 - pipeline - INFO - Feature Description: x86 perf_counter bts: Add BTS support to perfcounters
+2025-03-14 17:14:21,773 - pipeline - INFO - 
+【实体对比】7220.0
+2025-03-14 17:14:21,774 - pipeline - INFO - ✅ 正确识别 (4): perfcounters, bts, x86, perf_counter
+2025-03-14 17:14:21,774 - pipeline - INFO - ❗ 误报实体 (1): bts support
+2025-03-14 17:14:21,774 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:14:21,774 - pipeline - INFO - 
+Processing feature ID: 24153.0
+2025-03-14 17:14:21,774 - pipeline - INFO - Feature Description: Switch over some users of cpuidle notifiers to the new QoS-based frequency limits
+2025-03-14 17:14:33,050 - pipeline - INFO - 
+【实体对比】24153.0
+2025-03-14 17:14:33,050 - pipeline - INFO - ✅ 正确识别 (2): cpuidle, qos
+2025-03-14 17:14:33,051 - pipeline - INFO - ❗ 误报实体 (6): limits, frequency limits, qos-based frequency limits, cpuidle notifiers, notifiers, frequency
+2025-03-14 17:14:33,051 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:14:33,051 - pipeline - INFO - 
+Processing feature ID: 36931.0
+2025-03-14 17:14:33,051 - pipeline - INFO - Feature Description: perf inject: Add a command line option to specify build ids
+2025-03-14 17:14:43,077 - pipeline - INFO - 
+【实体对比】36931.0
+2025-03-14 17:14:43,077 - pipeline - INFO - ✅ 正确识别 (2): perf inject, command line option
+2025-03-14 17:14:43,077 - pipeline - INFO - ❗ 误报实体 (7): build ids, perf, build, command line, ids, option, inject
+2025-03-14 17:14:43,077 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:14:43,077 - pipeline - INFO - 
+Processing feature ID: 16925.0
+2025-03-14 17:14:43,077 - pipeline - INFO - Feature Description: SQUASHFS Add zstd support (FEATURED)
+2025-03-14 17:14:54,785 - pipeline - INFO - 
+【实体对比】16925.0
+2025-03-14 17:14:54,786 - pipeline - INFO - ✅ 正确识别 (2): squashfs, zstd
+2025-03-14 17:14:54,786 - pipeline - INFO - ❗ 误报实体 (2): featured, zstd support
+2025-03-14 17:14:54,786 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:14:54,786 - pipeline - INFO - 
+Processing feature ID: 15.0
+2025-03-14 17:14:54,786 - pipeline - INFO - Feature Description: RAID 6 implementation
+2025-03-14 17:15:04,425 - pipeline - INFO - 
+【实体对比】15.0
+2025-03-14 17:15:04,425 - pipeline - INFO - ✅ 正确识别 (1): raid 6
+2025-03-14 17:15:04,425 - pipeline - INFO - ❗ 误报实体 (4): implementation, raid, raid 6 implementation, 6
+2025-03-14 17:15:04,425 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:15:04,425 - pipeline - INFO - 
+Processing feature ID: 13496.0
+2025-03-14 17:15:04,425 - pipeline - INFO - Feature Description: HID hid-led: add support for reading from LED devices
+2025-03-14 17:15:14,081 - pipeline - INFO - 
+【实体对比】13496.0
+2025-03-14 17:15:14,081 - pipeline - INFO - ✅ 正确识别 (2): hid, led
+2025-03-14 17:15:14,081 - pipeline - INFO - ❗ 误报实体 (2): reading, led devices
+2025-03-14 17:15:14,081 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:15:14,081 - pipeline - INFO - 
+Processing feature ID: 23405.0
+2025-03-14 17:15:14,081 - pipeline - INFO - Feature Description: isdn: remove isdn4linux
+2025-03-14 17:15:28,840 - pipeline - INFO - 
+【实体对比】23405.0
+2025-03-14 17:15:28,840 - pipeline - INFO - ✅ 正确识别 (2): isdn, isdn4linux
+2025-03-14 17:15:28,840 - pipeline - INFO - ❗ 误报实体 (0): 
+2025-03-14 17:15:28,840 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:15:28,840 - pipeline - INFO - 
+Processing feature ID: 35863.0
+2025-03-14 17:15:28,840 - pipeline - INFO - Feature Description: firmware Add the ability for userspace to initiate the firmware load when it needs to instead of being always initiated by the kernel
+2025-03-14 17:15:44,348 - pipeline - INFO - 
+【实体对比】35863.0
+2025-03-14 17:15:44,348 - pipeline - INFO - ✅ 正确识别 (2): userspace, firmware
+2025-03-14 17:15:44,348 - pipeline - INFO - ❗ 误报实体 (2): kernel, firmware load
+2025-03-14 17:15:44,348 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:15:44,348 - pipeline - INFO - 
+Processing feature ID: 25177.0
+2025-03-14 17:15:44,349 - pipeline - INFO - Feature Description: regulator: qcom_spmi: Add PM8950 SPMI regulator
+2025-03-14 17:15:58,560 - pipeline - INFO - 
+【实体对比】25177.0
+2025-03-14 17:15:58,560 - pipeline - INFO - ✅ 正确识别 (3): regulator, spmi, pm8950
+2025-03-14 17:15:58,560 - pipeline - INFO - ❗ 误报实体 (2): pm8950 spmi regulator, qcom_spmi
+2025-03-14 17:15:58,560 - pipeline - INFO - ❌ 漏报实体 (1): qcom
+2025-03-14 17:15:58,560 - pipeline - INFO - 
+Processing feature ID: 27076.0
+2025-03-14 17:15:58,560 - pipeline - INFO - Feature Description: Device Mapper dm writecache: improve performance on DDR persistent memory (Optane)
+2025-03-14 17:16:18,696 - pipeline - INFO - 
+【实体对比】27076.0
+2025-03-14 17:16:18,697 - pipeline - INFO - ✅ 正确识别 (5): optane, dm, device mapper, writecache, ddr
+2025-03-14 17:16:18,697 - pipeline - INFO - ❗ 误报实体 (6): device, dm writecache, ddr persistent memory, performance, mapper, persistent memory
+2025-03-14 17:16:18,697 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:16:18,697 - pipeline - INFO - 
+Processing feature ID: 41577.0
+2025-03-14 17:16:18,697 - pipeline - INFO - Feature Description: Add new channels for adis16475
+2025-03-14 17:16:37,381 - pipeline - INFO - 
+【实体对比】41577.0
+2025-03-14 17:16:37,381 - pipeline - INFO - ✅ 正确识别 (2): adis16475, channels
+2025-03-14 17:16:37,381 - pipeline - INFO - ❗ 误报实体 (0): 
+2025-03-14 17:16:37,381 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:16:37,381 - pipeline - INFO - 
+Processing feature ID: 24324.0
+2025-03-14 17:16:37,381 - pipeline - INFO - Feature Description: memory: mtk-smi: Add gals support
+2025-03-14 17:16:48,823 - pipeline - INFO - 
+【实体对比】24324.0
+2025-03-14 17:16:48,823 - pipeline - INFO - ✅ 正确识别 (3): memory, gals, mtk-smi
+2025-03-14 17:16:48,823 - pipeline - INFO - ❗ 误报实体 (1): gals support
+2025-03-14 17:16:48,823 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:16:48,824 - pipeline - INFO - 
+Processing feature ID: 41888.0
+2025-03-14 17:16:48,824 - pipeline - INFO - Feature Description: POWERPC Topology and shared processor optimizations
+2025-03-14 17:16:59,460 - pipeline - INFO - 
+【实体对比】41888.0
+2025-03-14 17:16:59,460 - pipeline - INFO - ✅ 正确识别 (3): powerpc, topology, shared processor
+2025-03-14 17:16:59,460 - pipeline - INFO - ❗ 误报实体 (3): processor, shared, optimizations
+2025-03-14 17:16:59,460 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:16:59,460 - pipeline - INFO - 
+Processing feature ID: 23505.0
+2025-03-14 17:16:59,460 - pipeline - INFO - Feature Description: amdgpu Support hwmon temperature channel labels V2
+2025-03-14 17:17:12,871 - pipeline - INFO - 
+【实体对比】23505.0
+2025-03-14 17:17:12,871 - pipeline - INFO - ✅ 正确识别 (3): amdgpu, hwmon, channel
+2025-03-14 17:17:12,871 - pipeline - INFO - ❗ 误报实体 (5): temperature channel, labels, temperature, v2, temperature channel labels
+2025-03-14 17:17:12,871 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:17:12,872 - pipeline - INFO - 
+Processing feature ID: 21423.0
+2025-03-14 17:17:12,872 - pipeline - INFO - Feature Description: devlink: Add 'fw_load_policy' generic parameter which gives the ability to control this option which allows the user to choose between different loading policies supported by the driver
+2025-03-14 17:17:25,755 - pipeline - INFO - 
+【实体对比】21423.0
+2025-03-14 17:17:25,755 - pipeline - INFO - ✅ 正确识别 (3): devlink, fw_load_policy, loading policies
+2025-03-14 17:17:25,755 - pipeline - INFO - ❗ 误报实体 (13): ability, option, policy, driver, policies, control, different loading policies, loading, user, fw, parameter, generic parameter, load
+2025-03-14 17:17:25,756 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:17:25,756 - pipeline - INFO - 
+Processing feature ID: 14370.0
+2025-03-14 17:17:25,756 - pipeline - INFO - Feature Description: B.A.T.M.A.N.: Simple (re)broadcast avoidance
+2025-03-14 17:17:36,368 - pipeline - INFO - 
+【实体对比】14370.0
+2025-03-14 17:17:36,369 - pipeline - INFO - ✅ 正确识别 (0): 
+2025-03-14 17:17:36,369 - pipeline - INFO - ❗ 误报实体 (5): broadcast, broadcast avoidance, re, avoidance, b.a.t.m.a.n.
+2025-03-14 17:17:36,369 - pipeline - INFO - ❌ 漏报实体 (1): b.a.t.m.a.n
+2025-03-14 17:17:36,369 - pipeline - INFO - 
+Processing feature ID: 172.0
+2025-03-14 17:17:36,369 - pipeline - INFO - Feature Description: reiserfs: AIO support
+2025-03-14 17:17:48,174 - pipeline - INFO - 
+【实体对比】172.0
+2025-03-14 17:17:48,174 - pipeline - INFO - ✅ 正确识别 (2): aio, reiserfs
+2025-03-14 17:17:48,174 - pipeline - INFO - ❗ 误报实体 (1): aio support
+2025-03-14 17:17:48,174 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:17:48,175 - pipeline - INFO - 
+Processing feature ID: 4612.0
+2025-03-14 17:17:48,175 - pipeline - INFO - Feature Description: wireless nl80211: export hardware bitrate/channel capabilities  nl80211: Add monitor interface configuration flags
+2025-03-14 17:18:06,842 - pipeline - INFO - 
+【实体对比】4612.0
+2025-03-14 17:18:06,842 - pipeline - INFO - ✅ 正确识别 (2): nl80211, bitrate
+2025-03-14 17:18:06,842 - pipeline - INFO - ❗ 误报实体 (15): hardware bitrate/channel capabilities, monitor interface configuration flags, wireless, channel, capabilities, monitor, flags, hardware bitrate, wireless nl80211, configuration flags, monitor interface, hardware, interface, channel capabilities, configuration
+2025-03-14 17:18:06,842 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:18:06,842 - pipeline - INFO - 
+Processing feature ID: 40168.0
+2025-03-14 17:18:06,842 - pipeline - INFO - Feature Description: ASoC tas2781: Add tas2781 driver
+2025-03-14 17:18:15,928 - pipeline - INFO - 
+【实体对比】40168.0
+2025-03-14 17:18:15,928 - pipeline - INFO - ✅ 正确识别 (2): asoc, tas2781
+2025-03-14 17:18:15,928 - pipeline - INFO - ❗ 误报实体 (2): driver, tas2781 driver
+2025-03-14 17:18:15,928 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:18:15,928 - pipeline - INFO - 
+Processing feature ID: 36406.0
+2025-03-14 17:18:15,928 - pipeline - INFO - Feature Description: fpga: m10bmc-sec: create max10 bmc secure update
+2025-03-14 17:18:26,472 - pipeline - INFO - 
+【实体对比】36406.0
+2025-03-14 17:18:26,472 - pipeline - INFO - ✅ 正确识别 (1): fpga
+2025-03-14 17:18:26,472 - pipeline - INFO - ❗ 误报实体 (6): update, secure, max10, secure update, bmc, m10bmc-sec
+2025-03-14 17:18:26,472 - pipeline - INFO - ❌ 漏报实体 (1): m10bmc
+2025-03-14 17:18:26,473 - pipeline - INFO - 
+Processing feature ID: 8489.0
+2025-03-14 17:18:26,473 - pipeline - INFO - Feature Description: bonding: allow user-controlled output slave selection
+2025-03-14 17:18:35,858 - pipeline - INFO - 
+【实体对比】8489.0
+2025-03-14 17:18:35,858 - pipeline - INFO - ✅ 正确识别 (1): bonding
+2025-03-14 17:18:35,858 - pipeline - INFO - ❗ 误报实体 (4): selection, output, user-controlled output slave selection, slave
+2025-03-14 17:18:35,858 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:18:35,858 - pipeline - INFO - 
+Processing feature ID: 40027.0
+2025-03-14 17:18:35,858 - pipeline - INFO - Feature Description: media: atomisp: Add enum_framesizes function for sensors with selection / crop support
+2025-03-14 17:18:51,304 - pipeline - INFO - 
+【实体对比】40027.0
+2025-03-14 17:18:51,304 - pipeline - INFO - ✅ 正确识别 (2): enum_framesizes, atomisp
+2025-03-14 17:18:51,304 - pipeline - INFO - ❗ 误报实体 (9): selection, selection / crop, crop support, media, framesizes, crop, function, enum, sensors
+2025-03-14 17:18:51,304 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:18:51,305 - pipeline - INFO - 
+Processing feature ID: 17466.0
+2025-03-14 17:18:51,305 - pipeline - INFO - Feature Description: mailbox: bcm-flexrm-mailbox: Add debugfs support
+2025-03-14 17:19:05,932 - pipeline - INFO - 
+【实体对比】17466.0
+2025-03-14 17:19:05,932 - pipeline - INFO - ✅ 正确识别 (2): debugfs, mailbox
+2025-03-14 17:19:05,932 - pipeline - INFO - ❗ 误报实体 (4): debugfs support, bcm, flexrm, bcm-flexrm-mailbox
+2025-03-14 17:19:05,932 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:19:05,932 - pipeline - INFO - 
+Processing feature ID: 19005.0
+2025-03-14 17:19:05,932 - pipeline - INFO - Feature Description: ARM Expose Arm v8.4 features
+2025-03-14 17:19:24,142 - pipeline - INFO - 
+【实体对比】19005.0
+2025-03-14 17:19:24,143 - pipeline - INFO - ✅ 正确识别 (1): arm
+2025-03-14 17:19:24,143 - pipeline - INFO - ❗ 误报实体 (3): arm v8.4, features, v8.4
+2025-03-14 17:19:24,143 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:19:24,143 - pipeline - INFO - 
+Processing feature ID: 5551.0
+2025-03-14 17:19:24,143 - pipeline - INFO - Feature Description: ath9k: Add LED support  add RF kill support  allow AP mode to be enabled
+2025-03-14 17:19:36,868 - pipeline - INFO - 
+【实体对比】5551.0
+2025-03-14 17:19:36,868 - pipeline - INFO - ✅ 正确识别 (3): ath9k, rf, ap mode
+2025-03-14 17:19:36,868 - pipeline - INFO - ❗ 误报实体 (7): rf kill, kill, led, mode, led support, rf kill support, ap
+2025-03-14 17:19:36,868 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:19:36,868 - pipeline - INFO - 
+Processing feature ID: 31098.0
+2025-03-14 17:19:36,869 - pipeline - INFO - Feature Description: New boards imx8mm-nitrogen-r2: add ecspi2 support
+2025-03-14 17:19:53,162 - pipeline - INFO - 
+【实体对比】31098.0
+2025-03-14 17:19:53,162 - pipeline - INFO - ✅ 正确识别 (1): ecspi2
+2025-03-14 17:19:53,162 - pipeline - INFO - ❗ 误报实体 (6): nitrogen, ecspi, imx8mm, boards, imx8mm-nitrogen-r2, r2
+2025-03-14 17:19:53,162 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:19:53,162 - pipeline - INFO - 
+Processing feature ID: 22075.0
+2025-03-14 17:19:53,162 - pipeline - INFO - Feature Description: New device tree sources X96 Max a generic TV box based on Amlogic G12a (S905X2)
+2025-03-14 17:20:05,436 - pipeline - INFO - 
+【实体对比】22075.0
+2025-03-14 17:20:05,436 - pipeline - INFO - ✅ 正确识别 (3): device tree, device tree sources, amlogic
+2025-03-14 17:20:05,436 - pipeline - INFO - ❗ 误报实体 (7): x96 max, g12a, amlogic g12a, sources, tv box, generic tv box, s905x2
+2025-03-14 17:20:05,436 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:20:05,437 - pipeline - INFO - 
+Processing feature ID: 33067.0
+2025-03-14 17:20:05,437 - pipeline - INFO - Feature Description: visconti: Add Toshiba Visconti PCIe host controller driver
+2025-03-14 17:20:17,639 - pipeline - INFO - 
+【实体对比】33067.0
+2025-03-14 17:20:17,639 - pipeline - INFO - ✅ 正确识别 (2): visconti, pcie
+2025-03-14 17:20:17,639 - pipeline - INFO - ❗ 误报实体 (8): host controller, toshiba visconti pcie host controller, toshiba visconti, toshiba visconti pcie, controller, toshiba, driver, pcie host controller
+2025-03-14 17:20:17,639 - pipeline - INFO - ❌ 漏报实体 (1): toshiba 
+2025-03-14 17:20:17,639 - pipeline - INFO - 
+Processing feature ID: 39942.0
+2025-03-14 17:20:17,639 - pipeline - INFO - Feature Description: Make ELFv2 ABI the default for 64-bit big-endian kernel builds
+2025-03-14 17:20:29,735 - pipeline - INFO - 
+【实体对比】39942.0
+2025-03-14 17:20:29,735 - pipeline - INFO - ✅ 正确识别 (2): abi, elfv2
+2025-03-14 17:20:29,735 - pipeline - INFO - ❗ 误报实体 (5): 64-bit, elfv2 abi, builds, kernel builds, kernel
+2025-03-14 17:20:29,735 - pipeline - INFO - ❌ 漏报实体 (2): elf, big-endian
+2025-03-14 17:20:29,736 - pipeline - INFO - 
+Processing feature ID: 29060.0
+2025-03-14 17:20:29,736 - pipeline - INFO - Feature Description: rtw88 Add dump fw crash log
+2025-03-14 17:20:38,844 - pipeline - INFO - 
+【实体对比】29060.0
+2025-03-14 17:20:38,845 - pipeline - INFO - ✅ 正确识别 (1): rtw88
+2025-03-14 17:20:38,845 - pipeline - INFO - ❗ 误报实体 (6): fw, log, dump, fw crash log, crash log, crash
+2025-03-14 17:20:38,845 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:20:38,845 - pipeline - INFO - 
+Processing feature ID: 37334.0
+2025-03-14 17:20:38,845 - pipeline - INFO - Feature Description: Drop V4L2_CAP_ASYNCIO
+2025-03-14 17:20:52,039 - pipeline - INFO - 
+【实体对比】37334.0
+2025-03-14 17:20:52,039 - pipeline - INFO - ✅ 正确识别 (1): v4l2_cap_asyncio
+2025-03-14 17:20:52,039 - pipeline - INFO - ❗ 误报实体 (3): asyncio, cap, v4l2
+2025-03-14 17:20:52,039 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:20:52,039 - pipeline - INFO - 
+Processing feature ID: 41014.0
+2025-03-14 17:20:52,040 - pipeline - INFO - Feature Description: pca995x: Add support for PCA995X chips
+2025-03-14 17:21:03,669 - pipeline - INFO - 
+【实体对比】41014.0
+2025-03-14 17:21:03,670 - pipeline - INFO - ✅ 正确识别 (1): pca995x
+2025-03-14 17:21:03,670 - pipeline - INFO - ❗ 误报实体 (2): chips, pca995x chips
+2025-03-14 17:21:03,670 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:21:03,670 - pipeline - INFO - 
+Processing feature ID: 17182.0
+2025-03-14 17:21:03,670 - pipeline - INFO - Feature Description: atmel-hlcdc Add 8-bit color support
+2025-03-14 17:21:13,672 - pipeline - INFO - 
+【实体对比】17182.0
+2025-03-14 17:21:13,673 - pipeline - INFO - ✅ 正确识别 (1): atmel-hlcdc
+2025-03-14 17:21:13,673 - pipeline - INFO - ❗ 误报实体 (3): color, 8-bit, 8-bit color
+2025-03-14 17:21:13,673 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:21:13,673 - pipeline - INFO - 
+Processing feature ID: 39645.0
+2025-03-14 17:21:13,673 - pipeline - INFO - Feature Description: atomisp: Remove depth-mode and continuous mode support
+2025-03-14 17:21:23,505 - pipeline - INFO - 
+【实体对比】39645.0
+2025-03-14 17:21:23,505 - pipeline - INFO - ✅ 正确识别 (1): atomisp
+2025-03-14 17:21:23,505 - pipeline - INFO - ❗ 误报实体 (4): continuous mode, depth-mode, depth, mode
+2025-03-14 17:21:23,505 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:21:23,505 - pipeline - INFO - 
+Processing feature ID: 35548.0
+2025-03-14 17:21:23,505 - pipeline - INFO - Feature Description: nfp VF rate limit support
+2025-03-14 17:21:33,132 - pipeline - INFO - 
+【实体对比】35548.0
+2025-03-14 17:21:33,132 - pipeline - INFO - ✅ 正确识别 (3): rate limit, vf, nfp
+2025-03-14 17:21:33,132 - pipeline - INFO - ❗ 误报实体 (4): limit, rate, nfp vf, nfp vf rate limit
+2025-03-14 17:21:33,132 - pipeline - INFO - ❌ 漏报实体 (0): 
+2025-03-14 17:21:33,132 - pipeline - INFO - 
+=== Overall Metrics ===
+2025-03-14 17:21:33,132 - pipeline - INFO - Multi_model - Precision: 0.4392, Recall: 0.9297, F1: 0.5965
+2025-03-14 17:21:33,132 - pipeline - INFO - 
+=== 误报实体统计 ===
+2025-03-14 17:21:33,132 - pipeline - INFO - 共发现 0 个独特误报实体
+
+=== 误报实体统计 ===
+共发现 464 个独特实体
+  mode: 出现 5 次
+  driver: 出现 5 次
+  device: 出现 4 次
+  tree: 出现 3 次
+  memory: 出现 3 次
+
+=== 漏报实体统计 ===
+共发现 30 个独特实体
+  ftdi: 出现 1 次
+  pch: 出现 1 次
+  idle: 出现 1 次
+  bcm63xx-usbh driver: 出现 1 次
+  issue: 出现 1 次
+
+Evaluation completed. Results saved to output directory.
