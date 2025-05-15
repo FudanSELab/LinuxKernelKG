@@ -59,6 +59,7 @@ class NameHandler:
         name = re.sub(r"\s+", " ", name)
         return name
 
+    # 检查同义词
     def check_synonym(self, long_term, short_term, max_dis=2, threshold=0.25):
         if long_term.isupper() and short_term.isupper():
             return False
@@ -134,6 +135,7 @@ class NameHandler:
 
             return False
 
+    # 检查缩写
     def check_abbr(self, long_term, short_term):
         long_name = self.normalize(long_term)
         short_name = self.normalize(short_term)

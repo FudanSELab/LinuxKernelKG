@@ -1,16 +1,10 @@
 from openai import OpenAI
 from config.llm_config import LLMType, LLM_CONFIG
 from utils.logger import setup_logger
+from utils.base_llm import BaseLLM
+from utils.batch_llm import BatchLLM
 import logging
 import time
-
-class BaseLLM:
-    def __init__(self, config: dict):
-        self.config = config
-        self.logger = setup_logger("llm", logging.DEBUG, console_output=False, file_output=True)
-
-    def get_response(self, prompt: str) -> str:
-        raise NotImplementedError
 
 class DeepseekLLM(BaseLLM):
     def __init__(self, config: dict):
@@ -121,5 +115,20 @@ class LLMFactory:
             return DeepseekLLM(config)
         elif llm_type == LLMType.OPENAI:
             return OpenAILLM(config)
+        elif llm_type == LLMType.BATCH:
+            return BatchLLM(config)
         else:
-            raise ValueError(f"Unsupported LLM type: {llm_type}") 
+            raise ValueError(f"Unsupported LLM type: {llm_type}")
+
+def create_llm(config):
+    """
+    Factory function to create an appropriate LLM instance based on config
+    """
+    llm_type = config.get("type", "default")
+    
+    if llm_type == "batch":
+        return BatchLLM(config)
+    # Add other LLM types as needed
+    else:
+        # Return default LLM implementation
+        raise ValueError(f"Unknown LLM type: {llm_type}")

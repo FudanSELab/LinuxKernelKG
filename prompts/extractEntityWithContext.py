@@ -11,7 +11,7 @@ class extractEntityWithContextPrompt:
       IMPORTANT: ONLY extract entities that appear in the feature_description text. Return your answer as a JSON format string.
 
     Entity extraction rules (extract ALL possible entities FROM FEATURE_DESCRIPTION ONLY):
-    1. BE EXTREMELY THOROUGH - extract EVERY possible entity, even if you're uncertain. It is CRITICAL to not miss any entities.
+    1. extract EVERY possible entity, even if you're uncertain. It is CRITICAL to not miss any entities.
     2. IMPORTANT CLARIFICATION: Extract BOTH compound terms (e.g., 'tree-checker', 'inline backrefs') AND their individual components ONLY when the components have independent technical meaning in context. 
        - GOOD EXAMPLE: For 'AES-256 encryption', extract both the full term and 'AES', 'AES-256', 'encryption' as they all have technical meaning.
        - BAD EXAMPLE: For 'custom operations', DO NOT extract 'custom' alone as it has no specific technical meaning by itself.
@@ -21,9 +21,8 @@ class extractEntityWithContextPrompt:
        - BAD EXAMPLE: For 'param_credit', DO NOT extract 'param' or 'credit' alone if they don't represent complete technical concepts in the Linux kernel context.
     5. Consider ALL technical jargon, system components, hardware elements, software concepts, and kernel-related terminology as potential entities.
     6. When you see numbers or identifiers that might represent versions, models, or specifications, include them as entities.
-    7. DO NOT extract standalone generic words that have no specific technical meaning in the Linux kernel context, such as 'param', 'credit', 'custom', 'operations' when they appear alone.
-    8. DO NOT extract common verbs and generic action words like: 'add', 'support', 'implement', 'enable', 'check', 'export', 'create', 'improve', 'optimize', 'fix', 'allow', 'make', 'use', 'handle', 'provide'
-    9. DO NOT extract generic descriptive words like: 'new', 'better', 'faster', 'improved', 'enhanced', 'basic', 'simple'
+    7. DO NOT extract common verbs and generic action words like: 'add', 'support', 'implement', 'enable', 'check', 'export', 'create', 'improve', 'optimize', 'fix', 'allow', 'make', 'use', 'handle', 'provide'
+    8. DO NOT extract generic descriptive words like: 'new', 'better', 'faster', 'improved', 'enhanced', 'basic', 'simple'
     You can refer to the examples field for guidance.",
     "examples": [{{
         "input": {{
@@ -50,7 +49,7 @@ class extractEntityWithContextPrompt:
             "feature_description": "Optimize inode allocation to improve performance on large directories"
         }},
         "output": {{
-            "entities": ["inode allocation", "inode", "allocation", "large directories", "directories"]
+            "entities": ["inode allocation", "inode", "directories"]
         }}
     }}, {{
         "input": {{
@@ -59,7 +58,7 @@ class extractEntityWithContextPrompt:
             "feature_description": "Implement AES-256 encryption for secure data transmission"
         }},
         "output": {{
-            "entities": ["AES-256 encryption","AES", "AES-256", "encryption", "secure data transmission", "secure", "data", "transmission"]
+            "entities": ["AES-256 encryption","AES", "AES-256", "encryption", "secure data transmission", "data"]
         }}
     }}, {{
         "input": {{

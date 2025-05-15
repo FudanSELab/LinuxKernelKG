@@ -7,12 +7,13 @@ from functools import wraps
 import logging
 
 class LinkCache:
-    def __init__(self, cache_file: str = "data/cache/link_cache_deepseek_local_205.json"):
+    def __init__(self, cache_file: str = "data/cache/link_cache_deepseek_online.json"):
         self.cache_file = cache_file
         self.cache_files = {
+            # 'main': self.cache_file.replace('.json','_main.json'),
             'main': self.cache_file,
-            'variations': self.cache_file.replace('.json', '_variations.json'),
-            'disambig': self.cache_file.replace('.json', '_disambig.json')
+            'variations': self.cache_file.replace('.json', '_0506_variations.json'),
+            'disambig': self.cache_file.replace('.json', '_0506_disambig.json')
         }
         self.caches = {
             'main': self._load_cache_file('main'),
@@ -40,10 +41,17 @@ class LinkCache:
             print(f"Error saving {cache_type} cache file: {e}")
 
     def _get_cache_key(self, term: str, feature_id: str, commit_ids: list, cache_type: str) -> str:
-        """统一的缓存键生成方法"""
-        commit_ids_str = '_'.join(sorted(commit_ids))
+        """统一的缓存键生成方法，确保键的唯一性"""
+        # 规范化参数以减少重复键的可能性
+        normalized_term = term.lower().strip()
+        
+        # 确保commit_ids是有序的以生成一致的键
+        commit_ids_str = '_'.join(sorted(commit_ids)) if commit_ids else "no_commits"
+        
+        # 为不同类型的缓存添加前缀
         prefix = f"{cache_type}_" if cache_type != 'main' else ""
-        return f"{prefix}{term}_{feature_id}_{commit_ids_str}"
+        
+        return f"{prefix}{normalized_term}_{feature_id}_{commit_ids_str}"
 
     def cache_operation(self, operation: str, cache_type: str, term: str, feature_id: str, 
                        commit_ids: list, data: any = None) -> Optional[any]:
@@ -60,8 +68,9 @@ class LinkCache:
         Returns:
             获取操作时返回缓存的数据，设置操作时返回 None
         """
-        cache_key = self._get_cache_key(term, feature_id, commit_ids, cache_type)
-        
+        # 先不考虑语义信息
+        # cache_key = self._get_cache_key(term, feature_id, commit_ids, cache_type)
+        cache_key = term
         if operation == 'get':
             cached = self.caches[cache_type].get(cache_key)
             if not cached:
@@ -78,7 +87,17 @@ class LinkCache:
                     
         elif operation == 'set':
             if cache_type == 'variations':
-                self.caches[cache_type][cache_key] = data
+                # 检查是否已有缓存数据
+                existing_variations = self.caches[cache_type].get(cache_key, [])
+                
+                # 合并新旧变体并去重
+                if existing_variations:
+                    # 将新变体与现有变体合并并去重
+                    combined_variations = list(set(existing_variations + data))
+                    self.caches[cache_type][cache_key] = combined_variations
+                else:
+                    # 确保新添加的变体不包含重复项
+                    self.caches[cache_type][cache_key] = list(set(data))
             else:
                 serialized_data = [self._serialize_candidate(item) for item in data]
                 self.caches[cache_type][cache_key] = serialized_data
@@ -97,7 +116,23 @@ class LinkCache:
         return self.cache_operation('get', 'variations', term, feature_id, commit_ids)
 
     def set_variations(self, term: str, feature_id: str, commit_ids: list, variations: List[str]) -> None:
-        self.cache_operation('set', 'variations', term, feature_id, commit_ids, variations)
+        # 获取缓存键
+        cache_key = self._get_cache_key(term, feature_id, commit_ids, 'variations')
+        
+        # 检查是否已有缓存数据
+        existing_variations = self.caches['variations'].get(cache_key, [])
+        
+        # 合并新旧变体并去重
+        if existing_variations:
+            # 将新变体与现有变体合并并去重
+            combined_variations = list(set(existing_variations + variations))
+            self.caches['variations'][cache_key] = combined_variations
+        else:
+            # 确保新添加的变体不包含重复项
+            self.caches['variations'][cache_key] = list(set(variations))
+            
+        # 保存更新后的缓存
+        self._save_cache_file('variations')
 
     def get_disambig_results(self, term: str, feature_id: str, commit_ids: list) -> Optional[List[LinkingCandidate]]:
         return self.cache_operation('get', 'disambig', term, feature_id, commit_ids)
@@ -107,7 +142,7 @@ class LinkCache:
 
     # 保留序列化相关的辅助方法
     def _serialize_candidate(self, candidate: LinkingCandidate) -> dict:
-        return asdict(candidate)
+        return candidate.to_dict()
 
     def _deserialize_candidate(self, data: dict, term: str) -> LinkingCandidate:
         return LinkingCandidate(
@@ -160,6 +195,21 @@ class LinkCache:
                 if not feature_id:
                     logger.warning(f"Missing required cache parameters - feature_id: {feature_id}, commit_ids: {commit_ids}")
                     return await func(linker_instance, term, feature_id, commit_ids, *args, **kwargs)
+                
+                # 确保commit_ids是列表类型
+                if commit_ids is None:
+                    commit_ids = []
+                elif not isinstance(commit_ids, list):
+                    # 处理非列表类型的commit_ids
+                    if isinstance(commit_ids, str):
+                        commit_ids = [commit_ids]
+                    else:
+                        try:
+                            # 尝试转换为字符串后放入列表
+                            commit_ids = [str(commit_ids)]
+                        except Exception as e:
+                            logger.error(f"Cannot convert commit_ids to list: {e}")
+                            commit_ids = []
                 
                 # 尝试从缓存获取
                 try:

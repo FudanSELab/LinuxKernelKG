@@ -5,7 +5,7 @@ from functools import wraps
 import logging
 
 class FusionCache:
-    def __init__(self, cache_file: str = "data/cache/fusion_cache_131.json"):
+    def __init__(self, cache_file: str = "data/cache/fusion/fusion_cache_mm_0512.json"):
         self.cache_file = cache_file
         self.cache_files = {
             'reference': self.cache_file,
@@ -40,7 +40,7 @@ class FusionCache:
     def _get_cache_key(self, entity: str, feature_id: str, commit_ids: list) -> str:
         """统一的缓存键生成方法"""
         # 添加调试日志
-        print(f"Debug - commit_ids before processing: {commit_ids}")
+        # print(f"Debug - commit_ids before processing: {commit_ids}")
         
         # 确保 commit_ids 是列表并且所有元素都是字符串
         if commit_ids is None:
@@ -53,7 +53,7 @@ class FusionCache:
         commit_ids_str = '_'.join(commit_ids)  # 将列表中的元素用下划线连接成一个字符串
 
         # Debug 输出，查看最后生成的 commit_ids_str
-        print("Debug - final commit_ids_str:", commit_ids_str)  # 确保输出为字符串，不应为列表
+        # print("Debug - final commit_ids_str:", commit_ids_str)  # 确保输出为字符串，不应为列表
 
 
         # 如果需要将结果进一步使用，可以返回或者继续处理 commit_ids_str
@@ -110,7 +110,7 @@ class FusionCache:
                 
                 # 尝试从缓存获取
                 try:
-                    cached = fusion_cache.cache_operation('get', cache_type, entity, feature_id, commit_ids)
+                    cached = fusion_cache.cache_operation('get', cache_type, entity.name, feature_id, commit_ids)
                     if cached is not None:
                         logger.info(f"Cache hit for {cache_type} of: {entity}")
                         return cached
@@ -124,7 +124,7 @@ class FusionCache:
                 # 缓存结果
                 if result is not None:
                     try:
-                        fusion_cache.cache_operation('set', cache_type, entity, feature_id, commit_ids, result)
+                        fusion_cache.cache_operation('set', cache_type, entity.name, feature_id, commit_ids, result)
                         logger.info(f"Cached {cache_type} result for: {entity}")
                     except Exception as e:
                         logger.error(f"Error saving to cache: {e}")

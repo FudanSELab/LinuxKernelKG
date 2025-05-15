@@ -5,33 +5,123 @@ import json
 class extractTripleOpenPrompt:
 
     template = """{{
-    "instructions": "你是一个开放关系抽取 (OpenIE) 任务的专家，同时也是 linux 内核的专家。给你一个 linux 内核特性的描述 (feature_description)、对应的若干 commit 的标题和提交信息 (commits)。你的任务是：根据这些信息提取出在 linux 内核中涉及到的与这个 feature 相关关系三元组 (triples)，形如(entity1, relation, entity2)。用英语回答。用json格式字符串返回你的回答。你可以参考 examples 字段给出的例子。",
-    "examples": [{{
+    "instructions": "You are an expert in openIE tasks, and also an expert in the Linux kernel.
+        Given a Linux kernel feature description (feature_description) and related contextual title information (parents),
+        Your task is to: extract ABSOLUTELY ALL possible relation triples (triples). a triple should be in the format [head, relation, tail, type_of_tail].
+        The 'parents' list describe a hierarchical structure of the feature, where the leftmost title is the most general title, and the rightmost title is the most specific title.
+        Here are a few guidelines to help you:
+        1. the head should be a noun phrase that represents the subject of the relation. Also,
+            the head should be a concept or term that is relevant to the Linux kernel.
+        2. the tail can be of one of the two types:
+            (1) A noun phrase that represents the object of the relation (noun).
+            (2) An adjective or adverb phrase, or a clause that describes a property or characteristic of the head (adj/adv/clause).
+            You should output the type of the tail in the last element of the triple.
+        3. The phrases located at the beginning of the feature description and before the colon is usually the name of the module to which the feature belongs.
+            In other words, the changes usually happen within the module.
+        4. Make sure the triples you extract are meaningful and precise.
+        You can refer to the examples field for guidance.",
+    "examples": [
+    {{
         "input": {{
+            "parents": ["Memory management"]
             "feature_description": "Prohibit the last subpage from reusing the entire large folio",
-            "commits": "commit_subject:\nmm: prohibit the last subpage from reusing the entire large folio\ncommit_message:\nIn a Copy-on-Write (CoW) scenario, the last subpage will reuse the entire\nlarge folio, resulting in the waste of (nr_pages - 1) pages.  This wasted\nmemory remains allocated until it is either unmapped or memory reclamation\noccurs.\n\nThe following small program can serve as evidence of this behavior\n\n main()\n {{\n #define SIZE 1024 * 1024 * 1024UL\n         void *p = malloc(SIZE);\n         memset(p, 0x11, SIZE);\n         if (fork() == 0)\n                 _exit(0);\n         memset(p, 0x12, SIZE);\n         printf("done\\n");\n         while(1);\n }}\n\nFor example, using a 1024KiB mTHP by:\n echo always > /sys/kernel/mm/transparent_hugepage/hugepages-1024kB/enabled\n\n(1) w/o the patch, it takes 2GiB,\n\nBefore running the test program,\n / # free -m\n                total        used        free      shared  buff/cache   available\n Mem:            5754          84        5692           0          17        5669\n Swap:              0           0           0\n\n / # /a.out &\n / # done\n\nAfter running the test program,\n / # free -m\n                 total        used        free      shared  buff/cache   available\n Mem:            5754        2149        3627           0          19        3605\n Swap:              0           0           0\n\n(2) w/ the patch, it takes 1GiB only,\n\nBefore running the test program,\n / # free -m\n                 total        used        free      shared  buff/cache   available\n Mem:            5754          89        5687           0          17        5664\n Swap:              0           0           0\n\n / # /a.out &\n / # done\n\nAfter running the test program,\n / # free -m\n                total        used        free      shared  buff/cache   available\n Mem:            5754        1122        4655           0          17        4632\n Swap:              0           0           0\n\nThis patch migrates the last subpage to a small folio and immediately\nreturns the large folio to the system. It benefits both memory availability\nand anti-fragmentation.\n\n"
         }},
         "output": {{
-            "triples": [["Last subpage", "is prohibited from reusing", "Entire large folio"], ["Large folio", "benefits", "Memory availability"], ["Large folio", "benefits", "Anti-fragmentation"]]
+            "triples": [["page", "uses", "folio", "noun"]]
         }}
-    }}],
+    }},
+    {{
+        "input": {{
+            "parents": ["Architectures", "POWERPC"]
+            "feature_description": "Make ELFv2 ABI the default for 64-bit big-endian kernel builds",
+        }},
+        "output": {{
+            "triples": [["ELFv2 ABI", "is default for", "64-bit big-endian kernel builds", "noun"]]
+        }}
+    }},
+    {{
+        "input": {{
+            "parents": ["Various core changes"]
+            "feature_description": "kconfig: add make localyesconfig option",
+        }},
+        "output": {{
+            "triples": [["make localyesconfig", "is an option of", "kconfig", "noun"]]
+        }}
+    }},
+    {{
+        "input": {{
+            "parents": ["Memory management"],
+            "feature_description": "Memory cgroup controller: Reclaim memory from nodes in round-robin order",
+        }},
+        "output": {{
+            "triples": [["Memory cgroup controller", "reclaims", "memory", "noun"],
+                       ["memory reclaim", "is done in", "round-robin order", "noun"]]
+        }}
+    }},
+    {{
+        "input": {{
+            "parents": ["Memory management"],
+            "feature_description": "Add Uacce (Unified/User-space-access-intended Accelerator Framework). Von Neumann architecture is not good at general data manipulation so there are more and more heterogeneous processors such as encryption/decryption accelerators TPUs or EDGE processors.",
+        }},
+        "output": {{
+            "triples": [["Uacce", "is abbreviation of", "Unified/User-space-access-intended Accelerator Framework", "noun"],
+                        ["Von Neumann architecture", "is not good at", "general data manipulation", "noun"],
+                        ["TPUs", "is a type of", "heterogeneous processors", "noun"],
+                        ["EDGE processors", "is a type of", "heterogeneous processors", "noun"],
+                        ["Uacce", "is related to", "encryption/decryption accelerators", "noun"]]
+        }}
+    }},
+    {{
+        "input": {{
+            "parents": ["Memory management"],
+            "feature_description": "Add a new software tag-based mode to KASAN. The plan is to implement HWASan for the kernel with the incentive that it's going to have comparable to KASAN performance but in the same time consume much less memory trading that off for somewhat imprecise bug detection and being supported only for arm64."
+        }},
+        "output": {{
+            "triples": ["bug detection", "is", "somewhat imprecise for HWASan", "adj/adv/clause"],
+                        ["KASAN performance", "is comparable to", "HWASan performance", "noun"],
+                        ["KASAN", "consumes less memory than", "HWASan", "noun"]]
+
+        }}
+    }},
+    {{
+        "input": {{
+            "parents": ["Core (various)", "Scheduler"],
+            "feature_description": "Energy Model improvements: fix & refine all the energy fairness metrics (PELT) and remove the conservative threshold requiring 6% energy savings to migrate a task. Doing this improves power efficiency for most workloads and also increases the reliability of energy-efficiency scheduling (recommended LWN article)"
+        }},
+        "output": {{
+            "triples": [["Energy Model", "improves", "power efficiency", "noun"],
+                        ["energy fairness metrics", "is a type of", "PELT", "noun"],
+                        ["conservative threshold", "requires", "6% energy savings to migrate a task", "adj/adv/clause"],
+                        ["energy-efficiency scheduling", "is recommended by", "LWN article", "noun"]]
+        }}
+    }},
+    {{
+        "input": {{
+            "parents": [],
+            "feature_description": ""
+        }},
+        "output": {{
+            "triples": []
+        }}
+    }}
+    ],
     "input": {{
-        "feature_description": "{feature_description}",
-        "commits": {commits},
+        "parents": "{parents}"
+        "feature_description": "{feature_description}"
     }}
 }}
 """
 
-    prompt_template_extract = PromptTemplate(template=template, input_variables=["feature_description", "commits"])
+    prompt_template_extract = PromptTemplate(template=template, input_variables=["feature_description", "parents"])
 
-    def __init__(self, feature_description, commits):
+    def __init__(self, feature_description, parents):
         self.feature_description = feature_description
-        self.commits = commits
+        self.parents = parents
 
     def format(self):
         return self.prompt_template_extract.format(
             feature_description = self.feature_description,
-            commits = json.dumps(self.commits, ensure_ascii=False, indent=None),
+            parents = self.parents
         )
 
 

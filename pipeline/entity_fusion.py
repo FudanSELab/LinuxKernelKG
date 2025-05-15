@@ -17,6 +17,9 @@ from utils.name_handler import NameHandler
 from selenium.common.exceptions import TimeoutException, WebDriverException
 import concurrent.futures
 from functools import partial
+import time
+from models.entity import Entity
+import json
 
 class EntityFusion:
     def __init__(self, config):
@@ -24,154 +27,190 @@ class EntityFusion:
         self.config = config
         self.fusion_cache = FusionCache()
         self.llm = deepseek()
-        
+        self.name_handler = NameHandler.get_inst()
+        self.persistence_path = getattr(config, 'fusion_persistence_path', 'data/fused_entities')
+        self.persistence_interval = getattr(config, 'fusion_persistence_interval', 30)  # 默认3分钟
+        self.last_persistence_time = 0
+        self.fused_entities_by_class = self._load_persisted_entities()  
+        self.aiohttp_retry_attempts = getattr(config, 'aiohttp_retry_attempts', 3)
+        self.aiohttp_retry_delay = getattr(config, 'aiohttp_retry_delay', 2) # 秒
 
-    async def process_fusion(self, new_entities, feature_ids=None, commit_ids_list=None):
+        # Kernel Docs并发控制
+        self.kernel_docs_concurrency = getattr(config, 'kernel_docs_concurrency', 2) #默认2个并发
+        self.kernel_docs_semaphore = asyncio.Semaphore(self.kernel_docs_concurrency)
+
+        # 启动定期保存任务
+        self._start_persistence_timer()
+
+    async def process_fusion(self, entities, linked_entities=[]):
         """处理实体融合的主流程
         
         Args:
-            new_entities (list): 需要进行融合的新实体列表
-            feature_ids (list, optional): 与实体一一对应的特征ID列表
-            commit_ids_list (list, optional): 与实体一一对应的提交ID列表的列表
+            entities (list): 需要进行融合的实体列表
+            linked_entities (list, optional): 成功链接到Wikipedia的实体列表
         Returns:
-            dict: 包含融合结果的字典
+            list: 包含融合组的列表，每个融合组包含原始实体和其别名
         """
-        # 1. 预处理 - 标准化和保留上下文信息
-        processed_entities = await self._preprocess_entities(new_entities, feature_ids, commit_ids_list)
+
+        # # 1. 查找引用源 - 分离有引用源和无引用源的实体
+        # self.logger.info("查找实体的外部引用源")
+        # for entity in entities:
+        #     entity_name = entity.name
+
+        #     # 引用源验证
+        #     reference = await self._find_entity_reference(
+        #         entity,
+        #         entity.feature_id,
+        #         entity.commit_ids,
+        #     )
+        #     entity.external_links = reference
         
-        # 2. 分离有引用源和无引用源的实体
-        entities_with_refs = {}
-        entities_without_refs = {}
-        entities = {}
+        # entities_with_refs = [entity for entity in entities if entity.external_links]
+        
+        # # 2. 准备融合池 - 合并有引用的新实体和已链接实体，并按类别分类
+        # self.logger.info("准备融合池，合并有引用的新实体和已链接实体")
 
-        for item in processed_entities:
-            entity_name = item['entity']
-            entity_key = self._create_entity_key(
-                entity_name,
-                item['feature_id'],
-                item['commit_ids']
-            )
+        # start_time = time.time()
+        # fusion_pool_by_class = self._prepare_fusion_pool_by_class(linked_entities, entities_with_refs)
+        # self.logger.info(f"融合池准备完成，耗时: {time.time() - start_time:.2f}秒")
+        
+        # # 3. 执行基于规则的融合 - 对每个类别分别进行融合，并与已有融合实体进行融合
+        # self.logger.info("执行基于规则的融合")
+        # start_time = time.time()
+        # fusion_groups = self._perform_rule_based_fusion(fusion_pool_by_class)
+        # self.logger.info(f"基于规则的融合完成，耗时: {time.time() - start_time:.2f}秒")
 
-            reference = await self._find_entity_reference(
-                entity_name,
-                item['feature_id'],
-                item['commit_ids'],
-                item['candidates']
-            )
-
-            if reference and reference['found']:
-                if entity_name not in entities_with_refs:
-                    entities_with_refs[entity_name] = {
-                        'keys': set(),
-                        'items': [],
-                        'references': []
-                    }
-                entities_with_refs[entity_name]['keys'].add(entity_key)
-                entities_with_refs[entity_name]['items'].append(item)
-                entities_with_refs[entity_name]['references'].append(reference)
-            else:
-                if entity_name not in entities_without_refs:
-                    entities_without_refs[entity_name] = {
-                        'keys': set(),
-                        'items': [],
-                        'references': []
-                    }
-                entities_without_refs[entity_name]['keys'].add(entity_key)
-                entities_without_refs[entity_name]['items'].append(item)
-                if reference:
-                    entities_without_refs[entity_name]['references'].append(reference)
-            
-            item['references'] = reference
-            entities[entity_key] = item
-
-        # 3. 处理有引用源的实体
+        # 直接从JSON文件读取fusion_groups
+        fusion_groups_file_path = "output/entity_fusion/fused_entities_result_mm_0510.json"
+        self.logger.info(f"Attempting to load fusion_groups from {fusion_groups_file_path}")
         fusion_groups = []
-        processed_entity_keys = set()
-
-        for entity_name, entity_data in entities_with_refs.items():
-            if entity_data['keys'].issubset(processed_entity_keys):
-                continue
+        try:
+            with open(fusion_groups_file_path, 'r', encoding='utf-8') as f:
+                loaded_data = json.load(f)
             
-                        # 添加日志来追踪处理进度
-            self.logger.info(f"Processing entity: {entity_name}")
-            self.logger.info(f"Processed entities so far: {processed_entity_keys}")
-            
-            # fusion_candidates = await self._get_fusion_candidates(
-            #     entity_name,
-            #     entities_with_refs,
-            #     processed_entity_keys,
-            #     entity_data['items']
-            # )
-            fusion_candidates = None
-            if fusion_candidates is not None:
-                group = self._create_fusion_group(
-                    entity_name,
-                    fusion_candidates,
-                    entity_data['items'],
-                    entity_data['references']
-                )
-                fusion_groups.append(group)
-                self._update_processed_entities(processed_entity_keys, entity_name, fusion_candidates)
+            if isinstance(loaded_data, list):
+                for entity_dict in loaded_data:
+                    try:
+                        # Entity class is imported at the top of the file
+                        fusion_groups.append(Entity.from_dict(entity_dict))
+                    except Exception as e_conv:
+                        self.logger.error(f"Error converting dict to Entity: {entity_dict}, error: {e_conv}")
             else:
-                # 如果没有找到融合候选项，创建一个单独的融合组
-                group = {
-                    'original': entity_name,
-                    'variations': [],
-                    'canonical_form': entity_name,
-                    'contexts': entity_data['items'],
-                    'reference': entity_data['references'],
-                    'fusion_reason': 'No fusion candidates, standalone group'
-                }
-                fusion_groups.append(group)
-                self._update_processed_entities(processed_entity_keys, entity_name, [])
-
-        # 4. 计算统计信息
-        self._evaluate_reference_accuracy(entities_with_refs)
-        # stats = self._evaluate_fusion_results(fusion_groups)
+                self.logger.error(f"Expected a list from {fusion_groups_file_path}, got {type(loaded_data)}. fusion_groups will be empty.")
+        except FileNotFoundError:
+            self.logger.error(f"File {fusion_groups_file_path} not found. fusion_groups will be empty.")
+        except json.JSONDecodeError as e_json:
+            self.logger.error(f"Error decoding JSON from {fusion_groups_file_path}: {e_json}. fusion_groups will be empty.")
+        except Exception as e_gen: # Catch other potential errors during file operations or unexpected issues
+            self.logger.error(f"An unexpected error occurred while loading {fusion_groups_file_path}: {e_gen}. fusion_groups will be empty.")
         
-        return fusion_groups
-
-
-    async def _preprocess_entities(self, entities, feature_ids=None, commit_ids_list=None):
-        """预处理实体，但不进行上下文去重
-        - 只进行基础的标准化和清洗
-        - 保留所有上下文信息供后续融合使用
-        """
-        processed = []
+        self.logger.info(f"Successfully loaded {len(fusion_groups)} entities into fusion_groups from {fusion_groups_file_path if 'fusion_groups_file_path' in locals() else 'configured path'}")
         
-        for i, entity in enumerate(entities):
-            # TODO基于规则生成一些变体
-            # normalized = self._normalize_entity_name(entity)
-            candidates = await self._generate_candidates(entity, feature_ids[i] if feature_ids else None)
-            # if not normalized:
-            #     continue
+        # 4. 执行基于 LLM 的补充融合
+        self.logger.info(f"执行基于 LLM 的补充融合，输入 {len(fusion_groups)} 个规则融合组")
+        start_llm_time = time.time()
+        final_fusion_result = await self._perform_llm_based_fusion(fusion_groups)
+        self.logger.info(f"基于 LLM 的补充融合完成，耗时: {time.time() - start_llm_time:.2f}秒. 输出 {len(final_fusion_result)} 个融合组")
+        
+        return final_fusion_result
+
+    def _prepare_fusion_pool_by_class(self, linked_entities, entities_with_refs):
+        """准备融合池，合并已链接实体和有引用的新实体，并按类别分类
+        
+        Args:
+            linked_entities (list): 已链接到Wikipedia的实体列表
+            entities_with_refs (list): 有外部引用的实体列表
             
-            entity_info = {
-                'entity': entity,
-                'candidates': candidates,
-                'feature_id': feature_ids[i] if feature_ids else None,
-                'commit_ids': commit_ids_list[i] if isinstance(commit_ids_list[i], list) else [commit_ids_list[i]] if commit_ids_list else None
-            }
-            processed.append(entity_info)
+        Returns:
+            dict: 按实体类别分类的融合池
+        """
+        self.logger.info(f"准备融合池: {len(linked_entities)}个已链接实体, {len(entities_with_refs)}个引用实体")
+        
+        # 使用字典来按类别跟踪实体
+        fusion_pool_by_class = {class_name: [] for class_name in Entity.ENTITY_TYPES}
+        
+        # 处理所有实体，先处理linked_entities保证优先级
+        for entity in linked_entities + entities_with_refs:
+            entity_type = entity.entity_type
+            fusion_pool_by_class[entity_type].append(entity)
+        
+        self.logger.info(f"融合池按类别分类完成")
+        
+        return fusion_pool_by_class
+
+    def _perform_rule_based_fusion(self, fusion_pool_by_class):
+        """执行基于规则的融合，识别同一实体的不同表示形式，并与已有融合实体进行融合
+        
+        Args:
+            fusion_pool_by_class (dict): 按实体类别分类的融合池
+            
+        Returns:
+            list: 融合组列表，每个融合组是一个包含关联实体的列表
+        """
+        all_fusion_groups = []
+        # 获取名称处理器
+        name_handler = self.name_handler
+        # 对每个类别分别进行融合
+        for class_name, new_entities in fusion_pool_by_class.items():
+            self.logger.info(f"开始融合 {class_name} 类别，共有 {len(new_entities)} 个新实体和 {len(self.fused_entities_by_class[class_name])} 个已存在实体")
+            
+            # 合并新实体和已存在的该类别融合实体
+            combined_entities = new_entities + self.fused_entities_by_class[class_name]
+            
+            # 直接使用集合记录别名关系，每个集合包含互为别名的实体ID
+            fusion_groups = []
+            entity_to_group = {}  # 记录每个实体ID所在的组索引
+            
+            # 比较新实体和所有实体
+            for entity2 in new_entities:
+                found_match = False
                 
-        return processed
+                # 检查entity2是否可以与任何已有组合并
+                for entity1 in combined_entities:
+                    name1, name2 = entity1.name, entity2.name
 
-    # def _normalize_entity_name(self, entity):
-    #     
-    #     if not entity:
-    #         return None
+                    # 应用融合规则
+                    if name1 == name2 or name_handler.check_abbr(name1, name2) or self._check_singular_plural_relation(name1, name2) \
+                        or self._check_gerund_relation(name1, name2) or self._check_naming_convention_relation(name1, name2) \
+                        or entity1.is_same_wikipedia_link(entity2):
+                        found_match = True
+                        if entity1.id == entity2.id:
+                            continue
+                        combined_entities.remove(entity2)
+                        new_entities.remove(entity2)
+                        # 按照url_type将entity2合并进entity1的外部链接列表,并去重
+                        entity1.merge_with(entity2)
+                        break
+            
+            # 更新已存在融合实体
+            self.fused_entities_by_class[class_name] = combined_entities # 每个组选第一个实体作为代表
+            
+            self.logger.info(f"{class_name} 类别融合完成，识别出 {len(combined_entities)} 个融合组")
         
-    #     # 基础清理
-    #     normalized = entity.strip()
+        self.logger.info(f"所有类别融合完成，总共 {len(new_entities)} 个融合组")
         
-    #     # 移除特殊字符
-    #     normalized = re.sub(r'[^\w\s-]', '', normalized)
-        
-    #     # 统一空格
-    #     normalized = ' '.join(normalized.split())
-        
-    #     return normalized if normalized else None
+        return new_entities
 
+    # async def _find_entity_references(self, entities):
+    #     entities_with_refs = {}
+    #     entities_without_refs = {}
+
+    #     for entity in entities:
+    #         entity_name = entity.name
+    #         entity_key = self._create_entity_key(
+    #             entity,
+    #             entity.feature_id,
+    #             entity.commit_ids
+    #         )
+
+    #         # 引用源验证
+    #         reference = await self._find_entity_reference(
+    #             entity,
+    #             entity.feature_id,
+    #             entity.commit_ids,
+    #         )
+            # entity.external_links = reference
+        
     @FusionCache.cached_operation('candidates')
     async def _generate_candidates(self, entity, feature_id=None, commit_ids=None):
         """生成实体的候选变体
@@ -182,10 +221,10 @@ class EntityFusion:
         """
         candidates = set([entity])  
         
-        # 1. 使用规则处理基本命名风格，暂时不使用，因为规则生成的变体可能导致搜索不够准确
-        # candidates.update(self._generate_naming_variants(entity))
+        # 1. 使用规则处理基本命名风格
+        candidates.update(self._generate_naming_variants(entity))
         
-        # 2. 使用大模型处理复杂缩写
+        # 2. 使用大模型处理复杂缩写：语义层面的融合可以先不考虑
         # abbreviation_variants = await self._generate_abbreviation_variants(entity)
         # candidates.update(abbreviation_variants)
         
@@ -195,214 +234,11 @@ class EntityFusion:
         
         return list(candidates)
 
-    def _generate_naming_variants(self, entity):
-        """使用规则生成基本的命名风格变体
-        
-        Args:
-            entity (str): 输入的实体名称
-            
-        Returns:
-            set: 包含所有生成的命名风格变体的集合
-            
-        Examples:
-            >>> _generate_naming_variants("user input data")
-            {
-                'user_input_data',          # 下划线
-                'userInputData',            # 驼峰
-                'UserInputData',            # 帕斯卡
-                'user_input_data',          # 全小写下划线
-                'USER_INPUT_DATA',          # 全大写下划线
-                'UID',                      # 首字母缩写（大写）
-                'uid'                       # 首字母缩写（小写）
-            }
-        """
-        if not entity or not isinstance(entity, str):
-            return set()
-        
-        variants = {entity}  # 包含原始实体
-        
-        # 预处理：清理多余空格
-        entity = ' '.join(entity.split())
-        
-        # 1. 分词处理
-        words = self._split_identifier(entity)
-        if not words:
-            return variants
-        
-        # 2. 基本变体生成
-        if len(words) > 1:
-            # 下划线形式
-            underscore = '_'.join(words)
-            variants.add(underscore)
-            
-            # 空格形式
-            space = ' '.join(words)
-            variants.add(space)
-            
-            # 驼峰命名
-            camel = words[0].lower() + ''.join(w.capitalize() for w in words[1:])
-            variants.add(camel)
-            
-            # 帕斯卡命名
-            pascal = ''.join(w.capitalize() for w in words)
-            variants.add(pascal)
-            
-            # 全小写下划线
-            lower_underscore = '_'.join(w.lower() for w in words)
-            variants.add(lower_underscore)
-            
-            # 全大写下划线
-            upper_underscore = '_'.join(w.upper() for w in words)
-            variants.add(upper_underscore)
-            
-            # 首字母缩写（仅当单词数量在2-5之间时生成）
-            if 2 <= len(words) <= 5:
-                # 大写缩写
-                upper_acronym = ''.join(w[0].upper() for w in words)
-                variants.add(upper_acronym)
-                # 小写缩写
-                lower_acronym = ''.join(w[0].lower() for w in words)
-                variants.add(lower_acronym)
-        
-        # 3. 移除无效变体
-        variants = {v for v in variants if v and len(v.strip()) > 0}
-        
-        return variants
-
-    async def _generate_abbreviation_variants(self, entity):
-        """使用大模型生成复杂的缩写变体
-        """
-        # 如果实体长度小于3，不处理缩写
-        if len(entity) < 3:
-            return []
-        
-        prompt = f"""As a Linux kernel expert, if "{entity}" is a common term in Linux kernel:
-1. If it's a full word, provide its common abbreviation.
-2. If it's an abbreviation, provide its full word.
-3. Only respond if you're highly confident.
-
-Format: Return each variation on a new line, prefixed with 'Variant: '. If unsure, return 'Variant: None'.
-Example for "memory":
-Variant: mem
-Variant: mem
-
-Example for "mem":
-Variant: memory
-
-Example for "unknown_term":
-Variant: None
-"""
-
-        try:
-            # 直接调用同步方法
-            response = self._get_llm_response(prompt)
-            if not response:
-                return []
-            
-            # 处理响应
-            variants = self._parse_and_normalize_response(response)
-            
-            return variants
-            
-        except Exception as e:
-            self.logger.warning(f"Error generating abbreviation variants for {entity}: {str(e)}")
-            return []
-
-    def _parse_and_normalize_response(self, response):
-        """解析和规范化大模型的响应"""
-        # 去除多余的空格和空行
-        response = response.strip()
-        
-        # 分割响应为变体列表
-        variants = [line.split('Variant: ')[1].strip() for line in response.splitlines() if line.startswith('Variant: ') and line.split('Variant: ')[1].strip() != 'None']
-        
-        # 进一步规范化变体
-        normalized_variants = self._normalize_variants(variants)
-        
-        return normalized_variants
-
-    def _normalize_variants(self, variants):
-        """规范化变体列表"""
-        normalized = set()
-        for variant in variants:
-            # 例如：将所有变体转换为小写，去除重复项
-            normalized.add(variant.lower())
-        return list(normalized)
-
-    def _evaluate_fusion_results(self, fusion_groups):
-        """评估融合结果"""
-        total_entities = sum(len(group['variations']) + 1 for group in fusion_groups)
-        total_groups = len(fusion_groups)
-        
-        return {
-            'total_entities': total_entities,
-            'total_groups': total_groups,
-            'average_group_size': total_entities / total_groups if total_groups > 0 else 0,
-            'fusion_rate': (total_entities - total_groups) / total_entities if total_entities > 0 else 0
-        }
-
-    def _apply_fusion_rules(self, entity, context, fusion_pool):
-        """应用启发式规则进行匹配"""
-        candidates = set()
-        # name_handler = NameHandler.get_inst()
-
-        # 1. 大小写变体
-        lower_entity = entity.lower()
-        for other in fusion_pool:
-            if other != entity and other.lower() == lower_entity:
-                candidates.add(other)
-
-        # 2. 常见缩写模式
-        if '(' in entity:
-            main_part = entity.split('(')[0].strip()
-            abbrev = entity.split('(')[1].rstrip(')').strip()
-            for other in fusion_pool:
-                if other == main_part or other == abbrev:
-                    candidates.add(other)
-
-        # 3. 驼峰命名和下划线分隔
-        words = self._split_identifier(entity)
-        if len(words) > 1:
-            acronym = ''.join(word[0].upper() for word in words)
-            for other in fusion_pool:
-                if other == acronym:
-                    candidates.add(other)
-
-        # # 4. 使用 NameHandler 进行同义词和缩写检查
-        # for other in fusion_pool:
-        #     if name_handler.check_synonym(entity, other) or name_handler.check_abbr(entity, other):
-        #         candidates.add(other)
-
-        return candidates
-
-    def _split_identifier(self, identifier: str) -> list:
-        """将标识符分解为单词列表
-        
-        处理以下情况：
-        1. 驼峰命名: MyVariableName -> ['My', 'Variable', 'Name']
-        2. 下划线分隔: my_variable_name -> ['my', 'variable', 'name']
-        3. 混合情况: my_VariableName -> ['my', 'Variable', 'Name']
-        """
-        import re
-        
-        # 首先按下划线分割
-        parts = identifier.split('_')
-        
-        words = []
-        for part in parts:
-            # 处理驼峰命名
-            camel_words = re.findall('[A-Z][a-z]*|[a-z]+|[A-Z]{2,}(?=[A-Z][a-z]|\d|\W|$)|\d+', part)
-            words.extend(camel_words)
-        
-        return words
-
     def _get_llm_response(self, prompt: str) -> str:
         """获取LLM的响应"""
         try:
-            # 创建 LLM 实例
-            llm = deepseek()
             # 调用 LLM 获取响应
-            response = llm.get_response(prompt)
+            response = self.llm.get_response(prompt)
             
             if not response:
                 raise ValueError("Empty response received from LLM")
@@ -413,77 +249,12 @@ Variant: None
             self.logger.error(f"Error getting LLM response: {str(e)}")
             raise  # 重新抛出异常，让调用方处理
 
-    def _merge_fusion_groups(self, existing_group, new_synonyms):
-        """合并已存在的融合组与新发现的同义词"""
-        all_variations = set(existing_group['variations'])
-        all_variations.update(new_synonyms)
-        
-        return {
-            'original': existing_group['original'],
-            'variations': list(all_variations),
-            'canonical_form': self._select_canonical_form(
-                [existing_group['original']] + list(all_variations)
-            )
-        }
-
-    def _select_canonical_form(self, variations: list) -> str:
-        """从变体中选择规范形式
-        
-        选择规则：
-        1. 优先选择完整形式而不是缩写
-        2. 优先选择官方文档中更常用的形式
-        3. 如果无法判断，使用最长的形式
-        
-        Args:
-            variations: 所有变体的列表，包括原始实体
-            
-        Returns:
-            str: 选择的规范形式
-        """
-        if not variations:
-            return ""
-        
-        # 按长度排序，最长的可能是完整形式
-        sorted_vars = sorted(variations, key=len, reverse=True)
-        
-        # 检查是否有明显的缩写（全大写且较短）
-        has_abbrev = any(v.isupper() and len(v) <= 5 for v in variations)
-        
-        if has_abbrev:
-            # 如果有缩写，选择非缩写的最长形式
-            for var in sorted_vars:
-                if not (var.isupper() and len(var) <= 5):
-                    return var
-        
-        # 默认返回最长的形式
-        return sorted_vars[0]
-
-    async def _get_entity_context(self, entity):
-        """获取实体的上下文信息，用于辅助链接
-        
-        可以从数据库中获取该实体相关的描述信息，或者其出现的代码上下文
-        
-        Args:
-            entity (str): 实体名称
-            
-        Returns:
-            str: 实体的上下文信息
-        """
-        try:
-            # 从数据库获取实体相关信息
-            context = await self.db_handler.get_entity_context(entity)
-            return context if context else ""
-        except Exception as e:
-            self.logger.warning(f"Failed to get context for entity {entity}: {str(e)}")
-            return ""
-
     @FusionCache.cached_operation('reference')
-    async def _find_entity_reference(self, entity, feature_id=None, commit_ids=None, candidates=None):
+    async def _find_entity_reference(self, entity, feature_id=None, commit_ids=None):
         """查找实体的引用源（官方文档或代码）
         
         Args:
             entity (str): 主要实体名称
-            candidates (list): 候选实体名称列表，包含主实体及其变体
             feature_id (str, optional): 特征ID
             commit_ids (list, optional): 提交ID列表
             
@@ -493,11 +264,10 @@ Variant: None
         try:
             # 对所有候选项并行执行搜索
             search_tasks = []
-            for candidate in candidates:
-                search_tasks.extend([
-                    self._search_bootlin(candidate),
-                    self._search_kernel_docs(candidate)
-                ])
+            search_tasks.extend([
+                self._search_bootlin(entity.name),
+                # self._search_kernel_docs(entity.name)
+            ])
             
             # 并行执行所有搜索任务
             all_results = await asyncio.gather(*search_tasks, return_exceptions=True)
@@ -509,22 +279,25 @@ Variant: None
                     continue
                 if result:  # 如果结果有效
                     valid_references.append(result)
+                    # entity.add_external_link(result['url_type'], result['url'])
             
             # 返回统一格式的结果
-            return {
-                'entity': entity,
-                'references': valid_references,
-                'found': bool(valid_references)
-            }
+            # 例如:
+            #[
+            #         {
+            #             'reference_type': 'code',
+            #             'references': ['https://elixir.bootlin.com/linux/v6.12.6/A/ident/kvm_vcpu_block']
+            #         },
+            #         {
+            #             'reference_type': 'documentation', 
+            #             'references': ['https://www.kernel.org/doc/html/latest/virt/kvm/api.html#kvm-vcpu-block']
+            #         }
+            #]
+            return valid_references
             
         except Exception as e:
             self.logger.error(f"Error finding reference for entity {entity}: {str(e)}")
-            return {
-                'entity': entity,
-                'references': [],
-                'found': False,
-                'error': str(e)
-            }
+            return [{'reference_type': f"error {str(e)}", 'references': []}]
 
     async def _search_bootlin(self, entity):
         """异步搜索Bootlin并返回结构化结果"""
@@ -534,23 +307,22 @@ Variant: None
 
         base_url = 'https://elixir.bootlin.com/linux/v6.12.6/A/ident/'
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
+            'User-Agent': 'Chrome/90.0.4430.93 Safari/537.36'
         }
-        
+        # 替换空格为URL编码的占位符
+        encoded_entity = entity.replace(' ', '%20')
         # 首先尝试原始搜索
         url = f"{base_url}{entity}"
-        response = requests.get(url, headers=headers)
+        try:
+            response = requests.get(url, headers=headers)
+        except Exception as e:
+            print(f'Bootlin 搜索失败，状态码: {response.status_code}')
         
         if response.status_code == 200:
             print(f'在 Bootlin 找到与 "{entity}" 相关的结果。')
             return {
-                'entity': entity,
-                'reference_type': 'code',
-                'reference_source': 'bootlin',
-                'references': [{
-                    "url": url,
-                    "title": f"Bootlin search result for {entity}"
-                }]
+                'url_type': 'code',
+                'url': [url]
             }
         
         # 如果原始搜索失败，尝试下划线格式
@@ -562,13 +334,8 @@ Variant: None
             if response.status_code == 200:
                 print(f'在 Bootlin 找到与 "{underscored_entity}" 相关的结果。')
                 return {
-                    'entity': entity,
-                    'reference_type': 'code',
-                    'reference_source': 'bootlin',
-                    'references': [{
-                        "url": url,
-                        "title": f"Bootlin search result for {underscored_entity}"
-                    }]
+                    'url_type': 'code',
+                    'url': [url]
                 }
             else:
                 print(f'Bootlin 搜索失败，状态码: {response.status_code}')
@@ -584,311 +351,107 @@ Variant: None
         Returns:
             dict: 包含引用信息的字典，如果未找到则返回None
         """
-        base_url = 'https://docs.kernel.org/search.html?q='
-        
-        # 配置 Chrome 选项，增加了 disable-gpu、固定窗口大小和远程调试端口等参数
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-setuid-sandbox')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('--log-level=3')
-        chrome_options.add_argument('--silent')
-        chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-
-        driver = None
-        try:
-            self.logger.info(f"开始搜索 {entity}...")
-            driver = webdriver.Chrome(options=chrome_options)
-            url = f"{base_url}{entity}"
-            driver.get(url)
-
-            # 设置等待时间，并等待 search-summary 元素出现
-            wait = WebDriverWait(driver, 6)
-            search_summary_element = wait.until(
-                EC.presence_of_element_located((By.CLASS_NAME, "search-summary"))
-            )
-            # 获取 search-summary 的文本内容
-            search_summary = search_summary_element.text
-            # 打印 search-summary 的内容到控制台
-            print("Search Summary:", search_summary)
+        async with self.kernel_docs_semaphore:
+            self.logger.info(f"Acquired semaphore for {entity}, remaining: {self.kernel_docs_semaphore._value}/{self.kernel_docs_concurrency}")
+            base_url = 'https://docs.kernel.org/search.html?q='
             
-            if "did not match any documents" in search_summary:
-                self.logger.info(f'在 Kernel Docs 没有找到与 "{entity}" 相关的结果。')
-                return None
+            # 配置 Chrome 选项，增加了 disable-gpu、固定窗口大小和远程调试端口等参数
+            chrome_options = Options()
+            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--disable-setuid-sandbox')
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--window-size=1920,1080')
+            chrome_options.add_argument('--log-level=3')
+            chrome_options.add_argument('--silent')
+            chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
-            references = []
-            # 修改：使用正确的 class="search" 选择器定位 ul 元素
+            driver = None
             try:
-                search_container = WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.CLASS_NAME, "search"))
+                self.logger.info(f"开始搜索 {entity}...")
+                driver = webdriver.Chrome(options=chrome_options)
+                url = f"{base_url}{entity}"
+                driver.get(url)
+
+                # 设置等待时间，并等待 search-summary 元素出现
+                wait = WebDriverWait(driver, 6)
+                search_summary_element = wait.until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "search-summary"))
                 )
-                # 从 ul.search 中查找所有链接
-                links = search_container.find_elements(By.TAG_NAME, "a")
-            except Exception as exc:
-                self.logger.warning(f"无法找到 class='search' 下的链接: {exc}. 尝试从整个页面查找链接。")
-                links = driver.find_elements(By.TAG_NAME, "a")
+                # 获取 search-summary 的文本内容
+                search_summary = search_summary_element.text
+                # 打印 search-summary 的内容到控制台
+                print("Search Summary:", search_summary)
+                
+                if "did not match any documents" in search_summary:
+                    self.logger.info(f'在 Kernel Docs 没有找到与 "{entity}" 相关的结果。')
+                    return None
 
-            for link in links:
+                references = []
+                # 修改：使用正确的 class="search" 选择器定位 ul 元素
                 try:
-                    result_url = link.get_attribute('href')
-                    if not result_url or not result_url.startswith('http'):
+                    search_container = WebDriverWait(driver, 5).until(
+                        EC.presence_of_element_located((By.CLASS_NAME, "search"))
+                    )
+                    # 从 ul.search 中查找所有链接
+                    links = search_container.find_elements(By.TAG_NAME, "a")
+                except Exception as exc:
+                    self.logger.warning(f"无法找到 class='search' 下的链接: {exc}. 尝试从整个页面查找链接。")
+                    links = driver.find_elements(By.TAG_NAME, "a")
+
+                for link in links:
+                    try:
+                        result_url = link.get_attribute('href')
+                        if not result_url or not result_url.startswith('http'):
+                            continue
+                            
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(result_url) as response:
+                                if response.status == 200:
+                                    content = await response.text()
+                                    # 使用业务逻辑判断实体是否在目标页面中，限制最多5个引用
+                                    if entity.lower() in content.lower():
+                                        references.append(result_url)
+                                        self.logger.info(f'在 Kernel Docs 找到相关内容: {result_url}')
+                                        # 当找到5个引用后停止搜索
+                                        if len(references) >= 1:
+                                            break
+                    except Exception as e:
+                        self.logger.warning(f"处理链接时出错: {str(e)}")
                         continue
-                        
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(result_url) as response:
-                            if response.status == 200:
-                                content = await response.text()
-                                # 使用业务逻辑判断实体是否在目标页面中，限制最多5个引用
-                                if entity.lower() in content.lower():
-                                    references.append({
-                                        'url': result_url,
-                                        'title': link.text
-                                    })
-                                    self.logger.info(f'在 Kernel Docs 找到相关内容: {result_url}')
-                                    # 当找到5个引用后停止搜索
-                                    if len(references) >= 5:
-                                        break
-                except Exception as e:
-                    self.logger.warning(f"处理链接时出错: {str(e)}")
-                    continue
 
-            if references:
-                return {
-                    'entity': entity,
-                    'reference_type': 'documentation',
-                    'reference_source': 'kernel_docs',
-                    'references': references
-                }
-            else:
-                self.logger.info(f'在 Kernel Docs 没有找到与 "{entity}" 相关的内容。')
+                if references:
+                    return {
+                        'url_type': 'documentation',
+                        'url': references
+                    }
+                else:
+                    self.logger.info(f'在 Kernel Docs 没有找到与 "{entity}" 相关的内容。')
+                    return None
+
+            except TimeoutException:
+                self.logger.warning(f'在 Kernel Docs 搜索超时: "{entity}"')
                 return None
+            except WebDriverException as e:
+                self.logger.error(f"WebDriver错误: {str(e)}")
+                return None
+            except Exception as e:
+                self.logger.error(f"搜索过程中发生错误: {str(e)}")
+                return None
+            finally:
+                if driver:
+                    try:
+                        driver.quit()
+                    except Exception:
+                        pass
+                self.logger.info(f"Released semaphore for {entity}, remaining: {self.kernel_docs_semaphore._value + 1}/{self.kernel_docs_concurrency}") # _value is internal, but for logging
 
-        except TimeoutException:
-            self.logger.warning(f'在 Kernel Docs 搜索超时: "{entity}"')
-            return None
-        except WebDriverException as e:
-            self.logger.error(f"WebDriver错误: {str(e)}")
-            return None
-        except Exception as e:
-            self.logger.error(f"搜索过程中发生错误: {str(e)}")
-            return None
-        finally:
-            if driver:
-                try:
-                    driver.quit()
-                except Exception:
-                    pass
-
-    def _find_candidates_by_rules(self, entity, candidates_pool):
-        """使用启发式规则查找可能的融合候选项"""
-        matches = set()
-        
-        # 1. 大小写变体匹配
-        entity_lower = entity.lower()
-        for candidate in candidates_pool:
-            if candidate.lower() == entity_lower:
-                matches.add(candidate)
-        
-        # 2. 缩写匹配
-        # 2.1 处理括号内显式标注的缩写
-        if '(' in entity:
-            main_part = entity.split('(')[0].strip()
-            abbrev = entity.split('(')[1].rstrip(')').strip()
-            for candidate in candidates_pool:
-                if candidate == main_part or candidate == abbrev:
-                    matches.add(candidate)
-        
-        # 2.2 处理首字母缩写
-        words = self._split_identifier(entity)
-        if len(words) > 1:
-            # 生成首字母缩写（全大写）
-            acronym = ''.join(word[0].upper() for word in words)
-            # 生成首字母缩写（保持原有大小写）
-            camel_acronym = ''.join(word[0] for word in words)
-            
-            for candidate in candidates_pool:
-                if candidate in (acronym, camel_acronym):
-                    matches.add(candidate)
-                # 反向匹配：检查当前实体是否是候选项的缩写
-                candidate_words = self._split_identifier(candidate)
-                if len(candidate_words) > 1:
-                    candidate_acronym = ''.join(word[0].upper() for word in candidate_words)
-                    if entity in (candidate_acronym, candidate_acronym.lower()):
-                        matches.add(candidate)
-        
-        return list(matches)
-
-    async def _verify_fusion_pair_with_context(self, entity1, entity2, contexts1, contexts2, reference):
-        """使用LLM验证两个实体是否可以融合
-        
-        Args:
-            entity1 (str): 第一个实体
-            entity2 (str): 第二个实体
-            contexts1 (list): 第一个实体的上下文列表
-            contexts2 (list): 第二个实体的上下文列表
-            reference (dict): 引用源信息
-            
-        Returns:
-            dict: 包含决策和原因的字典
-        """
-        # 准备上下文信息
-        contexts_str = self._prepare_context_string(entity1, entity2, contexts1, contexts2, reference)
-        
-        prompt = self._create_fusion_verification_prompt(entity1, entity2, contexts_str)
-        
-        try:
-            # 修改：移除 await，直接调用同步方法
-            response = self._get_llm_response(prompt)
-            return self._parse_llm_verification_response(response)
-        except Exception as e:
-            self.logger.error(f"LLM verification failed: {str(e)}")
-            return {'decision': False, 'reason': f'Verification failed: {str(e)}'}
-
-    def _prepare_context_string(self, entity1, entity2, contexts1, contexts2, reference):
-        """准备用于LLM验证的上下文字符串"""
-        context_parts = []
-        
-        # # 添加实体1的上下文
-        # if contexts1:
-        #     context_parts.append(f"Context for {entity1}:")
-        #     context_parts.extend(f"- {ctx.get('entity', '')}" for ctx in contexts1)
-        
-        # # 添加实体2的上下文
-        # if contexts2:
-        #     context_parts.append(f"\nContext for {entity2}:")
-        #     context_parts.extend(f"- {ctx.get('entity', '')}" for ctx in contexts2)
-        
-        # 添加引用信息
-        ref_info = "No official reference available"
-        if reference and reference.get('references'):
-            ref_info = str(reference['references'][0])
-        context_parts.append(f"\nReference Information:\n{ref_info}")
-        
-        return "\n".join(context_parts)
-
-    def _create_fusion_verification_prompt(self, entity1, entity2, contexts_str):
-        """创建用于实体融合验证的提示"""
-        return f"""As a Linux kernel expert, determine if the following two terms refer to the exact same concept in the Linux kernel context.
-
-Term 1: {entity1}
-Term 2: {entity2}
-
-{contexts_str}
-
-Consider:
-1. They must refer to exactly the same concept
-2. One might be an abbreviation or alternative representation of the other
-3. They must be used interchangeably in Linux kernel documentation
-4. Their usage contexts should be consistent
-5. The official reference should support their equivalence
-
-Please respond in the following format:
-Decision: [YES/NO]
-Reason: [Your reasoning]
-"""
-
-    def _parse_llm_verification_response(self, response):
-        """解析LLM验证响应
-        
-        Args:
-            response (str): LLM的原始响应
-            
-        Returns:
-            dict: 包含决策和原因的字典
-        """
-        if not response:
-            return {'decision': False, 'reason': 'Empty response from LLM'}
-        
-        response_lines = [line.strip() for line in response.split('\n') if line.strip()]
-        
-        decision_line = next((line for line in response_lines if line.lower().startswith('decision:')), None)
-        reason_line = next((line for line in response_lines if line.lower().startswith('reason:')), None)
-        
-        if not decision_line or not reason_line:
-            return {
-                'decision': False,
-                'reason': f'Invalid response format. Response: {response}'
-            }
-        
-        decision = 'yes' in decision_line.lower().split(':', 1)[1].strip().lower()
-        reason = reason_line.split(':', 1)[1].strip()
-        
-        return {
-            'decision': decision,
-            'reason': reason
-        }
-
-    async def _get_fusion_candidates(self, entity_name, entity_groups, processed_entities, contexts):
-        """获取实体的融合候选项"""
-        fusion_candidates = []
-        
-        # 首先使用现有的 _find_fusion_candidates 方法获取初步候选项
-        initial_candidates = self._apply_fusion_rules(entity_name,contexts, entity_groups)
-        
-        # 对初步候选项进行进一步验证
-        for other_name in initial_candidates:
-            # 跳过已处理的实体
-            if other_name in processed_entities:
-                continue
-            
-            # 获取候选项的上下文和引用
-            other_contexts = entity_groups.get(other_name, [])
-            other_reference = entity_groups.get(other_name)
-            
-            # 使用LLM验证融合可能性
-            verification = await self._verify_entities_fusion(
-                entity_name, other_name, contexts, other_contexts,
-                entity_groups[entity_name], other_reference
-            )
-            
-            if verification['decision']:
-                fusion_candidates.append({
-                    'entity': other_name,
-                    'contexts': other_contexts,
-                    'reference': other_reference,
-                    'reason': verification['reason']
-                })
-        
-        return fusion_candidates
-
-    def _create_fusion_group(self, entity_name, fusion_candidates, contexts, reference):
-        """创建融合组"""
-        return {
-            'original': entity_name,
-            'variations': [c['entity'] for c in fusion_candidates],
-            'canonical_form': entity_name,
-            'contexts': contexts + [ctx for c in fusion_candidates for ctx in c['contexts']],
-            'reference': reference,
-            'fusion_reason': 'Merged based on reference and context verification'
-        }
-
-    def _update_processed_entities(self, processed_entities, entity_name, fusion_candidates):
-        """更新已处理的实体集合"""
-        processed_entities.add(entity_name)
-        processed_entities.update(c['entity'] for c in fusion_candidates)
-
-    async def _verify_entities_fusion(self, entity1, entity2, contexts1, contexts2, ref1, ref2):
-        """验证两个实体是否可以融合"""
-        verification = await self._verify_fusion_pair_with_context(
-            entity1,
-            entity2,
-            contexts1,
-            contexts2,
-            {
-                'entity1_reference': ref1,
-                'entity2_reference': ref2
-            }
-        )
-        return verification
-
-    def _create_entity_key(self, entity_name, feature_id, commit_ids):
+    def _create_entity_key(self, entity, feature_id, commit_ids):
         """创建实体的复合键
         
         Args:
-            entity_name (str): 实体名称
+            entity (Entity): 实体对象
             feature_id (str): 特征ID
             commit_ids (list): 提交ID列表
             
@@ -899,179 +462,369 @@ Reason: [Your reasoning]
         commit_ids_str = ','.join(sorted(commit_ids)) if commit_ids else ''
         feature_id_str = str(feature_id) if feature_id else ''
         
-        return f"{entity_name}_{feature_id_str}_{commit_ids_str}"
+        return f"{entity.name}_{feature_id_str}_{commit_ids_str}"
 
-    def _evaluate_reference_accuracy(self, entities):
-        """评估实体引用的准确性，分别评估代码引用和文档引用
+    def _normalize_fusion_groups(self, fusion_groups):
+        """规范化融合组，选择规范形式和整理结果
+        
+        规范化规则:
+        1. 使用空格作为连接符（而非下划线或连字符）
+        2. 优先选择有外部引用的实体名称
+        3. 其他条件相同时，选择最长的名称
         
         Args:
-            entities (dict): 包含实体及其引用信息的字典
-        
+            fusion_groups (list): 融合组列表，每个融合组是一个包含关联实体的列表
+            
         Returns:
-            dict: 包含代码和文档引用评估指标的字典
+            list: 规范化后的融合组列表
         """
-        try:
-            import pandas as pd
-            
-            # 读取基准数据集
-            benchmark_df = pd.read_excel('data/entity_link_fusion_benchmark_0124.xlsx')
-            
-            # 初始化计数器 - 代码引用
-            code_metrics = {
-                'total_entities': 0,
-                'total_with_refs': 0,
-                'system_found_refs': 0,
-                'correct_found': 0
-            }
-            
-            # 初始化计数器 - 文档引用
-            doc_metrics = {
-                'total_entities': 0,
-                'total_with_refs': 0,
-                'system_found_refs': 0,
-                'correct_found': 0
-            }
-            
-            # 遍历实体
-            for entity_key, entity_data in entities.items():
-                entity_name = entity_key
-                code_metrics['total_entities'] += 1
-                doc_metrics['total_entities'] += 1
+        normalized_fusion_groups = []
+        
+        for group in fusion_groups:
                 
-                # 在基准数据集中查找对应实体
-                benchmark_row = benchmark_df[benchmark_df['original_mention'] == entity_name]
-                if benchmark_row.empty:
-                    continue
-                
-                # 获取系统找到的引用
-                reference_data = entity_data.get('references', [])
-                system_code_refs = []
-                system_doc_refs = []
-                
-                # 处理引用列表
-                for ref in reference_data:
-                    # 检查引用列表中的每个引用项
-                    reference = ref.get('references', [])
-                    if isinstance(reference, list):
-                        # 如果是列表，遍历其中的每个引用
-                        for single_ref in reference:
-                            if isinstance(single_ref, dict) and 'reference_type' in single_ref:
-                                ref_type = single_ref['reference_type']
-                                if ref_type == 'code':
-                                    system_code_refs.append(single_ref)
-                                elif ref_type == 'documentation':
-                                    system_doc_refs.append(single_ref)
-                # 评估代码引用
-                has_code_ref = not pd.isna(benchmark_row['reference(code)'].iloc[0])
-                if has_code_ref:
-                    code_metrics['total_with_refs'] += 1
-                if system_code_refs:
-                    code_metrics['system_found_refs'] += 1
-                    if has_code_ref:
-                        code_metrics['correct_found'] += 1
-                
-                # 评估文档引用
-                has_doc_ref = not pd.isna(benchmark_row['reference(document)'].iloc[0])
-                if has_doc_ref:
-                    doc_metrics['total_with_refs'] += 1
-                if system_doc_refs:
-                    doc_metrics['system_found_refs'] += 1
-                    if has_doc_ref:
-                        doc_metrics['correct_found'] += 1
+            # 4. 规范化连接符为空格
+            def normalize_name(name):
+                # 驼峰转换: AbcDef -> Abc Def
+                s1 = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+                # 替换所有连词符和下划线为空格
+                s2 = re.sub(r'[-_]', ' ', s1)
+                # 删除多余空格
+                return re.sub(r'\s+', ' ', s2).strip()
             
-            # 计算代码引用指标
-            code_metrics.update(self._calculate_metrics(
-                code_metrics['correct_found'],
-                code_metrics['system_found_refs'],
-                code_metrics['total_with_refs']
-            ))
+            # 5. 最后选择最长的名称
+            normalized_entity = max(group, key=lambda e: len(e.name))
             
-            # 计算文档引用指标
-            doc_metrics.update(self._calculate_metrics(
-                doc_metrics['correct_found'],
-                doc_metrics['system_found_refs'],
-                doc_metrics['total_with_refs']
-            ))
+            # 应用规范化名称
+            normalized_entity.name = normalize_name(normalized_entity.name)
             
-            # 记录评估结果
-            self._log_evaluation_results(code_metrics, doc_metrics)
+            # 将融合组中其他实体的名称添加为别名
+            for entity in group:
+                if entity.id != normalized_entity.id:
+                    normalized_entity.add_alias(entity.name)
             
-            return {
-                'code_references': code_metrics,
-                'doc_references': doc_metrics
-            }
-            
-        except Exception as e:
-            self.logger.error(f"Error evaluating reference accuracy: {str(e)}")
-            self.logger.error(f"First entity data sample: {next(iter(entities.items())) if entities else 'No entities'}")
-            return {
-                'code_references': {'error': str(e)},
-                'doc_references': {'error': str(e)}
-            }
+            normalized_fusion_groups.append(normalized_entity)
+        
+        return normalized_fusion_groups
 
-    def _calculate_metrics(self, correct_found, system_found, total_with_refs):
-        """计算评估指标
+    def _check_singular_plural_relation(self, name1, name2):
+        """检查两个名称是否为单复数关系
+        
+        处理常见的英语单复数变化规则:
+        - 一般情况: 加's' (file/files)
+        - 以s, x, z, ch, sh结尾: 加'es' (bus/buses, box/boxes)
+        - 以辅音+y结尾: 变y为i加es (facility/facilities)
+        - 以o结尾的特殊情况: 加'es' (hero/heroes)
+        - 不规则变化: 使用预定义映射 (man/men, child/children)
         
         Args:
-            correct_found (int): 正确找到的引用数量
-            system_found (int): 系统找到的引用数量
-            total_with_refs (int): 基准数据集中有引用的实体数量
-        
+            name1, name2: 要比较的两个名称
+            
         Returns:
-            dict: 包含precision, recall和f1_score的字典
+            bool: 如果两个名称是单复数关系，返回True
         """
-        precision = correct_found / system_found if system_found > 0 else 0
-        recall = correct_found / total_with_refs if total_with_refs > 0 else 0
-        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
-        
-        return {
-            'precision': precision,
-            'recall': recall,
-            'f1_score': f1_score
+        # 不规则复数形式映射
+        irregular_plurals = {
+            'man': 'men', 'woman': 'women', 'child': 'children',
+            'person': 'people', 'foot': 'feet', 'tooth': 'teeth',
+            'goose': 'geese', 'mouse': 'mice', 'ox': 'oxen',
+            'datum': 'data', 'medium': 'media', 'analysis': 'analyses',
+            'crisis': 'crises', 'phenomenon': 'phenomena', 'index': 'indices',
+            'matrix': 'matrices', 'vertex': 'vertices', 'criterion': 'criteria'
         }
+        
+        # 标准化比较
+        n1, n2 = name1.lower(), name2.lower()
+        
+        # 检查不规则复数
+        for singular, plural in irregular_plurals.items():
+            if (n1 == singular and n2 == plural) or (n1 == plural and n2 == singular):
+                return True
+        
+        # 检查标准's'结尾的复数
+        if n1.rstrip('s') == n2.rstrip('s') and n1.rstrip('s'):
+            return True
+        
+        # 检查'es'结尾的复数
+        if (n1.endswith('es') and n1[:-2] == n2) or (n2.endswith('es') and n2[:-2] == n1):
+            return True
+        
+        # 检查辅音+y变为ies的情况
+        if (n1.endswith('y') and n2.endswith('ies') and n1[:-1] == n2[:-3]) or \
+           (n2.endswith('y') and n1.endswith('ies') and n2[:-1] == n1[:-3]):
+            return True
+        
+        return False
 
-    def _log_evaluation_results(self, code_metrics, doc_metrics):
-        """记录评估结果
+    def _check_gerund_relation(self, name1, name2):
+        """检查两个名称是否为动词原形和动名词关系
+        
+        处理常见的动名词变化:
+        - 一般情况: 加'ing' (read/reading)
+        - 以e结尾: 去e加ing (write/writing)
+        - 短元音+辅音结尾: 双写辅音加ing (run/running)
         
         Args:
-            code_metrics (dict): 代码引用的评估指标
-            doc_metrics (dict): 文档引用的评估指标
+            name1, name2: 要比较的两个名称
+            
+        Returns:
+            bool: 如果两个名称是动词原形和动名词关系，返回True
         """
-        metrics_table = f"""
-Reference Evaluation Metrics:
-┌────────────────────┬───────────────┬───────────────┐
-│ Metric            │ Code Refs     │ Doc Refs      │
-├────────────────────┼───────────────┼───────────────┤
-│ Precision         │ {code_metrics['precision']:.2%} │ {doc_metrics['precision']:.2%} │
-│ Recall            │ {code_metrics['recall']:.2%}   │ {doc_metrics['recall']:.2%}   │
-│ F1 Score          │ {code_metrics['f1_score']:.2%} │ {doc_metrics['f1_score']:.2%} │
-├────────────────────┼───────────────┼───────────────┤
-│ Total Entities    │ {code_metrics['total_entities']:>11} │ {doc_metrics['total_entities']:>11} │
-│ With References   │ {code_metrics['total_with_refs']:>11} │ {doc_metrics['total_with_refs']:>11} │
-│ System Found      │ {code_metrics['system_found_refs']:>11} │ {doc_metrics['system_found_refs']:>11} │
-│ Correctly Found   │ {code_metrics['correct_found']:>11} │ {doc_metrics['correct_found']:>11} │
-└────────────────────┴───────────────┴───────────────┘"""
+        n1, n2 = name1.lower(), name2.lower()
         
-        self.logger.info(metrics_table)
+        # 基本情况: 加ing
+        if (n1.endswith('ing') and n1[:-3] == n2) or (n2.endswith('ing') and n2[:-3] == n1):
+            return True
+        
+        # e结尾情况: 去e加ing
+        if (n1.endswith('ing') and n2.endswith('e') and n1[:-3] == n2[:-1]) or \
+           (n2.endswith('ing') and n1.endswith('e') and n2[:-3] == n1[:-1]):
+            return True
+        
+        # 常见的双写辅音情况
+        consonant_doubles = ['run', 'sit', 'begin', 'swim', 'stop']
+        for base in consonant_doubles:
+            gerund = base + base[-1] + 'ing'  # 如 running, sitting
+            if (n1 == base and n2 == gerund) or (n1 == gerund and n2 == base):
+                return True
+        
+        return False
 
-def init_driver_with_enhanced_options():
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-setuid-sandbox")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1920,1080")
-    # 建议移除远程调试参数，除非你必须用到它:
-    # chrome_options.add_argument("--remote-debugging-port=9222")
-    
-    # 如果需要指定 Chrome 的位置，可解除下面的注释
-    # chrome_options.binary_location = "/usr/bin/google-chrome"
-    
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get("https://www.google.com")
-    print("Page title:", driver.title)
-    driver.quit()
-    
-if __name__ == "__main__":
-    init_driver_with_enhanced_options()
+    def _check_naming_convention_relation(self, name1, name2):
+        """检查两个名称是否使用不同命名约定但表示相同概念
+        
+        处理以下命名约定差异:
+        - 下划线分隔: linux_kernel
+        - 连字符分隔: linux-kernel
+        - 驼峰命名: LinuxKernel
+        - 小驼峰命名: linuxKernel
+        - 空格分隔: linux kernel
+        
+        Args:
+            name1, name2: 要比较的两个名称
+                
+        Returns:
+            bool: 如果两个名称仅在命名约定上不同但表示相同概念，返回True
+        """
+        # 规范化：将所有分隔符转为空格，同时处理驼峰
+        def normalize(name):
+            # 驼峰转换: AbcDef -> Abc Def
+            s1 = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+            # 替换所有连词符和下划线为空格
+            s2 = re.sub(r'[-_]', ' ', s1)
+            # 转小写并分割
+            return [word.lower() for word in s2.split() if word]
+        
+        # 获取词汇集合
+        words1 = normalize(name1)
+        words2 = normalize(name2)
+        
+        # 如果词汇完全相同，则属于不同命名约定的同一实体
+        if words1 == words2 and words1:  # 确保不是空列表
+            return True
+        
+        return False
+
+    def _start_persistence_timer(self):
+        """启动定期持久化任务"""
+        import threading
+        import time
+        
+        def persistence_task():
+            while True:
+                time.sleep(self.persistence_interval)
+                self._persist_entities()
+                
+        persistence_thread = threading.Thread(target=persistence_task, daemon=True)
+        persistence_thread.start()
+        
+    def _persist_entities(self):
+        """将融合实体持久化到JSON文件"""
+        import os
+        import json
+        import time
+        import threading
+        
+        current_time = time.time()
+        if current_time - self.last_persistence_time < self.persistence_interval:
+            return
+            
+        self.logger.info("正在将融合实体持久化到JSON文件...")
+        
+        # 使用线程锁保护数据一致性
+        lock = threading.Lock()
+        
+        try:
+            # 确保目录存在
+            os.makedirs(self.persistence_path, exist_ok=True)
+            
+            with lock:
+                for class_name, entities in self.fused_entities_by_class.items():
+                    if not entities:
+                        self.logger.info(f"跳过空的实体类别: {class_name}")
+                        continue
+                        
+                    file_path = os.path.join(self.persistence_path, f"{class_name}.json")
+                    temp_file_path = f"{file_path}.tmp"
+                    
+                    serializable_entities = [entity.to_dict() for entity in entities]
+                    if serializable_entities:
+                        # 实现自己的原子写入
+                        with open(temp_file_path, 'w', encoding='utf-8') as f:
+                            json.dump(serializable_entities, f, indent=2, ensure_ascii=False)
+                        
+                        # 验证临时文件是否成功写入
+                        if os.path.exists(temp_file_path) and os.path.getsize(temp_file_path) > 0:
+                            # 使用os.replace进行原子替换
+                            os.replace(temp_file_path, file_path)
+                            self.logger.info(f"已成功持久化 {len(serializable_entities)} 个 {class_name} 类实体")
+                        else:
+                            self.logger.error(f"临时文件 {temp_file_path} 写入失败")
+                    else:
+                        self.logger.warning(f"{class_name} 类实体序列化后为空，跳过持久化")
+            
+            self.last_persistence_time = current_time
+            self.logger.info("融合实体持久化完成")
+        except Exception as e:
+            self.logger.error(f"持久化融合实体时发生错误: {str(e)}")
+            # 记录详细错误信息和堆栈跟踪
+            import traceback
+            self.logger.error(traceback.format_exc())
+            
+    def _load_persisted_entities(self):
+        """从JSON文件加载持久化的融合实体"""
+        import os
+        import json
+        
+        self.logger.info("尝试从JSON文件加载融合实体...")
+        
+        try:
+            # 检查目录是否存在
+            if not os.path.exists(self.persistence_path):
+                self.logger.info(f"持久化目录 {self.persistence_path} 不存在，跳过加载")
+                return
+            
+            res = {}
+            # 加载每个实体类别的文件
+            total_entities = 0
+            for class_name in Entity.ENTITY_TYPES:
+                file_path = os.path.join(self.persistence_path, f"{class_name}.json")
+                
+                if os.path.exists(file_path):
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        entity_dicts = json.load(f)
+                        
+                    # 将字典转回实体对象
+                    entities = []
+                    for entity_dict in entity_dicts:
+                        entity = Entity.from_dict(entity_dict)
+                        entities.append(entity)
+
+                    res[class_name] = entities
+                    total_entities += len(entities)
+                    self.logger.info(f"从文件加载了 {len(entities)} 个 {class_name} 类实体")
+                else:
+                    self.logger.info(f"未找到 {class_name} 类实体的持久化文件")
+                    
+            self.logger.info(f"融合实体加载完成，共 {total_entities} 个实体")
+            return res
+        except Exception as e:
+            self.logger.error(f"加载融合实体时发生错误: {str(e)}")
+            
+    async def _perform_llm_based_fusion(self, rule_fused_groups: List[Entity]) -> List[Entity]:
+        """对规则融合返回的实体组中，名称相同的实体使用LLM结合feature描述进行二次融合。
+        这个方法不修改 self.fused_entities_by_class，它仅处理传入的列表。
+        """
+        if not rule_fused_groups:
+            self.logger.info("LLM融合步骤：输入列表为空，直接返回。")
+            return []
+
+        final_llm_fused_entities = []
+        # 创建一个副本进行操作，避免修改原始传入列表的结构（尽管内容会被修改）
+        entities_to_process = [e.clone() for e in rule_fused_groups] # 假设 Entity 有 clone 方法
+        processed_indices = set()
+        
+        for i in range(len(entities_to_process)):
+            if i in processed_indices:
+                continue
+            
+            entity1 = entities_to_process[i]
+            # 不需要将i立即加入processed_indices，因为entity1本身总是要加入final_llm_fused_entities
+            
+            for j in range(i + 1, len(entities_to_process)):
+                if j in processed_indices:
+                    continue
+                    
+                entity2 = entities_to_process[j]
+                
+                if entity1.id == entity2.id: # 确保不会比较自身（虽然理论上rule_fused_groups不应有重复ID）
+                    continue
+
+                if entity1.name == entity2.name:
+                    self.logger.debug(f"LLM候选: \'{entity1.name}\' (ID: {entity1.id}, Feature: {getattr(entity1, 'context', 'N/A')}) vs (ID: {entity2.id}, Feature: {getattr(entity2, 'context', 'N/A')})")
+                    # 检查两个实体的context是否有一个为空或者'None'字符串
+                    context1 = getattr(entity1, 'context', '')
+                    context2 = getattr(entity2, 'context', '')
+                    
+                    if not context1 or context1 == 'None' or not context2 or context2 == 'None':
+                        self.logger.info(f"实体 \'{entity1.name}\' (ID: {entity1.id}) 与 (name: {entity2.name}) 的context至少一个为空或'None'，认为是同一实体。进行合并。")
+                        entity1.merge_with(entity2)  # entity2 合并到 entity1
+                        processed_indices.add(j)  # entity2 已被合并，标记以便跳过
+                        continue  # 跳过LLM判断，直接处理下一个实体
+                    feature1_desc = getattr(entity1, 'context', 'No feature description available')
+                    feature2_desc = getattr(entity2, 'context', 'No feature description available')
+                    
+                    prompt = f"""Identity Check: Linux Kernel Entities
+Name: '{entity1.name}'
+
+Entity 1:
+  ID: {entity1.id}
+  Feature: {feature1_desc}
+
+Entity 2:
+  ID: {entity2.id}
+  Feature: {feature2_desc}
+
+Do these entities refer to the same concept? Respond with 'Yes' or 'No' only."""
+                    
+                    try:
+                        # 假设 self._get_llm_response 是同步的
+                        response = self._get_llm_response(prompt)
+                        self.logger.debug(f"LLM 对 \'{entity1.id}\' (IDs: {entity1.name} vs {entity2.name}) 的响应: '{response}'")
+                        
+                        if response and response.strip().lower() == 'yes':
+                            self.logger.info(f"LLM确认 \'{entity1.id}\' (IDs: {entity1.name} vs {entity2.name}) 为同一实体。进行合并。")
+                            entity1.merge_with(entity2) # entity2 合并到 entity1
+                            processed_indices.add(j) # entity2 已被合并，标记以便跳过
+                        else:
+                            self.logger.debug(f"LLM判断 \'{entity1.id}\' (IDs: {entity1.name} vs {entity2.name}) 不是同一实体或无法判断。")
+                            
+                    except Exception as e:
+                        self.logger.error(f"LLM调用或解析过程中发生错误 (实体IDs: {entity1.id}, {entity2.id}): {e}")
+                        # 此处选择跳过此对实体的LLM判断，继续处理其他实体
+                        
+            final_llm_fused_entities.append(entity1) # 将 entity1 (可能已合并其他实体) 加入最终列表
+            processed_indices.add(i) # 确保 entity1 本身也被标记为处理过
+            
+        self.logger.info(f"LLM融合处理完成。输入 {len(rule_fused_groups)} 个规则融合实体，输出 {len(final_llm_fused_entities)} 个实体。")
+        return final_llm_fused_entities
+
+    # async def _find_entity_references(self, entities):
+    #     entities_with_refs = {}
+    #     entities_without_refs = {}
+
+    #     for entity in entities:
+    #         entity_name = entity.name
+    #         entity_key = self._create_entity_key(
+    #             entity,
+    #             entity.feature_id,
+    #             entity.commit_ids
+    #         )
+
+    #         # 引用源验证
+    #         reference = await self._find_entity_reference(
+    #             entity,
+    #             entity.feature_id,
+    #             entity.commit_ids,
+    #         )
+            # entity.external_links = reference
+        

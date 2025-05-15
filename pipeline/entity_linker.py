@@ -27,9 +27,10 @@ class EntityLinker:
         self.llm = deepseek()
         
         # 修改本地数据库配置的获取方式
-        # 从配置类中直接访问属性，而不是使用 get 方法
-        self.use_local_db = getattr(self.config, 'USE_LOCAL_WIKIPEDIA', True)
-        self.db_path = getattr(self.config, 'WIKIPEDIA_DB_PATH', 'data/wikipedia.db')
+        self.use_local_db = getattr(self.config, 'USE_LOCAL_WIKIPEDIA', False)
+        
+        # 添加本地MediaWiki API配置
+        self.local_wiki_api = getattr(self.config, 'LOCAL_WIKI_API', 'http://10.176.37.1:6101/api.php')
         
         # 保持原有的Wikipedia API初始化
         self.wiki = wikipediaapi.Wikipedia(
@@ -38,33 +39,64 @@ class EntityLinker:
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
         )
         self.link_cache = LinkCache()
-     
-    def _get_db_connection(self):
-        """获取数据库连接"""
-        return sqlite3.connect(self.db_path)
 
-    async def link_entity(self, entity, context, feature_id=None, commit_ids=None):
+    async def link_entity(self, entity):
         """链接单个实体到知识库，返回所有可能的匹配结果"""
         start_time = time.time()
         self.logger.info(f"Processing entity linking for: {entity}")
-        
+        entity_name = entity.name
+        context = entity.context
+        feature_id = entity.feature_id
+        commit_ids = entity.commit_ids
+        entities = []
         # 1. 生成所有可能的搜索词
         variations_start = time.time()
         
         # 生成变体并合并
-        variations = await self._generate_variations(entity, feature_id, commit_ids)
-        word_variations = await self._generate_variations(Delimiter.split_camel(entity), feature_id, commit_ids)
-        variations.append(entity)
-        variations.extend(word_variations)
-        variations = list(dict.fromkeys(variations))
+        variations = await self._generate_variations(entity_name, context, feature_id, commit_ids)
+        # word_variations = await self._generate_variations(Delimiter.split_camel(entity), context, feature_id, commit_ids)
+        # variations.extend(word_variations)
         
         self.logger.info(f"Variations generation took {time.time() - variations_start:.2f}s")
-        
+           
         # 2. 搜索维基百科
         wiki_search_start = time.time()
         primary_candidates = []
+        # 模拟数据，用于临时测试
+        # 将variations转换为term列表，并保存对应的context信息
+        # mock_data = [
+        #     {
+        #         "term": "tree", 
+        #         "context": "File systems	Btrfs	tree-checker: add type and sequence check for inline backrefs"
+        #     },
+        #     {
+        #         "term": "PID", 
+        #         "context": "Drivers	USB	ftdi_sio: Added custom PID for  products"
+        #     },
+        #     {
+        #         "term": "card", 
+        #         "context": "Drivers & architectures		PCMCIA: core socket sysfs support,export card type"
+        #     },
+        #     {
+        #         "term": "Reset", 
+        #         "context": "Drivers	Bluetooth	btnxpuart: Improve inband Independent Reset handling"
+        #     },
+        #     {
+        #         "term": "architectures", 
+        #         "context": "Arch-independent changes in the kernel core		Memory management Allow the removal of ZONE_DMA32 for non x86_64 architectures and ZONE_HIGHMEM for arches not using highmem (like 64 bit architectures). While they're not used on those arches they eat some memory and they've no sense on those platforms anyway so make it possible to disable them at compile time"
+        #     },
+        #     {
+        #         "term": "Memory", 
+        #         "context": "Memory management Allow the removal of ZONE_DMA32 for non x86_64 architectures and ZONE_HIGHMEM for arches not using highmem (like 64 bit architectures). While they're not used on those arches they eat some memory and they've no sense on those platforms anyway so make it possible to disable them at compile time"
+        #     }
+        # ]
+        
+        # 提取term列表，保留context信息以便后续查询使用
+        # variations = [item["term"] for item in mock_data]
+        # term_to_context = {item["term"]: item["context"] for item in mock_data}
         for term in variations:
             wiki_results = await self._search_wikipedia(term, context, feature_id, commit_ids)
+            # wiki_results = await self._search_wikipedia(term, term_to_context[term], feature_id, commit_ids)
             primary_candidates.extend(wiki_results)
         
         primary_candidates = self._deduplicate_candidates(primary_candidates)
@@ -74,63 +106,26 @@ class EntityLinker:
         best_match_start = time.time()
         primary_match = await self._select_best_match(entity, context, primary_candidates)
         self.logger.info(f"Best match selection took {time.time() - best_match_start:.2f}s")
-        
-        # 3. 处理n-gram子序列匹配
-        ngram_start = time.time()
-        ngrams = self._generate_ngrams(entity)
-        ngram_candidates = []
-        
-        for ngram in ngrams:
-            ngram_variations = await self._generate_variations(ngram, feature_id, commit_ids)
-            for term in ngram_variations:
-                wiki_results = await self._search_wikipedia(term, context, feature_id, commit_ids)
-                ngram_candidates.extend(wiki_results)
-        
-        ngram_candidates = self._deduplicate_candidates(ngram_candidates)
-        self.logger.info(f"N-gram processing took {time.time() - ngram_start:.2f}s")
-        
-        # 获取所有合理的ngram匹配
-        ngram_match_start = time.time()
-        ngram_matches = await self._select_valid_ngram_matches(ngrams, context, ngram_candidates)
-        self.logger.info(f"N-gram matching took {time.time() - ngram_match_start:.2f}s")
+    
 
         # 整理结果
         matches = []
         if primary_match and primary_match.confidence > 0.5:
-            matches.append({
-                'linked_entity': primary_match.title,
-                'wikipedia_url': primary_match.url,
-                'confidence': primary_match.confidence,
-                'search_terms': variations,
-                'candidates_count': len(primary_candidates),
-                'match_type': 'primary'
-            })
+            entity.add_external_link('wikipedia',[primary_match.url])
+            entity.description = primary_match.summary
+            # 补充逻辑，如果entity.name和primary_match.title不一致，则将primary_match.title作为entity.name,并将entity.name作为别名
+            if entity.name != primary_match.title:
+                entity.add_alias(primary_match.title)
         
-        for ngram_match in ngram_matches:
-            if ngram_match.confidence > 0.5:
-                matches.append({
-                    'linked_entity': ngram_match.title,
-                    'wikipedia_url': ngram_match.url,
-                    'confidence': ngram_match.confidence,
-                    'search_terms': ngrams,
-                    'candidates_count': len(ngram_candidates),
-                    'match_type': 'ngram',
-                    'matched_ngram': ngram_match.mention
-                })
-
-        result = {
-            'mention': entity,
-            'matches': matches,
-            'total_candidates_count': len(primary_candidates) + len(ngram_candidates)
-        }
+            entities.append(entity)
         
         total_time = time.time() - start_time
         self.logger.info(f"Total entity linking process took {total_time:.2f}s for entity: {entity}")
         
-        return result
+        return entities
         
     @LinkCache.cached_operation('variations')
-    async def _generate_variations(self, mention: str, feature_id: str = None, commit_ids: list = None) -> List[str]:
+    async def _generate_variations(self, mention: str,context: str = None, feature_id: str = None, commit_ids: list = None) -> List[str]:
         """生成术语的变体
         
         Args:
@@ -142,58 +137,13 @@ class EntityLinker:
             List[str]: 生成的变体列表
         """
         # 只需要实现实际的获取逻辑
-        prompt = self._create_variation_prompt(mention)
+        prompt = self._create_variation_prompt(mention, context)
         response = await self._get_llm_response(prompt)
-        return self._parse_variations_response(response, mention)
-
-    def _generate_ngrams(self, text: str, min_n: int = 1, max_n: int = 3) -> List[str]:
-        """生成文本的 n-gram 子序列，根据分隔符切割并拼接形成
-        
-        Args:
-            text: 输入文本
-            min_n: 最小n-gram长度，默认为1
-            max_n: 最大n-gram长度，默认为3
-            
-        Returns:
-            List[str]: n-gram子序列列表
-        """
-        # # 原有实现（注释保留）
-        # # 首先进行驼峰分割，并按空格分割成列表
-        # camel_split = Delimiter.split_camel(text)
-        # words = camel_split.split()
-        # 
-        # # 如果驼峰分割无效（只有一个词），则使用配置的分隔符
-        # if len(words) <= 1:
-        #     words = re.split(f"[{re.escape(self.config.NGRAM_DELIMITERS)}]+", text)
-        #    
-        # ngrams = []
-        # 
-        # # 生成所有 min_n...max_n-gram 子序列，注意不能和原始文本相同
-        # for n in range(min_n, max_n + 1):
-        #     for i in range(len(words) - n + 1):
-        #         ngram = " ".join(words[i:i + n])
-        #         if i != 0 or i + n != len(words): # 不是整个文本
-        #             ngrams.append(ngram)
-        # 
-        # # 去重，但保留顺序不变
-        # ngrams = list(dict.fromkeys(ngrams))
-        
-        # 新实现：直接根据分隔符切割
-        words = re.split(f"[{re.escape(self.config.NGRAM_DELIMITERS)}]+", text)
-        words = [w.strip() for w in words if w.strip()]  # 移除空字符串和前后空格
-        
-        ngrams = []
-        # 生成所有可能的n-gram组合
-        for n in range(min_n, min(max_n + 1, len(words) + 1)):
-            for i in range(len(words) - n + 1):
-                ngram = " ".join(words[i:i + n])
-                # 只添加非完整文本的n-gram
-                if ngram != text:
-                    ngrams.append(ngram)
-        
-        # 去重但保持顺序
-        return list(dict.fromkeys(ngrams))
-        
+        variations = self._parse_variations_response(response, mention)
+        variations.append(mention)
+        variations = list(dict.fromkeys(variations))
+        return variations
+ 
     def _process_sections(self, page, term, sections, depth=0):
         """递归处理所有层级的章节
         
@@ -245,7 +195,7 @@ class EntityLinker:
         
         return candidates
 
-    @LinkCache.cached_operation('main')
+    # @LinkCache.cached_operation('main')
     async def _get_wikipedia_page_candidates(self, term: str, feature_id: str = None, 
                                        commit_ids: list = None, *, page=None, 
                                        context: str = None) -> List[LinkingCandidate]:
@@ -261,23 +211,23 @@ class EntityLinker:
         candidates = []
         
         # 1. 首先尝试在章节中查找精确匹配
-        section_candidates = await self._find_matching_sections(page, term)
-        if section_candidates:
-            return section_candidates
+        section_title,section_text,is_find = await self._find_matching_sections(page, term)
+        # if section_title:
+        #     return section_title,section_text
             
         # 2. 如果没有找到章节匹配，检查页面相关性
         is_match, confidence = await self._check_page_relevance(
-            page.title, 
-            page.summary, 
+            section_title, 
+            section_text, 
             term, 
             context
         )
         if is_match:
             candidate = LinkingCandidate(
                 mention=term,
-                title=page.title,
-                url=page.fullurl,
-                summary=page.summary[:200],
+                title=section_title,
+                url=page.fullurl+("#"+section_title if is_find else ''),
+                summary=section_text,
                 confidence=confidence,
                 is_disambiguation=False
             )
@@ -285,59 +235,41 @@ class EntityLinker:
             
         return candidates
 
-    async def _find_matching_sections(self, page, term: str) -> List[LinkingCandidate]:
-        """查找匹配的章节并构建带锚点的URL
+    async def _find_matching_sections(self, page, term: str) -> Tuple[str, str]:
+        """查找匹配的章节并返回章节的标题和摘要
         
         Args:
-            page: 维基百科页面对象或字典
+            page: 维基百科页面对象
             term: 搜索词
             
         Returns:
-            List[LinkingCandidate]: 匹配的候选项列表，URL包含章节锚点
+            Tuple[str, str]: 匹配章节的标题和摘要，如未找到则返回页面的标题和摘要
         """
-        candidates = []
         
-        def process_section(section, parent_path=[]):
-            current_path = parent_path + [section.title]
+        # 定义深度优先搜索函数
+        def search_sections(sections):
+            for section in sections:
+                # 检查章节标题是否匹配搜索词（忽略大小写）
+                if section.title.lower() == term.lower():
+                    return section.title, section.text,True
+                
+                # 递归搜索子章节
+                if section.sections:
+                    result = search_sections(section.sections)
+                    if result[0] is not None:  # 如果找到匹配，立即返回结果
+                        return result
             
-            # 检查章节标题或内容是否匹配搜索词
-            if (section.title.lower() == term.lower() or 
-                term.lower() in section.text.lower()[:200]):
-                
-                # 构建章节锚点
-                anchor = '_'.join(
-                    title.replace(' ', '_')
-                    .replace('(', '.28')
-                    .replace(')', '.29')
-                    .replace(',', '.2C')
-                    for title in current_path
-                )
-                
-                # 创建完整的URL，包含章节锚点
-                section_url = f"{page.fullurl}#{anchor}"
-                
-                # 创建标题，包含完整的章节路径
-                full_title = f"{page.title}#{' > '.join(current_path)}"
-                
-                candidate = LinkingCandidate(
-                    mention=term,
-                    title=full_title,
-                    url=section_url,
-                    summary=section.text[:200],
-                    confidence=0.8 if section.title.lower() == term.lower() else 0.6,
-                    is_disambiguation=False
-                )
-                candidates.append(candidate)
-            
-            # 递归处理子章节
-            for subsection in section.sections:
-                process_section(subsection, current_path)
+            # 当前层级未找到匹配
+            return None, None,False
         
-        # 处理所有顶级章节
-        for section in page.sections:
-            process_section(section)
-            
-        return candidates
+        # 开始搜索所有章节
+        result = search_sections(page.sections)
+        
+        # 如果找到匹配的章节，返回其标题和内容；否则返回页面的标题和摘要
+        if result[0] is not None:
+            return result
+        else:
+            return page.title, page.summary,False
 
     async def _search_wikipedia(self, term: str, context: str = None, feature_id: str = None, commit_ids: list = None) -> List[LinkingCandidate]:
         """搜索维基百科，根据配置使用本地数据库或在线API"""
@@ -347,27 +279,27 @@ class EntityLinker:
             return await self._search_wikipedia_online(term, context, feature_id, commit_ids)
 
     async def _search_wikipedia_online(self, term: str, context: str = None, feature_id: str = None, commit_ids: list = None) -> List[LinkingCandidate]:
-        """使用在线Wikipedia API搜索（统一实现）
-        
-        尝试通过 Wikipedia API 获取页面，并根据是否为消歧义页面分别处理。
-        
-        Args:
-            term: 搜索词
-            context: 上下文信息
-            feature_id: 特征ID，用于缓存
-            commit_ids: 提交ID列表，用于缓存
-            
-        Returns:
-            List[LinkingCandidate]: 匹配候选项列表
-        """
+        """使用在线Wikipedia API搜索"""
+
         try:
+            disambig_term = f"{term}_(disambiguation)"
+            disambig_page = self.wiki.page(disambig_term)
+            if disambig_page.exists():
+                self.logger.info(f"Found disambiguation page: {disambig_term}")
+                return await self._handle_disambiguation_with_relevance(
+                    term, feature_id, commit_ids, page=disambig_page, context=context
+                )
+             
             page = self.wiki.page(term)
             candidates = []
             
             if not page.exists():
+                self.logger.info(f"No Wikipedia page exists for term: {term}")
                 return []
             
             if self._is_disambiguation_page(page):
+                # 页面本身是消歧义页
+                self.logger.info(f"Found disambiguation page for term: {term}")
                 candidates.extend(await self._handle_disambiguation_with_relevance(
                     term, feature_id, commit_ids, page=page, context=context
                 ))
@@ -384,175 +316,248 @@ class EntityLinker:
             return []
 
     async def _search_wikipedia_local(self, term: str, context: str = None, feature_id: str = None, commit_ids: list = None) -> List[LinkingCandidate]:
-        """使用本地数据库搜索维基百科页面"""
+        """使用本地MediaWiki API搜索维基百科页面"""
         try:
-            conn = self._get_db_connection()
-            cursor = conn.cursor()
+            self.logger.info(f"Searching local MediaWiki for term: {term}")
             
-            # 首先尝试精确匹配标题
-            cursor.execute("""
-                SELECT title, content, summary, url, is_disambiguation 
-                FROM pages 
-                WHERE title = ?
-            """, (term,))
-            
-            row = cursor.fetchone()
-            if not row:
-                conn.close()
+            # 首先检查页面是否存在
+            if not self._check_page_exists_local(term):
+                self.logger.info(f"Page does not exist in local MediaWiki: {term}")
                 return []
             
-            title, content, summary, url, is_disambiguation = row
+            # 构建MediaWiki API请求 - 使用基本参数
+            api_url = self.local_wiki_api
+            params = {
+                'action': 'query',
+                'format': 'json',
+                'titles': term,
+                'prop': 'info|categories',  # 移除不支持的extracts和sections
+                'inprop': 'url',
+                'redirects': '1',
+            }
             
-            # 构造一个更完整的模拟页面对象
-            class FakePage:
-                def __init__(self):
-                    self.sections = []
-                    
-                def __getattr__(self, name):
-                    # 处理未定义的属性访问
-                    return None
-                    
-            page = FakePage()
-            page.title = title
-            page.content = content
-            page.summary = summary if summary else (content[:500] if content else "")
-            page.fullurl = url if url else f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
-            page.text = content
-            page.is_disambiguation = bool(is_disambiguation)
+            # 发送请求
+            response = requests.get(api_url, params=params)
+            self.logger.debug(f"API response for query: {response.text[:500]}")
+            data = response.json()
             
-            # 解析页面内容中的章节
-            if content:
-                sections = self._parse_sections_from_content(content)
-                page.sections = sections
+            # 检查是否有错误
+            if 'error' in data:
+                self.logger.warning(f"API error for query {term}: {data['error']}")
+                return []
             
+            # 获取页面内容 - 单独请求
+            content_params = {
+                'action': 'parse',
+                'format': 'json',
+                'page': term,
+                'prop': 'text',  # 简化请求参数
+                'formatversion': '2',
+            }
+            
+            content_data = {}
+            try:
+                content_response = requests.get(api_url, params=content_params)
+                self.logger.debug(f"API response for parse: {content_response.text[:500]}")
+                content_data = content_response.json()
+                
+                # 检查是否有错误
+                if 'error' in content_data:
+                    self.logger.warning(f"API error for parse {term}: {content_data['error']}")
+                    # 继续处理，但content_data为空字典
+                    content_data = {}
+            except Exception as e:
+                self.logger.error(f"Failed to get content for term {term}: {e}")
+                # 继续处理，但content_data为空字典
+            
+            # 处理结果
             candidates = []
-            if page.is_disambiguation:
-                # 如果是消歧义页面，处理所有可能的链接
-                candidates.extend(await self._handle_disambiguation_with_relevance(
-                    term, feature_id, commit_ids, page=page, context=context
-                ))
-            else:
-                # 如果不是消歧义页面，直接处理页面内容
-                page_candidates = await self._get_wikipedia_page_candidates(
-                    term, feature_id=feature_id, commit_ids=commit_ids, page=page, context=context
-                )
-                candidates.extend(page_candidates)
+            if 'query' in data and 'pages' in data['query']:
+                pages = data['query']['pages']
+                
+                # MediaWiki API返回的是字典，键是页面ID
+                for page_id, page_data in pages.items():
+                    # 跳过不存在的页面
+                    if int(page_id) < 0:
+                        self.logger.info(f"No local MediaWiki page exists for term: {term}")
+                        continue
+                    
+                    # 获取页面内容
+                    page_content = ''
+                    page_summary = ''
+                    page_title = page_data.get('title', '')
+                    
+                    # 尝试从parse响应中提取文本
+                    if 'parse' in content_data:
+                        if 'text' in content_data['parse']:
+                            raw_content = content_data['parse']['text']
+                            
+                            # 处理不同的响应格式
+                            if isinstance(raw_content, str):
+                                page_content = raw_content
+                            elif isinstance(raw_content, dict) and '*' in raw_content:
+                                page_content = raw_content['*']
+                            else:
+                                self.logger.warning(f"Unexpected content format: {type(raw_content)}")
+                                page_content = str(raw_content)
+                            
+                            # 提取文本的第一段作为摘要
+                            try:
+                                soup = BeautifulSoup(page_content, 'html.parser')
+                                # 移除脚本和样式元素
+                                for script in soup(["script", "style"]):
+                                    script.extract()
+                                
+                                paragraphs = soup.find_all('p')
+                                if paragraphs:
+                                    page_summary = paragraphs[0].get_text().strip()[:200]
+                                else:
+                                    # 如果没有段落，尝试获取任何文本
+                                    page_summary = soup.get_text().strip()[:200]
+                            except Exception as e:
+                                self.logger.error(f"Failed to parse HTML content: {e}")
+                                # 应急措施：直接提取一小部分内容作为摘要
+                                page_summary = page_content.replace('<', ' ').replace('>', ' ')[:200]
+                    
+                    # 构造模拟的页面对象，与online版本保持一致
+                    page = self._create_page_object_from_api_data_basic(
+                        page_data, 
+                        page_content, 
+                        page_summary,
+                        api_url
+                    )
+                    
+                    # 检查是否为消歧义页面
+                    is_disambiguation = self._is_disambiguation_page_local(page)
+                    
+                    if is_disambiguation:
+                        self.logger.info(f"Found local disambiguation page for term: {term}")
+                        # 处理消歧义页面 - 可能返回多个候选项
+                        disambig_candidates = await self._handle_disambiguation_with_relevance(
+                            term, feature_id, commit_ids, page=page, context=context
+                        )
+                        candidates.extend(disambig_candidates)
+                    else:
+                        # 处理普通页面
+                        page_candidates = await self._get_wikipedia_page_candidates(
+                            term, feature_id=feature_id, commit_ids=commit_ids, page=page, context=context
+                        )
+                        candidates.extend(page_candidates)
             
-            conn.close()
             return candidates
             
         except Exception as e:
-            self.logger.error(f"Local Wikipedia search failed for term {term}: {e}")
+            self.logger.error(f"Local MediaWiki search failed for term {term}: {e}")
             return []
 
-    def _parse_sections_from_content(self, content: str) -> list:
-        """从维基文本内容中解析章节结构
-        
-        Args:
-            content: 维基文本内容
-            
-        Returns:
-            list: 章节树结构
-        """
-        if not content:
-            return []
-        
-        try:
-            # 使用wikitextparser解析内容
-            parsed = wtp.parse(content)
-            sections = []
-            section_stack = []
-            
-            for section in parsed.sections:
-                # 获取章节级别（通过计算=号的数量）
-                level = section.level
+    def _create_page_object_from_api_data_basic(self, page_data, page_content, page_summary, api_base_url):
+        """从基本的MediaWiki API数据创建页面对象"""
+        class MediaWikiPage:
+            def __init__(self, data, content, summary, api_url):
+                self.pageid = data.get('pageid')
+                self.title = data.get('title', '')
+                self.summary = summary
+                self.content = content
+                self.text = content
                 
-                # 创建章节对象
-                current_section = {
-                    'title': section.title.strip() if section.title else '',
-                    'text': section.contents.strip(),
-                    'level': level,
-                    'sections': [],
-                    'parent': None
-                }
+                # 构建URL
+                self.fullurl = data.get('fullurl', '')
+                if not self.fullurl and 'title' in data:
+                    wiki_url = api_base_url.replace('api.php', 'index.php')
+                    self.fullurl = f"{wiki_url}?title={data['title'].replace(' ', '_')}"
                 
-                # 根据层级关系构建章节树
-                while section_stack and section_stack[-1]['level'] >= level:
-                    section_stack.pop()
-                    
-                if section_stack:
-                    parent = section_stack[-1]
-                    current_section['parent'] = parent
-                    parent['sections'].append(current_section)
-                else:
-                    sections.append(current_section)
-                    
-                section_stack.append(current_section)
-            
-            return sections
-            
-        except Exception as e:
-            self.logger.error(f"Failed to parse sections from content: {e}")
-            return []
-
+                # 处理类别
+                self.categories = []
+                if 'categories' in data:
+                    self.categories = [cat.get('title', '') for cat in data.get('categories', [])]
+                
+                # 没有章节信息时设置空列表
+                self.sections = []
+        
+        return MediaWikiPage(page_data, page_content, page_summary, api_base_url)
+    
     def _is_disambiguation_page(self, page) -> bool:
-        """检查页面是否为消歧义页面"""
+        """检查页面是否为消歧义页面或包含指向消歧义页面的链接"""
         try:
             # 检查页面类别中是否包含消歧义相关的类别
-            if not hasattr(page, 'categories'):
-                return False
+            if hasattr(page, 'categories'):
+                disambiguation_categories = [
+                    'Category:Disambiguation pages',
+                    'Category:All disambiguation pages',
+                    'Category:All article disambiguation pages'
+                ]
                 
-            disambiguation_categories = [
-                'Category:Disambiguation pages',
-                'Category:All disambiguation pages',
-                'Category:All article disambiguation pages'
-            ]
-            
-            for category in page.categories:
-                if any(dc.lower() in category.lower() for dc in disambiguation_categories):
-                    return True
+                for category in page.categories:
+                    if isinstance(category, str) and any(dc.lower() in category.lower() for dc in disambiguation_categories):
+                        return True
                     
-            # 也可以通过页面内容中的关键词来判断
-            if 'may refer to:' in page.text.lower():
-                return True
-                
+            # 通过页面内容关键词判断
+            if hasattr(page, 'text') and isinstance(page.text, str):
+                if 'may refer to:' in page.text.lower():
+                    return True
+        
             return False
             
         except Exception as e:
-            self.logger.error(f"Failed to check disambiguation for page {page.title}: {e}")
+            self.logger.error(f"Failed to check disambiguation for page {getattr(page, 'title', 'unknown')}: {e}")
+            return False
+    
+    def _is_disambiguation_page_local(self, page):
+        """检查本地MediaWiki页面是否为消歧义页面"""
+        try:
+            # 检查页面类别
+            disambiguation_keywords = ['disambiguation', 'disambig']
+            
+            # 检查类别
+            if hasattr(page, 'categories') and page.categories:
+                for category in page.categories:
+                    if any(keyword in category.lower() for keyword in disambiguation_keywords):
+                        return True
+            
+            # 检查页面内容
+            if hasattr(page, 'text') and page.text:
+                # 常见的消歧义页面标志
+                disambig_patterns = [
+                    'may refer to:',
+                    'can refer to:',
+                    'may mean:',
+                    'may stand for:',
+                    'is a disambiguation page',
+                    'disambiguation page',
+                    'refers to:',
+                    'can mean:'
+                ]
+                
+                for pattern in disambig_patterns:
+                    if pattern in page.text.lower():
+                        return True
+                
+                # 检查页面标题是否包含(disambiguation)
+                if hasattr(page, 'title') and '(disambiguation)' in page.title.lower():
+                    return True
+                
+                # 检查页面是否包含多个"may refer to"链接
+                if page.text.count('<li>') > 5 and page.text.count('<a href') > 5:
+                    try:
+                        # 检查是否有列表结构
+                        soup = BeautifulSoup(page.text, 'html.parser')
+                        list_items = soup.find_all('li')
+                        if len(list_items) > 5:
+                            # 如果有大量列表项，每项都包含链接，很可能是消歧义页面
+                            links_in_items = sum(1 for item in list_items if item.find('a'))
+                            if links_in_items > 0.7 * len(list_items):  # 70%以上的列表项都包含链接
+                                return True
+                    except Exception as e:
+                        self.logger.error(f"Error parsing page for disambiguation check: {e}")
+            
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Failed to check disambiguation for local page {getattr(page, 'title', 'unknown')}: {e}")
             return False
 
-    @LinkCache.cached_operation('disambig')
-    async def _handle_disambiguation_with_relevance(self, term: str, feature_id: str = None, 
-                                              commit_ids: list = None, *, page=None, 
-                                              context: str = None) -> List[LinkingCandidate]:
-        """处理消歧义页面并检查相关性
-        
-        Args:
-            term: 搜索词
-            feature_id: 特征ID，用于缓存
-            commit_ids: 提交ID列表，用于缓存
-            page: 维基百科页面对象
-            context: 上下文内容
-        """
-        disambig_candidates = self._handle_disambiguation_page(term, page)
-        filtered_candidates = []
-        
-        for candidate in disambig_candidates:
-            is_match, confidence = await self._check_page_relevance(
-                candidate.title, 
-                candidate.summary, 
-                term, 
-                context
-            )
-            if is_match:
-                candidate.confidence = confidence
-                filtered_candidates.append(candidate)
-        
-        return filtered_candidates
-
     def _handle_disambiguation_page(self, mention, disambig_page) -> List[LinkingCandidate]:
-        """处理消歧义页面"""
+        """处理消歧义页面，根据配置选择本地或在线方式"""
         if self.use_local_db:
             return self._handle_disambiguation_page_local(mention, disambig_page)
         else:
@@ -564,29 +569,29 @@ class EntityLinker:
         try:
             links = disambig_page.links
             
-            for title in list(links.keys()):
-                linked_page = self.wiki.page(title)
-                if not linked_page.exists() or self._is_disambiguation_page(linked_page):
+            for index, title in enumerate(list(links.keys())):
+                try:
+                    linked_page = links[title]
+                    candidate = LinkingCandidate(
+                        mention=mention,
+                        title=linked_page.title,
+                        url=getattr(linked_page, 'fullurl', getattr(disambig_page, 'fullurl', '')),
+                        summary=linked_page.summary[:500],
+                        confidence=0.0,
+                        page=linked_page,
+                        is_disambiguation=False
+                    )
+                    candidates.append(candidate)
+                except Exception as e:
+                    # 单个链接处理失败时，记录错误但继续处理其他链接
+                    self.logger.warning(f"Failed to process link '{title}': {e}")
                     continue
-                    
-                candidate = LinkingCandidate(
-                    mention=mention,
-                    title=linked_page.title,
-                    url=linked_page.fullurl,
-                    summary=linked_page.summary[:200],
-                    confidence=0.0,
-                    is_disambiguation=False
-                )
-                candidates.append(candidate)
-                
-            return candidates
-            
         except Exception as e:
             self.logger.error(f"Failed to handle disambiguation page {disambig_page.title}: {e}")
-            return []
+        return candidates
 
     def _handle_disambiguation_page_local(self, mention, disambig_page) -> List[LinkingCandidate]:
-        """使用本地数据库处理消歧义页面
+        """使用本地MediaWiki API处理消歧义页面
         
         Args:
             mention: 原始提及词
@@ -597,60 +602,321 @@ class EntityLinker:
         """
         candidates = []
         try:
-            conn = self._get_db_connection()
-            cursor = conn.cursor()
+            self.logger.info(f"Handling local disambiguation page for: {mention}")
             
-            # 使用wikitextparser解析页面内容中的维基链接
-            parsed = wtp.parse(disambig_page.content)
-            links = set()
+            # 构建MediaWiki API请求获取页面链接
+            api_url = self.local_wiki_api
+            params = {
+                'action': 'query',
+                'format': 'json',
+                'titles': disambig_page.title,
+                'prop': 'links',
+                'pllimit': '500',  # 最多获取500个链接
+            }
             
-            # 收集所有维基链接
-            for wikilink in parsed.wikilinks:
-                # 跳过分类链接和文件链接
-                if not wikilink.title.startswith(('Category:', 'File:', 'Image:')):
-                    # 处理带有显示文本的链接（例如：[[实际链接|显示文本]]）
-                    link_title = wikilink.title.split('|')[0].strip()
-                    links.add(link_title)
+            # 发送请求
+            response = requests.get(api_url, params=params)
+            self.logger.debug(f"API response for links: {response.text[:500]}")
+            data = response.json()
             
-            # 查询所有链接指向的非消歧义页面
-            for link_title in links:
-                cursor.execute("""
-                    SELECT title, content, summary, url 
-                    FROM pages 
-                    WHERE title = ? AND NOT is_disambiguation
-                """, (link_title,))
+            # 提取链接
+            links = []
+            if 'query' in data and 'pages' in data['query']:
+                for page_id, page_data in data['query']['pages'].items():
+                    if 'links' in page_data:
+                        for link in page_data['links']:
+                            # 跳过特殊页面链接
+                            if not any(ns in link['title'] for ns in ['Category:', 'File:', 'Image:', 'Special:', 'Template:']):
+                                links.append(link['title'])
+            
+            # 批量获取链接指向的页面信息
+            if links:
+                self.logger.info(f"Found {len(links)} links in disambiguation page for: {mention}")
                 
-                result = cursor.fetchone()
-                if result:
-                    title, content, summary, url = result
+                # 批量处理，每次最多50个链接
+                batch_size = 50
+                for i in range(0, len(links), batch_size):
+                    batch_links = links[i:i+batch_size]
+                    batch_titles = '|'.join(batch_links)
                     
-                    # 创建候选项
-                    candidate = LinkingCandidate(
-                        mention=mention,
-                        title=title,
-                        url=url or f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}",
-                        summary=summary or (content[:200] if content else ''),
-                        confidence=0.0,
-                        is_disambiguation=False
-                    )
-                    candidates.append(candidate)
+                    # 使用基本参数
+                    params = {
+                        'action': 'query',
+                        'format': 'json',
+                        'titles': batch_titles,
+                        'prop': 'info|categories',  # 移除不支持的extracts
+                        'inprop': 'url',
+                        'redirects': '1',
+                    }
+                    
+                    batch_response = requests.get(api_url, params=params)
+                    batch_data = batch_response.json()
+                    
+                    # 处理结果
+                    if 'query' in batch_data and 'pages' in batch_data['query']:
+                        for page_id, page_data in batch_data['query']['pages'].items():
+                            # 跳过不存在的页面
+                            if int(page_id) < 0:
+                                continue
+                            
+                            # 获取页面内容和摘要 - 单独请求
+                            page_title = page_data.get('title', '')
+                            
+                            # 首先检查页面是否存在
+                            if not self._check_page_exists_local(page_title):
+                                self.logger.info(f"Page does not exist in local MediaWiki: {page_title}")
+                                continue
+                            
+                            # 获取页面内容
+                            content_params = {
+                                'action': 'parse',
+                                'format': 'json',
+                                'page': page_title,
+                                'prop': 'text',
+                                'formatversion': '2',
+                            }
+                            
+                            try:
+                                content_response = requests.get(api_url, params=content_params)
+                                content_data = content_response.json()
+                                
+                                # 检查是否有错误
+                                if 'error' in content_data:
+                                    self.logger.warning(f"API error for page {page_title}: {content_data['error']}")
+                                    continue
+                                
+                                page_content = ''
+                                page_summary = ''
+                                
+                                # 尝试从parse响应中提取文本
+                                if 'parse' in content_data and 'text' in content_data['parse']:
+                                    raw_content = content_data['parse']['text']
+                                    
+                                    # 处理不同的响应格式
+                                    if isinstance(raw_content, str):
+                                        page_content = raw_content
+                                    elif isinstance(raw_content, dict) and '*' in raw_content:
+                                        page_content = raw_content['*']
+                                    else:
+                                        page_content = str(raw_content)
+                                    
+                                    # 提取文本的第一段作为摘要
+                                    try:
+                                        soup = BeautifulSoup(page_content, 'html.parser')
+                                        # 移除脚本和样式元素
+                                        for script in soup(["script", "style"]):
+                                            script.extract()
+                                        
+                                        paragraphs = soup.find_all('p')
+                                        if paragraphs:
+                                            page_summary = paragraphs[0].get_text().strip()[:200]
+                                        else:
+                                            # 如果没有段落，尝试获取任何文本
+                                            page_summary = soup.get_text().strip()[:200]
+                                    except Exception as e:
+                                        self.logger.error(f"Failed to parse HTML content: {e}")
+                                        # 应急措施：直接提取一小部分内容作为摘要
+                                        page_summary = page_content.replace('<', ' ').replace('>', ' ')[:200]
+                            except Exception as e:
+                                self.logger.error(f"Failed to get content for page {page_title}: {e}")
+                                continue  # 跳过此页面
+                            
+                            # 检查是否为消歧义页面
+                            page = self._create_page_object_from_api_data_basic(page_data, page_content, page_summary, api_url)
+                            is_disambig = self._is_disambiguation_page_local(page)
+                            
+                            # 跳过消歧义页面
+                            if is_disambig:
+                                continue
+                            
+                            # 创建候选项
+                            candidate = LinkingCandidate(
+                                mention=mention,
+                                title=page.title,
+                                url=getattr(page, 'fullurl', 'https://default-url.com'),
+                                summary=page_summary,
+                                confidence=0.0,
+                                is_disambiguation=False
+                            )
+                            candidates.append(candidate)
             
-            conn.close()
             return candidates
             
         except Exception as e:
-            self.logger.error(f"Failed to handle disambiguation page {disambig_page.title}: {e}")
+            self.logger.error(f"Failed to handle local disambiguation page {getattr(disambig_page, 'title', 'unknown')}: {e}")
             return []
 
-    async def _check_disambiguation(self, title: str) -> bool:
-        """检查页面是否为消歧义页面"""
-        try:
-            page = self.wiki.page(title)
-            return page.is_disambiguation
+    @LinkCache.cached_operation('disambig')
+    async def _filter_domain_relevant_pages(self, term: str,feature_id: str = None, commit_ids: list = None,page=None) -> List[LinkingCandidate]:
+        """预筛选与Linux/计算机领域相关的页面
+        
+        Args:
+            term: 原始搜索词
+            page: 当前页面
+        Returns:
+            List[LinkingCandidate]: 与领域相关的候选项列表
+        """
+
+        # 批量处理未缓存的候选项
+        prompt = """Analyze these Wikipedia pages and determine if each is related to Linux, operating systems, 
+        computer software, or computer hardware. Consider both direct and indirect but meaningful relationships.
+
+        Pages to analyze:
+        {candidates_json}
+
+        For each page, return a JSON object list:
+        [
+            {
+                "index": index num in candidates_json parameter,
+                "is_domain_relevant": true/false
+               
+            },
+            ...
+        ]
+
+        Consider the following categories as relevant:
+
+        Direct Relevance (Strong Connection):
+        1. Linux kernel, distributions, or Linux-specific components
+        2. Operating system concepts, architectures, or implementations
+        3. Computer hardware components that interact with operating systems
+        4. Low-level software or system programming
+        5. System calls, APIs, and protocols used in operating systems
+
+        Indirect but Important Relevance:
+        1. General computing concepts that are frequently used in OS context
+        2. Programming paradigms and patterns common in system development
+        3. Development tools and utilities essential for kernel development
+        4. Security concepts and mechanisms relevant to OS
+        5. Performance optimization and system resource management
+        6. Networking concepts that interact with the kernel
+        7. File systems and storage technologies
+        8. Process and thread management related concepts
+
+        Guidelines:
+        - Mark as relevant if the concept is commonly used or referenced in kernel development
+        - Include fundamental computer science concepts that are essential to understanding OS
+        - Consider the practical application in system programming
+        - If in doubt about relevance, check if the concept appears in Linux kernel documentation
+        """
+
+        # 获取所有消歧义候选项
+        candidates = self._handle_disambiguation_page(term, page)
+
+        # 分批处理，每批30个
+        BATCH_SIZE = 20
+        domain_relevant_candidates = []
+        # 构建候选项JSON
+        candidates_json = []
+        for i, candidate in enumerate(candidates):
+            # 移除多余的格式化和引号，直接使用字典
+            candidate_dict = {
+                "index": i,
+                "title": candidate.title,
+                "summary": candidate.summary[:500] if candidate.summary else ""
+            }
+            candidates_json.append(json.dumps(candidate_dict))
+
+    
+        for i in range(0, len(candidates_json), BATCH_SIZE):
+            batch = candidates_json[i:i+BATCH_SIZE]
+            candidates_json_str = ",".join(batch)
+            formatted_prompt = prompt.replace("{candidates_json}", candidates_json_str)
             
-        except Exception as e:
-            self.logger.error(f"Disambiguation check failed for {title}: {e}")
-            return False
+            try:
+                response = await self._get_llm_response(formatted_prompt)
+                cleaned_response = strip_json(response)
+                results = json.loads(cleaned_response)
+
+                # 处理结果并更新缓存
+                for result in results:
+                    if isinstance(result, dict) and "index" in result:
+                        index = result.get("index")
+                        if 0 <= index < len(candidates):
+                            candidate = candidates[index]
+                            candidate.page = candidates[index].page
+                            is_relevant = result.get("is_domain_relevant", False)
+                            
+                            if is_relevant:
+                                domain_relevant_candidates.append(candidate)
+                                self.logger.info(f"Domain relevant page found: {candidate.title} - {candidate.summary}")
+
+            except Exception as e:
+                self.logger.error(f"Failed to process domain relevance batch: {e}")
+                # 出错时保守处理：将该批次的所有候选项都视为可能相关
+
+        # 合并缓存的和新处理的结果
+        return domain_relevant_candidates
+
+    async def _handle_disambiguation_with_relevance(self, term: str, feature_id: str = None, 
+                                              commit_ids: list = None, *, page=None, 
+                                              context: str = None) -> List[LinkingCandidate]:
+        """处理消歧义页面并检查相关性"""
+        start_time = time.time()
+
+        # 首先筛选领域相关的页面
+        domain_relevant_candidates = await self._filter_domain_relevant_pages(term,feature_id,commit_ids,page)
+
+        
+        self.logger.info(f"Filtered candidates to {len(domain_relevant_candidates)} "
+                        f"domain relevant candidates for '{term}'")
+
+        # 章节匹配，参考_find_matching_sections的逻辑
+        section_candidates = []
+        for candidate in domain_relevant_candidates:
+            candidate.page = self.wiki.page(candidate.title)
+            section_title,section_text,is_find = await self._find_matching_sections(candidate.page, term)
+            section_candidates.append(LinkingCandidate(
+                mention=term,
+                title=section_title,
+                url=candidate.url + ("#" + section_title if is_find else ''),
+                summary=section_text
+            ))
+        
+        self.logger.info(f"Found {len(section_candidates)} section candidates for '{term}'")
+        
+        # 只对领域相关的候选项进行详细的相关性检查
+        batch_results = await self._batch_check_relevance(
+            section_candidates, term, context
+        )
+        
+        # 应用结果到候选项
+        filtered_candidates = []
+        for candidate, (is_match, confidence) in zip(domain_relevant_candidates, batch_results):
+            if is_match:
+                candidate.confidence = confidence
+                filtered_candidates.append(candidate)
+                
+        elapsed_time = time.time() - start_time
+        self.logger.info(f"Processed disambiguation for '{term}' in {elapsed_time:.2f}s. "
+                        f"Found {len(filtered_candidates)} relevant matches from "
+                        f"{len(domain_relevant_candidates)} domain relevant candidates.")
+                        
+        return filtered_candidates
+
+    async def _batch_check_relevance(self, candidates: List[LinkingCandidate], 
+                                term: str, context: str) -> List[Tuple[bool, float]]:
+        """批量检查候选项与上下文的相关性
+        
+        通过一次LLM调用，批量检查多个候选项的相关性，提高效率。
+        
+        Args:
+            candidates: 候选项列表
+            term: 原始搜索词
+            context: 上下文内容
+            
+        Returns:
+            List[Tuple[bool, float]]: 每个候选项的(是否匹配,置信度)元组列表
+        """
+        BATCH_SIZE = 20
+        results = []
+        
+        for i in range(0, len(candidates), BATCH_SIZE):
+            batch = candidates[i:i+BATCH_SIZE]
+            batch_results = await self._process_relevance_batch(batch, term, context)
+            results.extend(batch_results)
+            
+        return results
         
     async def _select_best_match(self, mention: str, context: str, 
                                candidates: List[LinkingCandidate]) -> Optional[LinkingCandidate]:
@@ -671,8 +937,7 @@ class EntityLinker:
                 "instructions": "Please analyze each candidate carefully and return a JSON object with:
                     1. 'selected_index': index of the best matching candidate (or -1 if none matches)
                     2. 'confidence': confidence score between 0 and 1
-                    3. 'reasoning': brief explanation of your choice, especially if this came from a disambiguation page
-                    4. 'disambiguation_source': whether the selected page was from a disambiguation resolution"
+                    3. 'disambiguation_source': whether the selected page was from a disambiguation resolution"
             }}"""
             
             # 其余代码保持不变
@@ -701,72 +966,72 @@ class EntityLinker:
             return None
 
 
-    async def _select_valid_ngram_matches(self, mentions: list[str], context: str,
-                                        ngram_candidates: List[LinkingCandidate]) -> List[LinkingCandidate]:
-        """从n-grams候选中选择所有合理的匹配"""
-        if not ngram_candidates:
-            return []
+    # async def _select_valid_ngram_matches(self, mentions: list[str], context: str,
+    #                                     ngram_candidates: List[LinkingCandidate]) -> List[LinkingCandidate]:
+    #     """从n-grams候选中选择所有合理的匹配"""
+    #     if not ngram_candidates:
+    #         return []
         
-        try:
-            # Improved prompt formatting to ensure valid JSON response
-            prompt = f"""Given mentions from Linux kernel documentation and their context, select appropriate pairs of (mention, Wikipedia page).
+    #     try:
+    #         # Improved prompt formatting to ensure valid JSON response
+    #         prompt = f"""Given mentions from Linux kernel documentation and their context, select appropriate pairs of (mention, Wikipedia page).
             
-            Mentions: {json.dumps(mentions)}
-            Context: {context}
-            Candidates: {self._format_candidates(ngram_candidates)}
+    #         Mentions: {json.dumps(mentions)}
+    #         Context: {context}
+    #         Candidates: {self._format_candidates(ngram_candidates)}
             
-            Return a JSON array of matches in this exact format:
-            [
-                {{
-                    "mention_index": <index of matching mention>,
-                    "page_index": <index of matching page>,
-                    "confidence": <score between 0 and 1>,
-                    "reasoning": "<brief explanation>"
-                }}
-            ]
+    #         Return a JSON array of matches in this exact format:
+    #         [
+    #             {{
+    #                 "mention_index": <index of matching mention>,
+    #                 "page_index": <index of matching page>,
+    #                 "confidence": <score between 0 and 1>,
+    #                 "reasoning": "<brief explanation>"
+    #             }}
+    #         ]
             
-            Only include pairs where the mention and page describe the exact same concept."""
+    #         Only include pairs where the mention and page describe the exact same concept."""
             
-            response = await self._get_llm_response(prompt)
-            if not response:
-                return []
+    #         response = await self._get_llm_response(prompt)
+    #         if not response:
+    #             return []
             
-            # More robust JSON parsing
-            try:
-                # First try to find JSON array within the response
-                json_start = response.find('[')
-                json_end = response.rfind(']') + 1
-                if json_start >= 0 and json_end > json_start:
-                    cleaned_response = response[json_start:json_end]
-                else:
-                    cleaned_response = strip_json(response)
+    #         # More robust JSON parsing
+    #         try:
+    #             # First try to find JSON array within the response
+    #             json_start = response.find('[')
+    #             json_end = response.rfind(']') + 1
+    #             if json_start >= 0 and json_end > json_start:
+    #                 cleaned_response = response[json_start:json_end]
+    #             else:
+    #                 cleaned_response = strip_json(response)
                 
-                results = json.loads(cleaned_response)
+    #             results = json.loads(cleaned_response)
                 
-            except json.JSONDecodeError:
-                self.logger.error(f"Failed to parse JSON response: {response}")
-                return []
+    #         except json.JSONDecodeError:
+    #             self.logger.error(f"Failed to parse JSON response: {response}")
+    #             return []
             
-            valid_matches = []
+    #         valid_matches = []
             
-            for result in results:
-                if isinstance(result, dict) and 'mention_index' in result and 'page_index' in result:
-                    if (0 <= result['mention_index'] < len(mentions) and 
-                        0 <= result['page_index'] < len(ngram_candidates)):
+    #         for result in results:
+    #             if isinstance(result, dict) and 'mention_index' in result and 'page_index' in result:
+    #                 if (0 <= result['mention_index'] < len(mentions) and 
+    #                     0 <= result['page_index'] < len(ngram_candidates)):
                         
-                        selected = ngram_candidates[result['page_index']]
-                        selected.mention = mentions[result['mention_index']]
-                        selected.confidence = result.get('confidence', 0.0)
-                        valid_matches.append(selected)
+    #                     selected = ngram_candidates[result['page_index']]
+    #                     selected.mention = mentions[result['mention_index']]
+    #                     selected.confidence = result.get('confidence', 0.0)
+    #                     valid_matches.append(selected)
                         
-                        self.logger.info(f"Matched: {selected.mention} -> {selected.title} "
-                                       f"(confidence: {selected.confidence})")
+    #                     self.logger.info(f"Matched: {selected.mention} -> {selected.title} "
+    #                                    f"(confidence: {selected.confidence})")
             
-            return valid_matches
+    #         return valid_matches
             
-        except Exception as e:
-            self.logger.error(f"Failed to select valid matches for {mentions}: {str(e)}")
-            return []
+    #     except Exception as e:
+    #         self.logger.error(f"Failed to select valid matches for {mentions}: {str(e)}")
+    #         return []
 
 
     def _deduplicate_candidates(self, candidates: List[LinkingCandidate]) -> List[LinkingCandidate]:
@@ -781,23 +1046,24 @@ class EntityLinker:
                 
         return unique_candidates
         
-    def _create_variation_prompt(self, mention: str) -> str:
+    def _create_variation_prompt(self, mention: str, context: str) -> str:
         """创建生成变体的提示"""
-        return f"""Please generate variations of the following technical term from Linux kernel documentation.
+        return f"""Please generate variations of the following technical term from Linux kernel documentation and relevant to the provided context. 
         Return ONLY a JSON array of strings containing Linux kernel related terms that you are CERTAIN about:
         1. The original term (if it is a valid Linux kernel term)
         2. Common abbreviations (ONLY if widely used in Linux kernel documentation)
         3. Full forms (ONLY if it is the official term used in Linux kernel)
-        
         Note: 
         - Only include terms that you can verify from official Linux kernel documentation
         - It's better to return fewer but accurate terms than many uncertain ones
         - If you're not confident about a term, do not include it
         - Return empty array if you're not certain about any variations
         Term: "{mention}"
-        
-        Example response format:
-        ["Virtual Memory", "VM", "virtual memory", "virt_mem"]
+        Context: "{context}"
+        Example response format for 'Virtual Memory':
+        ["Virtual Memory", "VM","virt_mem"]
+        Example response for "RCU":
+        [ "RCU","Read-Copy-Update"]
         """
         
     def _parse_variations_response(self, response: str, mention: str) -> List[str]:
@@ -807,7 +1073,16 @@ class EntityLinker:
             variations = json.loads(cleaned_response)
             
             if isinstance(variations, list):
-                return [v.strip() for v in variations if v and isinstance(v, str)]
+                # 使用集合去重，然后转回列表，保持顺序
+                unique_variations = []
+                seen = set()
+                for v in variations:
+                    if v and isinstance(v, str):
+                        v_stripped = v.strip()
+                        if v_stripped and v_stripped not in seen:
+                            seen.add(v_stripped)
+                            unique_variations.append(v_stripped)
+                return unique_variations
             return []
                 
         except Exception as e:
@@ -865,18 +1140,17 @@ class EntityLinker:
         Content: {content[:500]}
 
         Consider:
-        1. Does this Wikipedia page describe the same concept or a directly relevant concept as used in the Linux context?
-        2. While they don't need to be exactly identical, the core concept should match. For example:
-           - Good match: "MMU" and "Memory Management Unit" (one is abbreviation of the other)
-           - Poor match: "handle_pte_fault" and "Page table" (only indirectly related)
-        3. Is this the technical meaning of the term we're looking for?
+        1. Does this Wikipedia page describe a concept that matches how the term is used in the Linux context?
+        2. Check if the term is being used as a technical entity or just a common word/adjective:
+           - If it's clearly just a common word (like "core" meaning "main" or "central") or a generic adjective with no technical meaning, it should NOT match.
+           - If the page title contains the entity name but refers to a broader or different concept than what's being used in Linux, be cautious.
+        3. For programming concepts, prefer the most specific match:
+           - For example, "file" in kernel code could refer to either "Computer file" or "file system" depending on the context
+        4. A partial match is acceptable if the Wikipedia page covers the concept, even if the title isn't an exact match.
 
         Return a JSON object with the following structure:
         {{
-            "linux_meaning": "Brief explanation of the term's meaning in Linux context",
-            "wiki_meaning": "Brief explanation of the Wikipedia page's concept",
             "confidence": 0-1, // A value between 0 and 1 indicating how confident we are in the match, where 0 means no confidence and 1 means complete confidence
-            "reasoning": "Brief explanation of why they match or don't match",
             "is_match": true/false
         }}
         """
@@ -897,3 +1171,113 @@ class EntityLinker:
         except Exception as e:
             self.logger.error(f"Failed to check page relevance for {title}: {e}")
             return False, 0.0
+
+    async def _process_relevance_batch(self, candidates: List[LinkingCandidate], 
+                                   term: str, context: str) -> List[Tuple[bool, float]]:
+        """处理一批候选项的相关性检查
+        
+        Args:
+            candidates: 候选项列表
+            term: 原始搜索词
+            context: 上下文内容
+            
+        Returns:
+            List[Tuple[bool, float]]: 结果列表
+        """
+        if not candidates:
+            return []
+            
+        # 构建批量处理的提示
+        candidates_json = []
+        for i, candidate in enumerate(candidates):
+            candidates_json.append(
+                json.dumps({
+                    "index": i,
+                    "title": candidate.title,
+                    "summary": candidate.summary[:500]
+                })
+            )
+            
+        candidates_str = ",".join(candidates_json)
+        
+        prompt = f"""Given a term from Linux kernel documentation and its context, analyze which of these Wikipedia pages appropriately match the concept.
+
+        Original term: {term}
+        Context from documentation: {context[:300] if context else "No context provided"}
+
+        Candidate Wikipedia pages (only first sentence of each summary shown):
+        {candidates_str}
+
+        For EACH candidate, determine if it matches the meaning of the term as used in the Linux context based on the title and first sentence.
+        
+        Return a JSON array where each element corresponds to a candidate and has this structure:
+        [
+            {{
+                "index": 0,
+                "is_match": true/false,
+                "confidence": 0-1,
+            }},
+            // more results...
+        ]
+        """
+        
+        try:
+            response = await self._get_llm_response(prompt)
+            cleaned_response = strip_json(response)
+            results = json.loads(cleaned_response)
+            
+            # 验证结果有效性并映射到元组列表
+            match_results = []
+            for result in results:
+                if isinstance(result, dict) and "index" in result and "is_match" in result:
+                    idx = result.get("index")
+                    if 0 <= idx < len(candidates):
+                        is_match = result.get("is_match", False)
+                        confidence = result.get("confidence", 0.0)
+                        match_results.append((is_match, confidence))
+                    
+            # 如果结果数量不匹配，补全结果
+            if len(match_results) < len(candidates):
+                for _ in range(len(candidates) - len(match_results)):
+                    match_results.append((False, 0.0))
+                    
+            return match_results
+            
+        except Exception as e:
+            self.logger.error(f"Batch relevance check failed: {e}")
+            # 出错时返回所有不匹配
+            return [(False, 0.0) for _ in candidates]
+
+    def _check_page_exists_local(self, title: str) -> bool:
+        """检查本地MediaWiki页面是否存在
+        
+        Args:
+            title: 页面标题
+            
+        Returns:
+            bool: 页面是否存在
+        """
+        try:
+            api_url = self.local_wiki_api
+            params = {
+                'action': 'query',
+                'format': 'json',
+                'titles': title,
+            }
+            
+            response = requests.get(api_url, params=params)
+            data = response.json()
+            
+            if 'query' in data and 'pages' in data['query']:
+                for page_id in data['query']['pages']:
+                    # 如果页面ID为负数，则页面不存在
+                    if int(page_id) < 0:
+                        return False
+                    else:
+                        return True
+            
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Failed to check if page exists: {title}, error: {e}")
+            return False

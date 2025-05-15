@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
-from prompts.extractEntity import extractEntityPrompt
+from prompts.extractEntityWithContext import extractEntityWithContextPrompt
 from prompts.extractTriple import extractTriplePrompt
 from prompts.extractTripleOpen import extractTripleOpenPrompt
 from prompts.verify import verifyPrompt
@@ -10,6 +10,9 @@ import json
 import time
 from utils.logger import setup_logger
 from utils.db import DB
+from models.feature import Feature
+from models.entity import Entity
+
 def strip_json(text):
     """
     从文本中提取JSON字符串并清理
@@ -51,98 +54,104 @@ class EntityRelationExtractor:
         self.config = config
         self.db = DB(config)
 
-    def extract_entities_and_relations(self, features, save_to_file=False):
+    def extract_entities_and_relations(self, feature, save_to_file=False):
         """
         抽取实体和关系。
         Args:
-            features: list of dict, 每个 dict 包含 feature_id, feature_description 和 version
-        Returns:
-            features_output: list of dict, 每个 dict 包含 feature_id, feature_description, version, commit_ids, entities 和 triples
+            feature: dict, 包含 feature_id, feature_description 和 version
         """
         try:
-            features_output = []
-            for index, feature in enumerate(features):
-                feature_id = feature['feature_id']
-                feature_description = feature['feature_description']
-                version = feature['version']
-                
-                # 注释掉获取commits的逻辑
-                # commit_ids = self.db.get_commits_by_feature(feature_id)
-                # commits = []
-                # for commit_id in commit_ids:
-                #     commit = self._get_commit(commit_id)
-                #     commits.append(commit)
-                
-                self.logger.info(f"Processing index={index+1}/{len(features)}, feature_id {feature_id}")
-                # # 简单的分组处理，无论commits数量多少
-                # for i in range(0, len(commits), 5):
-                #     commits_group = "\n".join(commits[i:i+5])
-                # 使用空字符串替代commits
-                commits_group = ""
-                
-                # 实体抽取
-                prompt_entity = extractEntityPrompt(
-                    feature_description=feature_description, 
-                    commits=commits_group
-                ).format()
-                response_entity = self.llm.get_response(prompt_entity)
-                object_entity = json.loads(strip_json(response_entity))
-                
-                # TODO: 关系抽取需要取消注释
-                # 关系抽取
-                # prompt_triple = extractTriplePrompt(
-                #     feature_description=feature_description, 
-                #     commits=commits_group
-                # ).format()
-                # response_triple = self.llm.get_response(prompt_triple)
-                # object_triple = json.loads(strip_json(response_triple))
-                
-                # # 开放关系抽取
-                # prompt_tripleOpen = extractTripleOpenPrompt(
-                #     feature_description=feature_description, 
-                #     commits=commits_group
-                # ).format()
-                # response_tripleOpen = self.llm.get_response(prompt_tripleOpen)
-                # object_tripleOpen = json.loads(strip_json(response_tripleOpen))
-                
-                # # 合并三元组
-                # all_triples = object_triple['triples'] + object_tripleOpen['triples']
-                
-                # # 验证
-                # prompt_verify = verifyPrompt(
-                #     feature_description=feature_description,
-                #     commits=commits_group,
-                #     entities=object_entity['entities'],
-                #     triples=all_triples
-                # ).format()
-                # try:
-                #     response_verify = self.llm.get_response(prompt_verify)
-                #     json_str = strip_json(response_verify)
-                #     object_verify = json.loads(json_str)
-                # except json.JSONDecodeError as e:
-                #     self.logger.error(f"Failed to parse JSON response: {e}")
-                #     self.logger.debug(f"Raw response: {response_verify}")
-                #     object_verify = {"entities": [], "triples": []}
+            self.logger.info(f"Processing feature_id {feature.feature_id}")
+            
+            # 使用空字符串替代commits
+            commits_group = ""
+            
+            # 实体抽取
+            prompt_entity = extractEntityWithContextPrompt(
+                h1=feature.h1, 
+                h2=feature.h2, 
+                feature_description=feature.feature_description
+            ).format()
+            response_entity = self.llm.get_response(prompt_entity)
+            object_entity = json.loads(strip_json(response_entity))
+            
+            # TODO: 关系抽取需要取消注释
+            # 关系抽取
+            # prompt_triple = extractTriplePrompt(
+            #     feature_description=feature_description, 
+            #     commits=commits_group
+            # ).format()
+            # response_triple = self.llm.get_response(prompt_triple)
+            # object_triple = json.loads(strip_json(response_triple))
+            
+            # # 开放关系抽取
+            # prompt_tripleOpen = extractTripleOpenPrompt(
+            #     feature_description=feature_description, 
+            #     commits=commits_group
+            # ).format()
+            # response_tripleOpen = self.llm.get_response(prompt_tripleOpen)
+            # object_tripleOpen = json.loads(strip_json(response_tripleOpen))
+            
+            # # 合并三元组
+            # all_triples = object_triple['triples'] + object_tripleOpen['triples']
+            
+            # # 验证
+            # prompt_verify = verifyPrompt(
+            #     feature_description=feature_description,
+            #     commits=commits_group,
+            #     entities=object_entity['entities'],
+            #     triples=all_triples
+            # ).format()
+            # try:
+            #     response_verify = self.llm.get_response(prompt_verify)
+            #     json_str = strip_json(response_verify)
+            #     object_verify = json.loads(json_str)
+            # except json.JSONDecodeError as e:
+            #     self.logger.error(f"Failed to parse JSON response: {e}")
+            #     self.logger.debug(f"Raw response: {response_verify}")
+            #     object_verify = {"entities": [], "triples": []}
 
-                # TODO: 验证需要取消注释
-                object_verify = {"entities": [], "triples": []}
-                
-                commits_group_extracted = {
-                    "feature_id": feature_id,
-                    "feature_description": feature_description,
-                    "version": version,
-                    "commit_ids": [],  # 空列表替代原来的commit_ids
-                    "entities": object_entity['entities'],
-                    "triples": object_verify['triples']
-                }
-                
-                features_output.append(commits_group_extracted)
+            # TODO: 验证需要取消注释
+            object_verify = {"entities": [], "triples": []}
+            # 将object_entity中的实体转换为Entity类实例
+            entities = []
+            for entity_data in object_entity['entities']:
+                entity = Entity(
+                    name=entity_data,
+                    feature_id=feature.feature_id,
+                )
+                entities.append(entity)
+            
+            feature.entities = entities
+            feature.triples = object_verify['triples']
+            
+            # features_output.append(feature_output)
 
-                if save_to_file:
-                    with open(f"data/features/features_output_20250102.json", 'w') as f:
-                        json.dump(features_output, f, ensure_ascii=False, indent=4)
+            if save_to_file:
+                with open(f"data/features/features_output_20250102.json", 'w') as f:
+                    json.dump(features_output, f, ensure_ascii=False, indent=4)
                     
-            return features_output
+            # 返回格式举例：
+            # features_output = [
+            #     {
+            #         "feature_id": 123,  # 特性ID
+            #         "feature_description": "Add support for XYZ",  # 特性描述
+            #         "version": "6.6",  # 版本号
+            #         "commit_ids": [],  # 提交ID列表
+            #         "entities": [  # 实体列表
+            #             {
+            #                 "name": "XYZ",  # 实体名称
+            #                 "type": "Component",  # 实体类型
+            #                 "description": "A new component"  # 实体描述
+            #             }
+            #         ],
+            #         "triples": [  # 三元组列表
+            #             ["XYZ", "is_a", "Component"],  # [头实体,关系,尾实体]
+            #             ["XYZ", "supports", "ABC"]
+            #         ]
+            #     }
+            # ]
+            # return features
         
         except Exception as e:
             self.logger.error(f"Failed to extract entities and relations: {e}")

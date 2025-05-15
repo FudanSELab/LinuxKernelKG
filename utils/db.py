@@ -1,6 +1,6 @@
 import pymysql
 import json
-
+from models.feature import Feature
 class DB:
 
     QUERY_FEATURES_INFO_SQL = """
@@ -22,12 +22,18 @@ class DB:
     """
 
     QUERY_FEATURES_ALL_SQL = """
-    SELECT feature_id, text, version
+    SELECT feature_id, h1, h2, text, version
         FROM newbies_feature
         WHERE 1=1
         ORDER BY feature_id DESC;
     """
 
+    QUERY_FEATURES_ALL_NEW_SQL = """
+    SELECT feature_id, h1, h2, text, version
+        FROM newbies_feature_n
+        WHERE 1=1
+        ORDER BY feature_id DESC;
+    """
 
     QUERY_FEATURES_VERSION_SQL = """
     SELECT feature_id, text, version
@@ -40,6 +46,13 @@ class DB:
     SELECT feature_id, text, version
         FROM newbies_feature
         WHERE h1 = 'Memory management' and version = '6.6'
+        ORDER BY feature_id DESC;
+    """ 
+
+    QUERY_FEATURES_MM_H_SQL = """
+    SELECT feature_id, h1, h2, text, version
+        FROM newbies_feature
+        WHERE h1 = 'Memory management'
         ORDER BY feature_id DESC;
     """ 
 
@@ -102,11 +115,41 @@ class DB:
         return [commit_id for commit_id, in result]
 
     def get_all_features(self):
-        """获取所有特性的信息，暂时只有 mm 和 6.6 版本"""
+        """获取所有特性的信息，返回Feature对象列表"""
         cursor = self.connection.cursor()
         cursor.execute(self.QUERY_FEATURES_ALL_SQL)
         result = cursor.fetchall()
-        return [{"feature_id": feature_id, "feature_description": text, "version": version} for feature_id, text, version in result]
+        # 将查询结果转换为Feature对象列表
+        features = []
+        for feature_id, h1, h2, text, version in result:
+            feature = Feature(
+                feature_id=feature_id,
+                h1=h1,
+                h2=h2,
+                feature_description=text,
+                version=version
+            )
+            features.append(feature)
+        return features
+    
+    def get_all_features_new(self):
+        """获取所有特性的信息，返回Feature对象列表"""
+        cursor = self.connection.cursor()
+        # cursor.execute(self.QUERY_FEATURES_ALL_NEW_SQL)
+        cursor.execute(self.QUERY_FEATURES_MM_H_SQL)
+        result = cursor.fetchall()
+        # 将查询结果转换为Feature对象列表
+        features = []
+        for feature_id, h1, h2, text, version in result:
+            feature = Feature(
+                feature_id=feature_id,
+                h1=h1,
+                h2=h2,
+                feature_description=text,
+                version=version
+            )
+            features.append(feature)
+        return features
 
     def insert_commit_info(self, commit_id: str, commit_subject: str, commit_message: str):
         """插入一条提交的信息"""

@@ -4,8 +4,9 @@ from config.llm_config import LLMType
 class Neo4jConfig:
     """Neo4j配置基类"""
     DEFAULT_CONFIG = {
-        'uri': 'bolt://localhost:7687',     # Docker映射的本地端口
+        'uri': 'bolt://localhost:6103',     # Docker映射的本地端口
         'user': 'neo4j',                    # Docker环境变量中配置的用户名
+        # 登录密码： neo4j@openspg
         'password': 'cloudfdse',            # Docker环境变量中配置的密码
         'max_connection_lifetime': 3600
     }
@@ -122,7 +123,7 @@ class PipelineConfig:
     LLM_TYPE = LLMType.DEEPSEEK  # 修改为使用 DeepSeek
 
     # Wikipedia 本地数据库配置
-    USE_LOCAL_WIKIPEDIA = True
+    USE_LOCAL_WIKIPEDIA = False
     WIKIPEDIA_DB_PATH = 'data/wikipedia.db'
 
     @classmethod

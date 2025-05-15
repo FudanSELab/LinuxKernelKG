@@ -14,7 +14,7 @@ class DataCollector:
             limit (int, optional): 限制返回的特性数量，用于测试。默认为None表示返回所有特性。
         """
         try:
-            features = self.db.get_all_features()
+            features = self.db.get_all_features_new()
             
             if limit:
                 features = features[:limit]

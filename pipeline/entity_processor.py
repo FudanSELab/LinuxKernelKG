@@ -26,29 +26,30 @@ class EntityProcessor:
 
         self.fusion_cache = FusionCache()
 
-    async def process_linking_batch(self, entities, contexts, feature_ids=None, commit_ids_list=None):
-        """批量处理实体链接"""
-        results = []
-        for i, (entity, context) in enumerate(zip(entities, contexts)):
-            feature_id = feature_ids[i] if feature_ids else None
-            commit_ids = commit_ids_list[i] if commit_ids_list else None
+    async def process_linking_batch(self, entities):
+        """
+        批量处理实体链接
+        
+        Args:
+            entities (list): 需要进行链接的Entity对象列表
             
-            result = await self.entity_linker.link_entity(
-                entity, 
-                context,
-                feature_id=feature_id,
-                commit_ids=commit_ids
-            )
-            results.append(result)
-        return results
+        Returns:
+            list: 返回处理后的Entity对象列表，每个对象可能包含新增的外部链接
+        """
+        linked_entities = []
+        for entity in entities:
+            # entity_linker.link_entity 返回已处理的Entity对象列表
+            processed_entities = await self.entity_linker.link_entity(entity)
+            linked_entities.extend(processed_entities)
+    
+        return linked_entities
 
-    async def process_fusion(self, new_entities, feature_ids=None, commit_ids_list=None):
+    async def process_fusion(self, new_entities, linked_entities=[]):
         """处理实体融合的入口方法
         
         Args:
             new_entities (list): 需要进行融合的新实体列表
-            feature_ids (list, optional): 与实体一一对应的特征ID列表
-            commit_ids_list (list, optional): 与实体一一对应的提交ID列表的列表
+            linked_entities (list, optional): 已链接的实体列表
             
         Returns:
             dict: 包含融合结果的字典
@@ -56,8 +57,7 @@ class EntityProcessor:
         # 直接调用 EntityFusion 类的处理方法
         return await self.entity_fusion.process_fusion(
             new_entities,
-            feature_ids=feature_ids,
-            commit_ids_list=commit_ids_list
+            linked_entities
         )
 
     
