@@ -31,6 +31,7 @@ class Entity:
                  aliases: List[str] = None,
                  created_at: str = None,
                  updated_at: str = None,
+                 version: str = None,
                  properties: Dict[str, Any] = None):
         """
         初始化一个Entity对象
@@ -63,6 +64,7 @@ class Entity:
         
         # 其他属性
         self.feature_id = feature_id
+        self.version = version
         self.description = description
         self.context = context
         self.aliases = aliases or []
@@ -90,6 +92,7 @@ class Entity:
             "entity_type": self.entity_type,
             # "source_type": self.source_type,
             "feature_id": self.feature_id,
+            "version": self.version,
             "context": self.context,
             "description": self.description,
             "aliases": self.aliases,

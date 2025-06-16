@@ -69,8 +69,8 @@ def create_entity_objects(records: List[Dict[str, Any]], max_feature_id: int = N
     for record in records:
         feature_id = record.get('feature_id')
         feature = record.get('feature', {})
-        if feature.get('h1') != 'Memory management':
-            continue
+        # if feature.get('h1') != 'Memory management':
+        #     continue
     
         # Skip records with feature_id greater than max_feature_id if specified
         if max_feature_id is not None and feature_id > max_feature_id:
@@ -243,7 +243,7 @@ async def main():
                         help='Input file with extracted entities')
     parser.add_argument('--output', '-o', 
                         # default='output/entity_linking/linked_entities_20250409_1533.jsonl',
-                        default='output/entity_linking/linked_entities_gpt_mm_0508.json',
+                        default='output/entity_linking/linked_entities_gpt_0521.json',
                         help='Output file for linked entities')
     parser.add_argument('--batch-size', '-b', type=int, default=10,
                         help='Batch size for processing entities')
@@ -256,7 +256,7 @@ async def main():
     
     records = await load_entities_from_file(args.input)
     
-    entities = create_entity_objects(records, 50000)
+    entities = create_entity_objects(records, 33388)
     
     # Process entities in batches and write to file
     linked_entities = await process_entities_batch(

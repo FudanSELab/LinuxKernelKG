@@ -91,6 +91,7 @@ def create_entity_objects(records: List[Dict[str, Any]], max_feature_id: int = N
             entity = Entity(
                 name=entity_name,
                 feature_id=feature_id,
+                version=feature.get('version', ''),
                 description=""  # Initially empty, will be filled by entity linker/fusor
             )
             # Set feature-related properties
@@ -155,7 +156,7 @@ async def main():
                         default='output/entity_linking/linked_entities_gpt_mm_0508.json', # Example, but made required
                         help='Input JSON file with linked entities (list of entity dicts)')
     parser.add_argument('--output', '-o', 
-                        default='output/entity_fusion/fused_entities_result_mm_0513.json', # Example default
+                        default='output/entity_fusion/fused_entities_result_mm_0605.json',
                         help='Output JSON file for fused entity groups')
     # parser.add_argument('--batch-size', '-b', type=int, default=10, # Removed
     #                     help='Batch size for processing entities')

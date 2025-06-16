@@ -20,6 +20,7 @@ from functools import partial
 import time
 from models.entity import Entity
 import json
+from utils.utils import strip_json
 
 class EntityFusion:
     def __init__(self, config):
@@ -52,60 +53,94 @@ class EntityFusion:
             list: 包含融合组的列表，每个融合组包含原始实体和其别名
         """
 
-        # # 1. 查找引用源 - 分离有引用源和无引用源的实体
-        # self.logger.info("查找实体的外部引用源")
-        # for entity in entities:
-        #     entity_name = entity.name
+        # 1. 查找引用源 - 分离有引用源和无引用源的实体
+        self.logger.info("查找实体的外部引用源")
+        for entity in entities:
+            entity_name = entity.name
+            variations = await self._generate_variations(entity_name, entity.context, entity.feature_id)
+            # 引用源验证
+            for variation in variations:
+                reference = await self._find_entity_reference(
+                    variation,
+                    entity.feature_id,
+                    entity.commit_ids,
+                    entity.version,
+                )
+                # 如果reference不为空，则将reference添加到entity.external_links中
+                if reference:
+                    # 给reference里添加key是variation，value是variation的具体值
+                    for ref in reference:
+                        ref['variation'] = variation
+                    entity.external_links = reference
+                    break
+        
+        entities_with_refs = [entity for entity in entities if entity.external_links]
+        # 保存有引用源的实体到JSON文件
+        entities_with_refs_file = "output/entity_fusion/entities_with_refs_mm_0601.json"
+        
+        # 确保输出目录存在
+        import os
+        output_dir = os.path.dirname(entities_with_refs_file)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # 将实体转换为字典格式并保存
+        entities_with_refs_dicts = [entity.to_dict() for entity in entities_with_refs]
+        
+        with open(entities_with_refs_file, 'w', encoding='utf-8') as f:
+            json.dump(entities_with_refs_dicts, f, ensure_ascii=False, indent=2)
+        
+        self.logger.info(f"已保存 {len(entities_with_refs)} 个有引用源的实体到 {entities_with_refs_file}")
 
-        #     # 引用源验证
-        #     reference = await self._find_entity_reference(
-        #         entity,
-        #         entity.feature_id,
-        #         entity.commit_ids,
-        #     )
-        #     entity.external_links = reference
-        
-        # entities_with_refs = [entity for entity in entities if entity.external_links]
-        
-        # # 2. 准备融合池 - 合并有引用的新实体和已链接实体，并按类别分类
-        # self.logger.info("准备融合池，合并有引用的新实体和已链接实体")
+        # 利用优化后的tf-idf算法过滤一些大众化的词
 
-        # start_time = time.time()
-        # fusion_pool_by_class = self._prepare_fusion_pool_by_class(linked_entities, entities_with_refs)
-        # self.logger.info(f"融合池准备完成，耗时: {time.time() - start_time:.2f}秒")
+        # 分析bootlin的返回结果，提取代码上下文，与术语的上下文对比后判断是否要建立映射关系。
+
         
-        # # 3. 执行基于规则的融合 - 对每个类别分别进行融合，并与已有融合实体进行融合
-        # self.logger.info("执行基于规则的融合")
-        # start_time = time.time()
-        # fusion_groups = self._perform_rule_based_fusion(fusion_pool_by_class)
-        # self.logger.info(f"基于规则的融合完成，耗时: {time.time() - start_time:.2f}秒")
+        # 退出程序
+        import sys
+        sys.exit(0)
+
+        # 2. 准备融合池 - 合并有引用的新实体和已链接实体，并按类别分类
+        self.logger.info("准备融合池，合并有引用的新实体和已链接实体")
+
+        start_time = time.time()
+        fusion_pool_by_class = self._prepare_fusion_pool_by_class(linked_entities, entities_with_refs)
+        self.logger.info(f"融合池准备完成，耗时: {time.time() - start_time:.2f}秒")
+        
+        # 3. 执行基于规则的融合 - 对每个类别分别进行融合，并与已有融合实体进行融合
+        self.logger.info("执行基于规则的融合")
+        start_time = time.time()
+        fusion_groups = self._perform_rule_based_fusion(fusion_pool_by_class)
+        self.logger.info(f"基于规则的融合完成，耗时: {time.time() - start_time:.2f}秒")
 
         # 直接从JSON文件读取fusion_groups
-        fusion_groups_file_path = "output/entity_fusion/fused_entities_result_mm_0510.json"
-        self.logger.info(f"Attempting to load fusion_groups from {fusion_groups_file_path}")
-        fusion_groups = []
-        try:
-            with open(fusion_groups_file_path, 'r', encoding='utf-8') as f:
-                loaded_data = json.load(f)
+        # fusion_groups_file_path = "output/entity_fusion/fused_entities_result_mm_0510.json"
+        # self.logger.info(f"Attempting to load fusion_groups from {fusion_groups_file_path}")
+        # fusion_groups = []
+        # try:
+        #     with open(fusion_groups_file_path, 'r', encoding='utf-8') as f:
+        #         loaded_data = json.load(f)
             
-            if isinstance(loaded_data, list):
-                for entity_dict in loaded_data:
-                    try:
-                        # Entity class is imported at the top of the file
-                        fusion_groups.append(Entity.from_dict(entity_dict))
-                    except Exception as e_conv:
-                        self.logger.error(f"Error converting dict to Entity: {entity_dict}, error: {e_conv}")
-            else:
-                self.logger.error(f"Expected a list from {fusion_groups_file_path}, got {type(loaded_data)}. fusion_groups will be empty.")
-        except FileNotFoundError:
-            self.logger.error(f"File {fusion_groups_file_path} not found. fusion_groups will be empty.")
-        except json.JSONDecodeError as e_json:
-            self.logger.error(f"Error decoding JSON from {fusion_groups_file_path}: {e_json}. fusion_groups will be empty.")
-        except Exception as e_gen: # Catch other potential errors during file operations or unexpected issues
-            self.logger.error(f"An unexpected error occurred while loading {fusion_groups_file_path}: {e_gen}. fusion_groups will be empty.")
+        #     if isinstance(loaded_data, list):
+        #         for entity_dict in loaded_data:
+        #             try:
+        #                 # Entity class is imported at the top of the file
+        #                 fusion_groups.append(Entity.from_dict(entity_dict))
+        #             except Exception as e_conv:
+        #                 self.logger.error(f"Error converting dict to Entity: {entity_dict}, error: {e_conv}")
+        #     else:
+        #         self.logger.error(f"Expected a list from {fusion_groups_file_path}, got {type(loaded_data)}. fusion_groups will be empty.")
+        # except FileNotFoundError:
+        #     self.logger.error(f"File {fusion_groups_file_path} not found. fusion_groups will be empty.")
+        # except json.JSONDecodeError as e_json:
+        #     self.logger.error(f"Error decoding JSON from {fusion_groups_file_path}: {e_json}. fusion_groups will be empty.")
+        # except Exception as e_gen: # Catch other potential errors during file operations or unexpected issues
+        #     self.logger.error(f"An unexpected error occurred while loading {fusion_groups_file_path}: {e_gen}. fusion_groups will be empty.")
         
-        self.logger.info(f"Successfully loaded {len(fusion_groups)} entities into fusion_groups from {fusion_groups_file_path if 'fusion_groups_file_path' in locals() else 'configured path'}")
-        
+        # self.logger.info(f"Successfully loaded {len(fusion_groups)} entities into fusion_groups from {fusion_groups_file_path if 'fusion_groups_file_path' in locals() else 'configured path'}")
+         # 直接从JSON文件读取fusion_groups
+
         # 4. 执行基于 LLM 的补充融合
         self.logger.info(f"执行基于 LLM 的补充融合，输入 {len(fusion_groups)} 个规则融合组")
         start_llm_time = time.time()
@@ -113,6 +148,27 @@ class EntityFusion:
         self.logger.info(f"基于 LLM 的补充融合完成，耗时: {time.time() - start_llm_time:.2f}秒. 输出 {len(final_fusion_result)} 个融合组")
         
         return final_fusion_result
+
+
+    # @FusionCache.cached_operation('variations')
+    async def _generate_variations(self, mention: str,context: str = None, feature_id: str = None) -> List[str]:
+        """生成术语的变体
+        
+        Args:
+            mention: 需要生成变体的术语
+            feature_id: 特征ID，用于缓存
+            commit_ids: 提交ID列表，用于缓存
+            
+        Returns:
+            List[str]: 生成的变体列表
+        """
+        # 只需要实现实际的获取逻辑
+        prompt = self._create_variation_prompt(mention, context)
+        response = self._get_llm_response(prompt)
+        variations = self._parse_variations_response(response, mention)
+        variations.append(mention)
+        variations = list(dict.fromkeys(variations))
+        return variations
 
     def _prepare_fusion_pool_by_class(self, linked_entities, entities_with_refs):
         """准备融合池，合并已链接实体和有引用的新实体，并按类别分类
@@ -212,7 +268,7 @@ class EntityFusion:
             # entity.external_links = reference
         
     @FusionCache.cached_operation('candidates')
-    async def _generate_candidates(self, entity, feature_id=None, commit_ids=None):
+    async def _generate_candidates(self, entity, feature_id=None):
         """生成实体的候选变体
         
         结合规则和大模型方式生成变体：
@@ -250,7 +306,7 @@ class EntityFusion:
             raise  # 重新抛出异常，让调用方处理
 
     @FusionCache.cached_operation('reference')
-    async def _find_entity_reference(self, entity, feature_id=None, commit_ids=None):
+    async def _find_entity_reference(self, entity_name, feature_id=None, commit_ids=None, version='latest'):
         """查找实体的引用源（官方文档或代码）
         
         Args:
@@ -265,7 +321,7 @@ class EntityFusion:
             # 对所有候选项并行执行搜索
             search_tasks = []
             search_tasks.extend([
-                self._search_bootlin(entity.name),
+                self._search_bootlin(entity_name, version),
                 # self._search_kernel_docs(entity.name)
             ])
             
@@ -299,46 +355,38 @@ class EntityFusion:
             self.logger.error(f"Error finding reference for entity {entity}: {str(e)}")
             return [{'reference_type': f"error {str(e)}", 'references': []}]
 
-    async def _search_bootlin(self, entity):
+    async def _search_bootlin(self, entity, version):
         """异步搜索Bootlin并返回结构化结果"""
         # 去除标识符末尾的括号
         if entity.endswith('()'):
             entity = entity[:-2]
 
-        base_url = 'https://elixir.bootlin.com/linux/v6.12.6/A/ident/'
+        if version == '' or version is None:
+            version = 'latest'
+        else:
+            version = f'v{version}'
+
+        base_url = f'https://elixir.bootlin.com/linux/{version}/A/ident/'
+        # base_url = f'http://10.176.37.1:6106/linux/{version}/A/ident/'
         headers = {
             'User-Agent': 'Chrome/90.0.4430.93 Safari/537.36'
         }
-        # 替换空格为URL编码的占位符
-        encoded_entity = entity.replace(' ', '%20')
-        # 首先尝试原始搜索
-        url = f"{base_url}{entity}"
-        try:
-            response = requests.get(url, headers=headers)
-        except Exception as e:
-            print(f'Bootlin 搜索失败，状态码: {response.status_code}')
+        
+
+        # 尝试下划线格式搜索
+        underscored_entity = '_'.join(entity.split())
+        # if underscored_entity != entity:  # 只有当下划线格式与原始格式不同时才尝试
+        url = f"{base_url}{underscored_entity}"
+        response = requests.get(url, headers=headers)
         
         if response.status_code == 200:
-            print(f'在 Bootlin 找到与 "{entity}" 相关的结果。')
+            print(f'在 Bootlin 找到与 "{underscored_entity}" 相关的结果。')
             return {
                 'url_type': 'code',
                 'url': [url]
             }
-        
-        # 如果原始搜索失败，尝试下划线格式
-        underscored_entity = '_'.join(entity.split())
-        if underscored_entity != entity:  # 只有当下划线格式与原始格式不同时才尝试
-            url = f"{base_url}{underscored_entity}"
-            response = requests.get(url, headers=headers)
-            
-            if response.status_code == 200:
-                print(f'在 Bootlin 找到与 "{underscored_entity}" 相关的结果。')
-                return {
-                    'url_type': 'code',
-                    'url': [url]
-                }
-            else:
-                print(f'Bootlin 搜索失败，状态码: {response.status_code}')
+        else:
+            print(f'Bootlin 搜索失败，状态码: {response.status_code}, 实体: {entity}')
         
         return None
 
@@ -828,3 +876,55 @@ Do these entities refer to the same concept? Respond with 'Yes' or 'No' only."""
     #         )
             # entity.external_links = reference
         
+    def _create_variation_prompt(self, mention: str, context: str) -> str:
+        """创建生成变体的提示"""
+        return f"""You are an expert in Linux kernel code. Generate ONLY the most likely Linux kernel identifier variations that would actually appear in real kernel source code.
+
+Concept: "{mention}"
+Context: "{context}"
+
+Requirements:
+- Generate MAXIMUM 5 variations
+- Only include identifiers you are HIGHLY CONFIDENT exist in Linux kernel code
+- Focus on the most common naming patterns:
+  * Functions: lowercase_with_underscores
+  * Macros/Constants: UPPERCASE_WITH_UNDERSCORES  
+  * Short abbreviations commonly used in kernel
+
+Return ONLY a JSON array of the most probable variations.
+
+Examples:
+Input: "Virtual Memory"
+Output: ["vm", "vma", "virtual_memory", "VM"]
+
+Input: "Page Table Entry"
+Output: ["pte", "PTE", "page_table_entry"]
+
+Input: "Memory Management" 
+Output: ["mm", "MM", "memory_management"]
+
+Generate for: "{mention}"
+"""
+
+
+    def _parse_variations_response(self, response: str, mention: str) -> List[str]:
+        """解析 LLM 响应"""
+        try:
+            cleaned_response = strip_json(response)
+            variations = json.loads(cleaned_response)
+            
+            if isinstance(variations, list):
+                # 使用集合去重，然后转回列表，保持顺序
+                unique_variations = []
+                seen = set()
+                for v in variations:
+                    if v and isinstance(v, str):
+                        v_stripped = v.strip()
+                        if v_stripped and v_stripped not in seen:
+                            seen.add(v_stripped)
+                            unique_variations.append(v_stripped)
+                return unique_variations
+            return []
+        except Exception as e:
+            self.logger.error(f"Failed to parse variations response: {e}")
+            return [mention]

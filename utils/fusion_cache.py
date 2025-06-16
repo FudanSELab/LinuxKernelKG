@@ -5,17 +5,17 @@ from functools import wraps
 import logging
 
 class FusionCache:
-    def __init__(self, cache_file: str = "data/cache/fusion/fusion_cache_mm_0512.json"):
+    def __init__(self, cache_file: str = "data/cache/fusion/fusion_cache_mm.json"):
         self.cache_file = cache_file
         self.cache_files = {
-            'reference': self.cache_file,
-            'fusion': self.cache_file.replace('.json', '_fusion.json'),
-            'candidates': self.cache_file.replace('.json', '_candidates.json'),
+            'reference': self.cache_file.replace('.json', '_0603_reference.json'),
+            'candidates': self.cache_file.replace('.json', '_0530_candidates.json'),
+            'variations': self.cache_file.replace('.json', '_0530_variations.json'), 
         }
         self.caches = {
             'reference': self._load_cache_file('reference'),
-            'fusion': self._load_cache_file('fusion'),
             'candidates': self._load_cache_file('candidates'),
+            'variations': self._load_cache_file('variations'),
         }
 
     def _load_cache_file(self, cache_type: str) -> dict:
@@ -110,7 +110,7 @@ class FusionCache:
                 
                 # 尝试从缓存获取
                 try:
-                    cached = fusion_cache.cache_operation('get', cache_type, entity.name, feature_id, commit_ids)
+                    cached = fusion_cache.cache_operation('get', cache_type, entity, feature_id, commit_ids)
                     if cached is not None:
                         logger.info(f"Cache hit for {cache_type} of: {entity}")
                         return cached
@@ -124,7 +124,7 @@ class FusionCache:
                 # 缓存结果
                 if result is not None:
                     try:
-                        fusion_cache.cache_operation('set', cache_type, entity.name, feature_id, commit_ids, result)
+                        fusion_cache.cache_operation('set', cache_type, entity, feature_id, commit_ids, result)
                         logger.info(f"Cached {cache_type} result for: {entity}")
                     except Exception as e:
                         logger.error(f"Error saving to cache: {e}")
