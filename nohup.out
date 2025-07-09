@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/fdse/ytest/LinuxKernelKG/scripts/run_entity_link.py", line 25, in <module>
+    from pipeline.entity_linker import EntityLinker
+  File "/home/fdse/ytest/LinuxKernelKG/pipeline/entity_linker.py", line 646
+    response = await self._safe_requests_get(api_url, params=params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: 'await' outside async function

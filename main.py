@@ -104,7 +104,7 @@ async def run_pipeline():
             
             # 3. 实体和关系抽取
             extractor = EntityRelationExtractor(pipeline_config)
-            extractor.extract_entities_and_relations(feature)
+            extractor.extract_entities_and_relations(feature, save_to_file=True)
             
             # 新增：保存每个mention的数据
             # mentions_file = output_dir / f"feature_mentions_{timestamp}.csv"

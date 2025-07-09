@@ -17,7 +17,89 @@ from srctoolkit import Delimiter
 import time 
 import sqlite3
 import wikitextparser as wtp
+import random
+from functools import wraps
 
+
+class RateLimiter:
+    """请求限流器，控制API调用频率"""
+    def __init__(self, max_requests_per_minute=60, max_requests_per_hour=3600):
+        self.max_requests_per_minute = max_requests_per_minute
+        self.max_requests_per_hour = max_requests_per_hour
+        self.requests_per_minute = []
+        self.requests_per_hour = []
+        self.last_request_time = 0
+    
+    async def wait_if_needed(self):
+        """检查是否需要等待以避免超过限流"""
+        current_time = time.time()
+        
+        # 清理过期的请求记录
+        minute_ago = current_time - 60
+        hour_ago = current_time - 3600
+        
+        self.requests_per_minute = [t for t in self.requests_per_minute if t > minute_ago]
+        self.requests_per_hour = [t for t in self.requests_per_hour if t > hour_ago]
+        
+        # 检查是否需要等待
+        wait_time = 0
+        
+        # 每分钟限制
+        if len(self.requests_per_minute) >= self.max_requests_per_minute:
+            wait_time = max(wait_time, 60 - (current_time - self.requests_per_minute[0]))
+        
+        # 每小时限制
+        if len(self.requests_per_hour) >= self.max_requests_per_hour:
+            wait_time = max(wait_time, 3600 - (current_time - self.requests_per_hour[0]))
+        
+        # 最小请求间隔（避免过于频繁的请求）
+        min_interval = 1.0  # 最少等待1秒
+        if current_time - self.last_request_time < min_interval:
+            wait_time = max(wait_time, min_interval - (current_time - self.last_request_time))
+        
+        if wait_time > 0:
+            # 添加一些随机性避免多个进程同时请求
+            jitter = random.uniform(0, 0.5)
+            total_wait = wait_time + jitter
+            await asyncio.sleep(total_wait)
+            current_time = time.time()
+        
+        # 记录这次请求
+        self.requests_per_minute.append(current_time)
+        self.requests_per_hour.append(current_time)
+        self.last_request_time = current_time
+
+
+def retry_with_backoff(max_retries=5, base_delay=1.0, max_delay=300.0):
+    """装饰器：为函数添加重试和指数退避机制"""
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return await func(*args, **kwargs)
+                except Exception as e:
+                    # 检查是否是429错误或其他可重试的错误
+                    if isinstance(e, requests.exceptions.HTTPError) and e.response.status_code == 429:
+                        # 429错误，需要等待更长时间
+                        delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
+                        if hasattr(args[0], 'logger'):
+                            args[0].logger.warning(f"Rate limited (429), retrying in {delay:.2f}s (attempt {attempt + 1}/{max_retries})")
+                        await asyncio.sleep(delay)
+                    elif attempt < max_retries - 1:
+                        # 其他错误，短暂等待后重试
+                        delay = min(base_delay * (2 ** attempt), max_delay / 10)
+                        if hasattr(args[0], 'logger'):
+                            args[0].logger.warning(f"Request failed: {e}, retrying in {delay:.2f}s (attempt {attempt + 1}/{max_retries})")
+                        await asyncio.sleep(delay)
+                    else:
+                        # 最后一次尝试仍然失败
+                        if hasattr(args[0], 'logger'):
+                            args[0].logger.error(f"Max retries ({max_retries}) exceeded for request: {e}")
+                        raise
+            return None
+        return wrapper
+    return decorator
 
 
 class EntityLinker:
@@ -32,13 +114,59 @@ class EntityLinker:
         # 添加本地MediaWiki API配置
         self.local_wiki_api = getattr(self.config, 'LOCAL_WIKI_API', 'http://10.176.37.1:6101/api.php')
         
-        # 保持原有的Wikipedia API初始化
+        # 从配置获取限流参数
+        rate_limit_config = getattr(self.config, 'WIKIPEDIA_RATE_LIMIT', {})
+        self.rate_limiter = RateLimiter(
+            max_requests_per_minute=rate_limit_config.get('max_requests_per_minute', 20),
+            max_requests_per_hour=rate_limit_config.get('max_requests_per_hour', 1200)
+        )
+        
+        # 从配置获取User-Agent
+        user_agent = getattr(self.config, 'WIKIPEDIA_USER_AGENT', 
+                           'LinuxKernelKG/1.0 (Educational research project; Linux kernel knowledge graph; contact: admin@example.com) Python/3.x')
+        
+        # 改进的Wikipedia API初始化，使用配置的User-Agent
         self.wiki = wikipediaapi.Wikipedia(
             language='en',
             extract_format=wikipediaapi.ExtractFormat.HTML,
-            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+            user_agent=user_agent,
         )
         self.link_cache = LinkCache()
+        
+        # API调用统计
+        self.api_stats = {
+            'total_requests': 0,
+            'cached_requests': 0,
+            'failed_requests': 0,
+            'rate_limited_requests': 0,
+            'session_start_time': time.time()
+        }
+        
+        # 从配置获取其他参数
+        self.enable_api_logging = getattr(self.config, 'ENABLE_API_LOGGING', True)
+        self.auto_adjust_rate_limit = getattr(self.config, 'AUTO_ADJUST_RATE_LIMIT', True)
+        
+        self.logger.info(f"EntityLinker initialized with rate limits: {rate_limit_config.get('max_requests_per_minute', 20)}/min, {rate_limit_config.get('max_requests_per_hour', 1200)}/hour")
+
+    def log_api_stats(self):
+        """记录API调用统计"""
+        if not self.enable_api_logging:
+            return
+            
+        session_duration = time.time() - self.api_stats['session_start_time']
+        avg_requests_per_minute = (self.api_stats['total_requests'] / max(session_duration / 60, 1))
+        
+        stats_info = {
+            **self.api_stats,
+            'session_duration_minutes': round(session_duration / 60, 2),
+            'avg_requests_per_minute': round(avg_requests_per_minute, 2)
+        }
+        
+        self.logger.info(f"API Statistics: {json.dumps(stats_info, indent=2)}")
+        
+        # 如果平均请求频率过高，建议调整
+        if avg_requests_per_minute > self.rate_limiter.max_requests_per_minute * 0.8:
+            self.logger.warning(f"Request rate ({avg_requests_per_minute:.1f}/min) is approaching limit ({self.rate_limiter.max_requests_per_minute}/min). Consider reducing batch sizes.")
 
     async def link_entity(self, entity):
         """链接单个实体到知识库，返回所有可能的匹配结果"""
@@ -49,66 +177,46 @@ class EntityLinker:
         feature_id = entity.feature_id
         commit_ids = entity.commit_ids
         entities = []
-        # 1. 生成所有可能的搜索词
+        
+        # 1. 检查缓存以减少重复处理
+        cache_key = f"{entity_name}_{hash(context or '')}"
+        
+        # 2. 生成所有可能的搜索词
         variations_start = time.time()
         
         # 生成变体并合并
         variations = await self._generate_variations(entity_name, context, feature_id, commit_ids)
-        # word_variations = await self._generate_variations(Delimiter.split_camel(entity), context, feature_id, commit_ids)
-        # variations.extend(word_variations)
         
         self.logger.info(f"Variations generation took {time.time() - variations_start:.2f}s")
+        
+        # 3. 去重变体以减少API调用
+        unique_variations = list(dict.fromkeys(variations))
+        if len(variations) != len(unique_variations):
+            self.logger.info(f"Reduced variations from {len(variations)} to {len(unique_variations)} after deduplication")
            
-        # 2. 搜索维基百科
+        # 4. 搜索维基百科（带限流）
         wiki_search_start = time.time()
         primary_candidates = []
-        # 模拟数据，用于临时测试
-        # 将variations转换为term列表，并保存对应的context信息
-        # mock_data = [
-        #     {
-        #         "term": "tree", 
-        #         "context": "File systems	Btrfs	tree-checker: add type and sequence check for inline backrefs"
-        #     },
-        #     {
-        #         "term": "PID", 
-        #         "context": "Drivers	USB	ftdi_sio: Added custom PID for  products"
-        #     },
-        #     {
-        #         "term": "card", 
-        #         "context": "Drivers & architectures		PCMCIA: core socket sysfs support,export card type"
-        #     },
-        #     {
-        #         "term": "Reset", 
-        #         "context": "Drivers	Bluetooth	btnxpuart: Improve inband Independent Reset handling"
-        #     },
-        #     {
-        #         "term": "architectures", 
-        #         "context": "Arch-independent changes in the kernel core		Memory management Allow the removal of ZONE_DMA32 for non x86_64 architectures and ZONE_HIGHMEM for arches not using highmem (like 64 bit architectures). While they're not used on those arches they eat some memory and they've no sense on those platforms anyway so make it possible to disable them at compile time"
-        #     },
-        #     {
-        #         "term": "Memory", 
-        #         "context": "Memory management Allow the removal of ZONE_DMA32 for non x86_64 architectures and ZONE_HIGHMEM for arches not using highmem (like 64 bit architectures). While they're not used on those arches they eat some memory and they've no sense on those platforms anyway so make it possible to disable them at compile time"
-        #     }
-        # ]
         
-        # 提取term列表，保留context信息以便后续查询使用
-        # variations = [item["term"] for item in mock_data]
-        # term_to_context = {item["term"]: item["context"] for item in mock_data}
-        for term in variations:
+        for term in unique_variations:
+            # 为每个搜索术语添加限流
+            await self.rate_limiter.wait_if_needed()
             wiki_results = await self._search_wikipedia(term, context, feature_id, commit_ids)
-            # wiki_results = await self._search_wikipedia(term, term_to_context[term], feature_id, commit_ids)
             primary_candidates.extend(wiki_results)
+            
+            # 添加进度日志
+            if len(unique_variations) > 5:
+                self.logger.info(f"Processed {unique_variations.index(term) + 1}/{len(unique_variations)} variations for entity: {entity_name}")
         
         primary_candidates = self._deduplicate_candidates(primary_candidates)
         self.logger.info(f"Wikipedia primary search took {time.time() - wiki_search_start:.2f}s")
         
-        # 选择最佳匹配
+        # 5. 选择最佳匹配
         best_match_start = time.time()
         primary_match = await self._select_best_match(entity, context, primary_candidates)
         self.logger.info(f"Best match selection took {time.time() - best_match_start:.2f}s")
-    
 
-        # 整理结果
+        # 6. 整理结果
         matches = []
         if primary_match and primary_match.confidence > 0.5:
             entity.add_external_link('wikipedia',[primary_match.url])
@@ -122,8 +230,12 @@ class EntityLinker:
         total_time = time.time() - start_time
         self.logger.info(f"Total entity linking process took {total_time:.2f}s for entity: {entity}")
         
-        return entities
+        # 定期记录API统计
+        if self.api_stats['total_requests'] % 50 == 0:
+            self.log_api_stats()
         
+        return entities
+
     @LinkCache.cached_operation('variations')
     async def _generate_variations(self, mention: str,context: str = None, feature_id: str = None, commit_ids: list = None) -> List[str]:
         """生成术语的变体
@@ -278,19 +390,28 @@ class EntityLinker:
         else:
             return await self._search_wikipedia_online(term, context, feature_id, commit_ids)
 
+    @retry_with_backoff(max_retries=3, base_delay=2.0, max_delay=60.0)
     async def _search_wikipedia_online(self, term: str, context: str = None, feature_id: str = None, commit_ids: list = None) -> List[LinkingCandidate]:
-        """使用在线Wikipedia API搜索"""
+        """使用在线Wikipedia API搜索，包含限流和重试机制"""
+        
+        # 应用限流
+        await self.rate_limiter.wait_if_needed()
+        self.api_stats['total_requests'] += 1
 
         try:
+            # 首先尝试查找消歧义页面
             disambig_term = f"{term}_(disambiguation)"
-            disambig_term = "tree"
+            await self.rate_limiter.wait_if_needed()  # 为每个API调用添加限流
+            
             disambig_page = self.wiki.page(disambig_term)
             if disambig_page.exists():
                 self.logger.info(f"Found disambiguation page: {disambig_term}")
                 return await self._handle_disambiguation_with_relevance(
                     term, feature_id, commit_ids, page=disambig_page, context=context
                 )
-             
+            
+            # 如果没有消歧义页面，尝试直接查找页面
+            await self.rate_limiter.wait_if_needed()  # 为每个API调用添加限流
             page = self.wiki.page(term)
             candidates = []
             
@@ -312,7 +433,17 @@ class EntityLinker:
             
             return candidates
             
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                self.api_stats['rate_limited_requests'] += 1
+                self.logger.warning(f"Rate limited (429) for term: {term}")
+                raise  # 让装饰器处理重试
+            else:
+                self.api_stats['failed_requests'] += 1
+                self.logger.error(f"HTTP error for term {term}: {e}")
+                return []
         except Exception as e:
+            self.api_stats['failed_requests'] += 1
             self.logger.error(f"Wikipedia online search failed for term {term}: {e}")
             return []
 
@@ -801,20 +932,25 @@ class EntityLinker:
         - If in doubt about relevance, check if the concept appears in Linux kernel documentation
         """
 
-        # 获取所有消歧义候选项
+        # 获取所有消歧义候选项，但添加限流
+        await self.rate_limiter.wait_if_needed()
         candidates = self._handle_disambiguation_page(term, page)
 
-        # 分批处理，每批30个
-        BATCH_SIZE = 20
+        # 添加请求去重机制
+        unique_candidates = self._deduplicate_candidates(candidates)
+        self.logger.info(f"Reduced candidates from {len(candidates)} to {len(unique_candidates)} after deduplication")
+
+        # 分批处理，每批减少到15个以降低单次处理负担
+        BATCH_SIZE = 15
         domain_relevant_candidates = []
         # 构建候选项JSON
         candidates_json = []
-        for i, candidate in enumerate(candidates):
+        for i, candidate in enumerate(unique_candidates):
             # 移除多余的格式化和引号，直接使用字典
             candidate_dict = {
                 "index": i,
                 "title": candidate.title,
-                "summary": candidate.summary[:500] if candidate.summary else ""
+                "summary": candidate.summary[:300] if candidate.summary else ""  # 减少摘要长度以降低token消耗
             }
             candidates_json.append(json.dumps(candidate_dict))
 
@@ -825,6 +961,8 @@ class EntityLinker:
             formatted_prompt = prompt.replace("{candidates_json}", candidates_json_str)
             
             try:
+                # 为LLM调用也添加一定的延迟，避免过于频繁的调用
+                await asyncio.sleep(0.5)
                 response = await self._get_llm_response(formatted_prompt)
                 cleaned_response = strip_json(response)
                 results = json.loads(cleaned_response)
@@ -833,14 +971,14 @@ class EntityLinker:
                 for result in results:
                     if isinstance(result, dict) and "index" in result:
                         index = result.get("index")
-                        if 0 <= index < len(candidates):
-                            candidate = candidates[index]
-                            candidate.page = candidates[index].page
+                        if 0 <= index < len(unique_candidates):
+                            candidate = unique_candidates[index]
+                            candidate.page = unique_candidates[index].page
                             is_relevant = result.get("is_domain_relevant", False)
                             
                             if is_relevant:
                                 domain_relevant_candidates.append(candidate)
-                                self.logger.info(f"Domain relevant page found: {candidate.title} - {candidate.summary}")
+                                self.logger.info(f"Domain relevant page found: {candidate.title} - {candidate.summary[:100]}...")
 
             except Exception as e:
                 self.logger.error(f"Failed to process domain relevance batch: {e}")
@@ -1282,3 +1420,30 @@ class EntityLinker:
         except Exception as e:
             self.logger.error(f"Failed to check if page exists: {title}, error: {e}")
             return False
+
+    def cleanup_and_report(self):
+        """清理资源并生成最终报告"""
+        self.logger.info("=== Entity Linking Session Summary ===")
+        self.log_api_stats()
+        
+        # 计算成功率
+        total_requests = self.api_stats['total_requests']
+        successful_requests = total_requests - self.api_stats['failed_requests']
+        success_rate = (successful_requests / total_requests * 100) if total_requests > 0 else 0
+        
+        self.logger.info(f"Success rate: {success_rate:.2f}%")
+        self.logger.info(f"Cache hit rate: {self.api_stats['cached_requests'] / max(total_requests, 1) * 100:.2f}%")
+        
+        if self.api_stats['rate_limited_requests'] > 0:
+            self.logger.warning(f"Encountered {self.api_stats['rate_limited_requests']} rate limiting events")
+            self.logger.info("Consider increasing delays between requests if rate limiting persists")
+        
+        self.logger.info("=== End Summary ===")
+        
+    async def __aenter__(self):
+        """异步上下文管理器入口"""
+        return self
+        
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """异步上下文管理器退出"""
+        self.cleanup_and_report()

@@ -126,6 +126,25 @@ class PipelineConfig:
     USE_LOCAL_WIKIPEDIA = False
     WIKIPEDIA_DB_PATH = 'data/wikipedia.db'
 
+    # Wikipedia API 限流配置
+    WIKIPEDIA_RATE_LIMIT = {
+        'max_requests_per_minute': 20,  # 每分钟最多20次请求
+        'max_requests_per_hour': 1200,  # 每小时最多1200次请求
+        'min_request_interval': 2.0,    # 请求间最小间隔（秒）
+        'retry_max_attempts': 3,        # 最大重试次数
+        'retry_base_delay': 2.0,        # 重试基础延迟（秒）
+        'retry_max_delay': 120.0        # 重试最大延迟（秒）
+    }
+
+    # Wikipedia API User-Agent
+    WIKIPEDIA_USER_AGENT = 'LinuxKernelKG/1.0 (Educational research project; Linux kernel knowledge graph; contact: admin@example.com) Python/3.x'
+
+    # 是否启用详细的API调用日志
+    ENABLE_API_LOGGING = True
+
+    # 是否在遇到429错误时自动调整请求频率
+    AUTO_ADJUST_RATE_LIMIT = True
+
     @classmethod
     def validate_neo4j_config(cls):
         """验证Neo4j配置"""

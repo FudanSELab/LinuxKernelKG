@@ -244,7 +244,7 @@ class TestEntityExtraction(unittest.TestCase):
     def test_entity_extraction_examples(self):
         """测试并展示一些实体抽取的示例"""
         # 选择几个示例feature进行详细分析
-        sample_size = min(1, len(self.benchmark_features))
+        sample_size = min(  1, len(self.benchmark_features))
         sample_feature_ids = list(self.benchmark_features.keys())[:sample_size]
         
         for feature_id in sample_feature_ids:

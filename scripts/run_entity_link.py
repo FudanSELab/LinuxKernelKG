@@ -22,7 +22,7 @@ from datetime import datetime
 from tqdm import tqdm
 
 # Import project modules
-from pipeline.entity_linker import EntityLinker
+from pipeline.entity_linker_ban import EntityLinker
 from models.entity import Entity
 from config.pipeline_config import PipelineConfig
 from utils.logger import setup_logger
